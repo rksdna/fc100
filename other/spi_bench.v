@@ -1,56 +1,76 @@
+/*
+ * Serial peripheral interface
+ */
+ 
 `timescale 1us / 1ns
 `include "spi.v"
 
-module spi_test;
-	
-    reg nrst;
-    reg clk; 
+module spi_bench;
 
-    reg sck;
-    reg mosi;
-    wire miso;
-    reg nss;
+reg clk;
+reg rst;
 
-    wire [7:0] di;
-    wire [7:0] do;
-    wire we;
-    wire re;
+reg sck;
+reg sdi;
+wire sdo;
+reg scs;
 
-    reg [7:0] sh;
+wire [7:0] pdi;
+wire [7:0] pdo;
 
-	spi dut (nrst, clk, sck, mosi, miso, nss, di, do, we, re);
+defparam dut.size = 8;
 
-    assign di = re ? 8'hA1 : 8'bZ;
+spi dut(clk, rst, sck, sdi, sdo, scs, pdi, pdo);
 
-	initial 
-    begin
-		$dumpfile("spi_bench.vcd");
-		$dumpvars(0, spi_test);
+assign pdi = 8'h81;
+
+task shift;
+    input [7:0] tmp;
+begin
+    scs = 1'b1;
+    repeat (8) 
+    begin 
+        #1;
+        {sdi, tmp[7:1]} = tmp[7:0];
         
-        nrst = 0;
-        clk = 1;
-        sck = 0;
-        mosi = 0;
-        nss = 1;
-        sh = 8'h85;
+        #10;
+        sck = 1'b1;
+        
+        #10;
+        sck = 1'b0;
+   end  
+   scs = 1'b0; 
+end
+endtask
 
-		#10 nrst = 1;
-        #10 nss = 0;
+initial 
+begin
+    $dumpfile("spi_bench.vcd");
+    $dumpvars(0, spi_bench);
+        
+    rst = 1'b1;
+    clk = 1'b0;
+    sck = 1'b0;
+    sdi = 1'b0;
+    scs = 1'b0;
+    
+    #10;    
+    rst = 1'b0;
+        
+    #10;
+    shift(8'hA5);
+    
+    #10;    
+    shift(8'h5A);
+    
+    #10;
+    $finish();
+end
 
-        repeat (8) 
-        begin 
-            mosi = sh[7];
-            sh = sh << 1;
-            #5 sck = 1;
-            #5 sck = 0;
-            #2; 
-         end 
-
-        nss = 1;
-		#10 $finish();
-    end
-
-	always 
-		#1 clk = !clk;
+always 
+begin
+    #1;
+    clk = !clk;
+end
 
 endmodule

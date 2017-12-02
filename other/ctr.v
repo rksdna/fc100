@@ -3,8 +3,8 @@
  *
  * clk - reference clock
  * rst - async reset
- * ina - channel A input
- * inb - channel B input
+ * ina - input A clock
+ * inb - input B clock
  *
  * bis[1:0] - end mode
  *  00 - ina
@@ -37,7 +37,7 @@
 
 module ctr(clk, rst, ina, inb, bis, eis, brq, erq, bac, eac, cta, ctc, bip, eip, bin, ein, ip0, ip1);
 
-parameter size = 32;
+parameter size = 8;
 
 input wire clk;
 input wire rst;

@@ -1,6 +1,7 @@
 # Project files
 
-SRC = $(wildcard *_bench.v)
+#SRC = $(wildcard *_bench.v)
+SRC = fc.v
 OBJ = $(SRC:.v=.o)
 VCD = $(SRC:.v=.vcd)
 
@@ -12,10 +13,12 @@ RM = rm
 
 .PHONY: all clean install
 
-all: $(OBJ)
+all: $(VCD)
+
+%.vcd: %.o
 	@echo "Execute $<..."
 	$(VM) $<
-
+	
 %.o: %.v
 	@ echo "Compiling $<..."
 	$(CC) -o $@ $<

@@ -21,8 +21,8 @@ module ctr_bench;
     wire bac;
     wire eac;
 
-    wire [31:0] cta;
-    wire [31:0] ctc;
+    wire [7:0] cta;
+    wire [7:0] ctc;
 
     wire bip;
     wire eip;
@@ -30,6 +30,8 @@ module ctr_bench;
     wire ein;
     reg ip0;
     reg ip1;
+    
+    defparam dut.size = 8;
 
     ctr dut(clk, rst, ina, inb, bis, eis, brq, erq, bac, eac, cta, ctc, bip, eip, bin, ein, ip0, ip1);
 
