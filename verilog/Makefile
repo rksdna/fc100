@@ -1,7 +1,6 @@
 # Project files
 
-#SRC = $(wildcard *_bench.v)
-SRC = fc.v
+SRC = $(wildcard *_bench.v) fc.v
 OBJ = $(SRC:.v=.o)
 VCD = $(SRC:.v=.vcd)
 

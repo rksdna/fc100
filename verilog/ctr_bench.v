@@ -6,9 +6,11 @@
 `include "ctr.v"
 
 module ctr_bench;
+
+    reg rst;
 	
     reg clk;
-    reg rst;
+    reg rfc;
 
     reg ina;
     reg inb;
@@ -21,8 +23,11 @@ module ctr_bench;
     wire bac;
     wire eac;
 
-    wire [7:0] cta;
-    wire [7:0] ctc;
+    reg [1:0] xis;
+    wire [7:0] cnx;
+    
+    reg ris;
+    wire [7:0] cnr;
 
     wire bip;
     wire eip;
@@ -33,7 +38,7 @@ module ctr_bench;
     
     defparam dut.size = 8;
 
-    ctr dut(clk, rst, ina, inb, bis, eis, brq, erq, bac, eac, cta, ctc, bip, eip, bin, ein, ip0, ip1);
+    ctr dut(rst, clk, rfc, ina, inb, bis, eis, brq, erq, bac, eac, xis, cnx, ris, cnr, bip, eip, bin, ein, ip0, ip1);
 
 initial 
 begin
@@ -41,13 +46,18 @@ begin
     $dumpvars(0, ctr_bench);
 		
     rst = 1'b1;
+    
     clk = 1'b0;
+    rfc = 1'b0;
     
     ina = 1'b0;
     inb = 1'b0;
     
     bis = 2'b00;
     eis = 2'b00;
+    
+    xis = 2'b00;
+    ris = 1'b0;
     
     brq = 1'b0;
     erq = 1'b0;
@@ -130,6 +140,12 @@ always
 begin
     #4;
     clk = !clk;
+end
+
+always 
+begin
+    #3;
+    rfc = !rfc;
 end
 
 endmodule

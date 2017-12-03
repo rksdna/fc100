@@ -7,8 +7,9 @@
 
 module spi_bench;
 
-reg clk;
 reg rst;
+
+reg clk;
 
 reg sck;
 reg sdi;
@@ -20,7 +21,7 @@ wire [7:0] pdo;
 
 defparam dut.size = 8;
 
-spi dut(clk, rst, sck, sdi, sdo, scs, pdi, pdo);
+spi dut(rst, clk, sck, sdi, sdo, scs, pdi, pdo);
 
 assign pdi = 8'h81;
 

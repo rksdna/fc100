@@ -28,8 +28,9 @@ void startup_board(void)
 
    SYSCFG->CFGR1 = SYSCFG_CFGR1_PA11_PA12_RMP;
 
-   GPIOA->ODR = GPIO_ODR_ODR7;
+   GPIOA->ODR = GPIO_ODR_ODR4;
    GPIOA->MODER =
+           /* CPL_RST */ GPIO_MODER_GPO(3) |
            /* CPL_NSS */ GPIO_MODER_GPO(4) |
            /* CPL_SCK */ GPIO_MODER_AFO(5) |
            /* CPL_SDI */ GPIO_MODER_AFO(6) |
@@ -44,7 +45,7 @@ void startup_board(void)
    USART2->BRR = 8000000 / 115200 + 1;
 
    SPI1->CR2 = SPI_CR2_FRXTH | SPI_CR2_DS_0 | SPI_CR2_DS_1 | SPI_CR2_DS_2;
-   SPI1->CR1 = SPI_CR1_MSTR | SPI_CR1_SSI | SPI_CR1_SSM | SPI_CR1_SPE | SPI_CR1_BR;
+   SPI1->CR1 = SPI_CR1_MSTR | SPI_CR1_SSI | SPI_CR1_SSM | SPI_CR1_SPE | SPI_CR1_BR_2;
 
    start_timers_clock(8000);
 
@@ -52,13 +53,80 @@ void startup_board(void)
    debug("id: %*m flash: %dKbytes\n", sizeof(DES->ID), DES->ID, DES->FSIZE & DES_FSIZE_FSIZE);
 }
 
+struct fc_tx_frame
+{
+    u8_t bis;
+    u8_t eis;
+    u8_t xis;
+    u8_t ris;
+
+    u32_t dummy;
+    u8_t cr;
+};
+
+struct fc_rx_frame
+{
+    u32_t cnr;
+    u32_t cnx;
+    u8_t sr;
+};
+
+static struct fc_tx_frame fc_tx = {0x00, 0x00, 0x00, 0x00, 0xFFFFFFFF, 0x00};
+static struct fc_rx_frame fc_rx = {0x00000000, 0x00000000, 0x00};
+
 #define SPI1_DR_8 *(volatile u8_t *)(&SPI1->DR)
 
-u8_t spi_poll(u8_t value)
+void fc_poll(void)
 {
-    SPI1_DR_8 = value;
-    wait_for(&SPI1->SR, SPI_SR_RXNE, SPI_SR_RXNE);
-    return SPI1_DR_8;
+    const u8_t * txp = (void *)&fc_tx;
+    u8_t * rxp = (void *)&fc_rx;
+    u32_t n = 9;
+
+    GPIOA->BSRR = GPIO_BSRR_BR4;
+
+    while (n--)
+    {
+        SPI1_DR_8 = txp[n];
+        wait_for(&SPI1->SR, SPI_SR_RXNE, SPI_SR_RXNE);
+        rxp[n] = SPI1_DR_8;
+    }
+
+    GPIOA->BSRR = GPIO_BSRR_BS4;
+
+    debug("%*m > %*m\n", 9, (void *)&fc_tx, 9, (void *)&fc_rx);
+}
+
+void fx_m(void)
+{
+    GPIOA->BSRR = GPIO_BSRR_BS3;
+
+    fc_tx.bis = 0x00;
+    fc_tx.eis = 0x00;
+    fc_tx.xis = 0x00;
+    fc_tx.ris = 0x00;
+    fc_tx.cr = 0x80;
+    fc_poll();
+
+    fc_tx.cr = 0x81;
+    fc_poll();
+
+    sleep(1000);
+
+    fc_tx.cr = 0x83;
+    fc_poll();
+
+    while (1)
+    {
+        fc_poll();
+        if (fc_rx.sr == 0xAB)
+        {
+            debug("%d / %d \n", fc_rx.cnx, fc_rx.cnr);
+            break;
+        }
+        sleep(10);
+    }
+
+    GPIOA->BSRR = GPIO_BSRR_BR3;
 }
 
 void main(void)
@@ -67,12 +135,8 @@ void main(void)
 
     while (1)
     {
-        u8_t s;
-        GPIOA->BSRR = GPIO_BSRR_BR4;
-        s = spi_poll(0xA5);
-        GPIOA->BSRR = GPIO_BSRR_BS4;
-
-        debug(" -> %x\n", s);
-        sleep(50);
+        fx_m();
+        sleep(250);
     }
+
 }
