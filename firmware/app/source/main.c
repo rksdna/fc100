@@ -129,13 +129,55 @@ void fx_m(void)
     GPIOA->BSRR = GPIO_BSRR_BR3;
 }
 
+static u8_t espi(u8_t value)
+{
+    SPI1_DR_8 = value;
+    wait_for(&SPI1->SR, SPI_SR_RXNE, SPI_SR_RXNE);
+    return SPI1_DR_8;
+}
+
+static void fc_read(u32_t address, u8_t *data, u32_t count)
+{
+    u32_t n = count;
+
+    GPIOA->BSRR = GPIO_BSRR_BR4;
+
+    espi(address & 0x0F);
+    while (count--)
+        *data++ = espi(0x00);
+
+    GPIOA->BSRR = GPIO_BSRR_BS4;
+
+    debug("r %x %*m\n", address, n, data - n);
+}
+
+static void fc_write(u32_t address, const u8_t *data, u32_t count)
+{
+    u32_t n = count;
+
+    GPIOA->BSRR = GPIO_BSRR_BR4;
+
+    espi(0x80 | (address & 0x0F));
+    while (count--)
+        espi(*data++);
+
+    GPIOA->BSRR = GPIO_BSRR_BS4;
+
+    debug("w %x %*m\n", address, n, data - n);
+}
+
 void main(void)
 {
+    u8_t buf[16];
     startup_board();
 
     while (1)
     {
-        fx_m();
+        GPIOA->BSRR = GPIO_BSRR_BS3;
+
+        fc_read(0, buf, 16);
+
+        GPIOA->BSRR = GPIO_BSRR_BR3;
         sleep(250);
     }
 
