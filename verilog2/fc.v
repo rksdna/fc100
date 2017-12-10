@@ -11,7 +11,7 @@
  * spi_ss_n - serial frame sync
  * 
  */
-
+ 
 `include "spi.v"
  
 module fc(rst_n, clk, spi_clk, spi_mosi, spi_miso, spi_ss_n, test);
@@ -35,14 +35,9 @@ wire mem_wrt;
 reg [7:0] r0;
 reg [7:0] r1;
 
-wire [7:0] mem_mux[1:0];
-
-assign mem_mux[0] = r0;
-assign mem_mux[1] = r1;
-
 assign test = r0[7];
 
-assign mem_din = mem_mux[mem_addr];
+assign mem_din = mem_addr == 0 ? r0 : (mem_addr == 1 ? r1 : 8'hAA);
 
 spi spi(!rst_n, clk, spi_clk, spi_mosi, spi_miso, !spi_ss_n, mem_addr, mem_din, mem_dout, mem_wrt);
 
@@ -50,8 +45,8 @@ always @(posedge clk or negedge rst_n)
 begin
     if (!rst_n)
     begin
-        r0 <= 8'b0;
-        r1 <= 8'b0;
+        r0 <= 8'hE1;
+        r1 <= 8'hE2;
     end
     else
     begin

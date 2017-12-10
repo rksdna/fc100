@@ -168,17 +168,22 @@ static void fc_write(u32_t address, const u8_t *data, u32_t count)
 
 void main(void)
 {
-    u8_t buf[16];
+    u8_t rbuf[16];
+    u8_t wbuf[16] = {0, 21};
     startup_board();
 
     while (1)
     {
         GPIOA->BSRR = GPIO_BSRR_BS3;
 
-        fc_read(0, buf, 16);
+        fc_read(0, rbuf, 16);
+        fc_write(0, wbuf, 2);
+        fc_read(0, rbuf, 16);
+
+        sleep(250);
 
         GPIOA->BSRR = GPIO_BSRR_BR3;
-        sleep(250);
+        sleep(1);
     }
 
 }
