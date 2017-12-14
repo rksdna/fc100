@@ -169,21 +169,41 @@ static void fc_write(u32_t address, const u8_t *data, u32_t count)
 void main(void)
 {
     u8_t rbuf[16];
-    u8_t wbuf[16] = {0, 21};
+    u8_t mbuf[16] = {0xDA, 0xDA, 0x81, 0x80};
+    u8_t cbuf[16] = {0xDA, 0xDA, 0x01, 0x03};
+    u8_t ebuf[16] = {0xDA, 0xDA, 0x01, 0x03};
+
     startup_board();
+
+    GPIOA->BSRR = GPIO_BSRR_BS3;
+
+    u32_t tmr;
+    u32_t cnt;
+
 
     while (1)
     {
-        GPIOA->BSRR = GPIO_BSRR_BS3;
+        debug("--- begin ---\n");
 
+        fc_write(0, mbuf, 4);
         fc_read(0, rbuf, 16);
-        fc_write(0, wbuf, 2);
+
+        fc_write(0, cbuf, 4);
         fc_read(0, rbuf, 16);
 
-        sleep(250);
+        sleep(994);
 
-        GPIOA->BSRR = GPIO_BSRR_BR3;
-        sleep(1);
+        fc_write(0, ebuf, 4);
+        fc_read(0, rbuf, 16);
+
+        cnt = (u32_t)rbuf[8] + ((u32_t)rbuf[9] << 8) + ((u32_t)rbuf[10] << 16) + ((u32_t)rbuf[11] << 24);
+        tmr = (u32_t)rbuf[12] + ((u32_t)rbuf[13] << 8) + ((u32_t)rbuf[14] << 16) + ((u32_t)rbuf[15] << 24);
+
+        debug("%d / %d\n", cnt, tmr);
+
+        sleep(10);
     }
+
+    GPIOA->BSRR = GPIO_BSRR_BR3;
 
 }
