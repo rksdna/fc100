@@ -51,7 +51,7 @@
 `include "spi.v"
 `include "counter.v"
  
-module fc(rst_n, clk, ref_clk, ch1_clk, ch2_clk, ch1_dac, ch2_dac, ch1_hpf, ch2_hpf, strt_tac_out, strt_tac_fb, stop_tac_out, stop_tac_fb, spi_clk, spi_mosi, spi_miso, spi_ss_n, test);
+module main(rst_n, clk, ref_clk, ch1_clk, ch2_clk, ch1_dac, ch2_dac, ch1_hpf, ch2_hpf, strt_tac_out, strt_tac_fb, stop_tac_out, stop_tac_fb, spi_clk, spi_mosi, spi_miso, spi_ss_n, test);
 
 input wire rst_n;
 
@@ -142,7 +142,7 @@ begin
         dac_2_reg <= 8'b0;
         mode_reg <= 7'b0;
         ctrl_reg <= 7'b0; 
-		  clr_reg <= 1'b0;
+	clr_reg <= 1'b0;
     end
     else
     begin
