@@ -23,9 +23,9 @@
 
 # Project files
 
-TARGET ?= app
-SCRIPT ?= kernel/target/stm32f042x4.ld
-MODULES ?= app kernel
+TARGET ?= fc
+SCRIPT ?= kernel/target/stm32f042x6.ld
+MODULES ?= kernel cdc fc
 PORT ?= /dev/ttyUSB0
 
 INCDIRS = $(addsuffix /include, $(MODULES))
