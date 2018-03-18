@@ -1,4 +1,6 @@
-app/source/main.c
+fc/source/main.c
+fc/source/device.c
+fc/include/device.h
 cdc/include/cdc.h
 cdc/source/cdc.c
 kernel/include/stm32/adc.h

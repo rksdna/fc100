@@ -1,209 +1,52 @@
-#include <stm32/syscfg.h>
-#include <stm32/usart.h>
-#include <stm32/flash.h>
-#include <stm32/gpio.h>
-#include <stm32/rcc.h>
-#include <stm32/des.h>
-#include <stm32/spi.h>
+/*
+ * Reciprocal counter with vernier and serial peripheral interface
+ * Copyright (c) 2018 rksdna, murych
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
 #include <threads.h>
-#include <timers.h>
 #include <debug.h>
-#include <tools.h>
-
-static void debug_put(void *data, char value)
-{
-   while (~USART2->ISR & USART_ISR_TXE)
-       continue;
-
-   USART2->TDR = value;
-}
-
-struct stream debug_stream = {debug_put, 0};
-
-void startup_board(void)
-{
-   RCC->AHBENR = RCC_AHBENR_SRAMEN | RCC_AHBENR_FLITFEN | RCC_AHBENR_GPIOAEN;
-   RCC->APB1ENR = RCC_APB1ENR_USART2EN;
-   RCC->APB2ENR = RCC_APB2ENR_SYSCFGCOMPEN | RCC_APB2ENR_SPI1EN;
-
-   SYSCFG->CFGR1 = SYSCFG_CFGR1_PA11_PA12_RMP;
-
-   GPIOA->ODR = GPIO_ODR_ODR4;
-   GPIOA->MODER =
-           /* CPL_RST */ GPIO_MODER_GPO(3) |
-           /* CPL_NSS */ GPIO_MODER_GPO(4) |
-           /* CPL_SCK */ GPIO_MODER_AFO(5) |
-           /* CPL_SDI */ GPIO_MODER_AFO(6) |
-           /* CPL_SDO */ GPIO_MODER_AFO(7) |
-           /* SYS_TXD */ GPIO_MODER_AFO(14) |
-           /* SYS_RXD */ GPIO_MODER_GPI(15);
-   GPIOA->AFRL = GPIO_AFRL(4, 0) | GPIO_AFRL(5, 0) | GPIO_AFRL(6, 0);
-   GPIOA->AFRH = GPIO_AFRH(14, 1);
-
-   USART2->CR1 = USART_CR1_UE | USART_CR1_TE;
-   USART2->CR2 = 0;
-   USART2->BRR = 8000000 / 115200 + 1;
-
-   SPI1->CR2 = SPI_CR2_FRXTH | SPI_CR2_DS_0 | SPI_CR2_DS_1 | SPI_CR2_DS_2;
-   SPI1->CR1 = SPI_CR1_MSTR | SPI_CR1_SSI | SPI_CR1_SSM | SPI_CR1_SPE | SPI_CR1_BR_2;
-
-   start_timers_clock(8000);
-
-   debug("hello\n");
-   debug("id: %*m flash: %dKbytes\n", sizeof(DES->ID), DES->ID, DES->FSIZE & DES_FSIZE_FSIZE);
-}
-
-struct fc_tx_frame
-{
-    u8_t bis;
-    u8_t eis;
-    u8_t xis;
-    u8_t ris;
-
-    u32_t dummy;
-    u8_t cr;
-};
-
-struct fc_rx_frame
-{
-    u32_t cnr;
-    u32_t cnx;
-    u8_t sr;
-};
-
-static struct fc_tx_frame fc_tx = {0x00, 0x00, 0x00, 0x00, 0xFFFFFFFF, 0x00};
-static struct fc_rx_frame fc_rx = {0x00000000, 0x00000000, 0x00};
-
-#define SPI1_DR_8 *(volatile u8_t *)(&SPI1->DR)
-
-void fc_poll(void)
-{
-    const u8_t * txp = (void *)&fc_tx;
-    u8_t * rxp = (void *)&fc_rx;
-    u32_t n = 9;
-
-    GPIOA->BSRR = GPIO_BSRR_BR4;
-
-    while (n--)
-    {
-        SPI1_DR_8 = txp[n];
-        wait_for(&SPI1->SR, SPI_SR_RXNE, SPI_SR_RXNE);
-        rxp[n] = SPI1_DR_8;
-    }
-
-    GPIOA->BSRR = GPIO_BSRR_BS4;
-
-    debug("%*m > %*m\n", 9, (void *)&fc_tx, 9, (void *)&fc_rx);
-}
-
-void fx_m(void)
-{
-    GPIOA->BSRR = GPIO_BSRR_BS3;
-
-    fc_tx.bis = 0x00;
-    fc_tx.eis = 0x00;
-    fc_tx.xis = 0x00;
-    fc_tx.ris = 0x00;
-    fc_tx.cr = 0x80;
-    fc_poll();
-
-    fc_tx.cr = 0x81;
-    fc_poll();
-
-    sleep(1000);
-
-    fc_tx.cr = 0x83;
-    fc_poll();
-
-    while (1)
-    {
-        fc_poll();
-        if (fc_rx.sr == 0xAB)
-        {
-            debug("%d / %d \n", fc_rx.cnx, fc_rx.cnr);
-            break;
-        }
-        sleep(10);
-    }
-
-    GPIOA->BSRR = GPIO_BSRR_BR3;
-}
-
-static u8_t espi(u8_t value)
-{
-    SPI1_DR_8 = value;
-    wait_for(&SPI1->SR, SPI_SR_RXNE, SPI_SR_RXNE);
-    return SPI1_DR_8;
-}
-
-static void fc_read(u32_t address, u8_t *data, u32_t count)
-{
-    u32_t n = count;
-
-    GPIOA->BSRR = GPIO_BSRR_BR4;
-
-    espi(address & 0x0F);
-    while (count--)
-        *data++ = espi(0x00);
-
-    GPIOA->BSRR = GPIO_BSRR_BS4;
-
-    debug("r %x %*m\n", address, n, data - n);
-}
-
-static void fc_write(u32_t address, const u8_t *data, u32_t count)
-{
-    u32_t n = count;
-
-    GPIOA->BSRR = GPIO_BSRR_BR4;
-
-    espi(0x80 | (address & 0x0F));
-    while (count--)
-        espi(*data++);
-
-    GPIOA->BSRR = GPIO_BSRR_BS4;
-
-    debug("w %x %*m\n", address, n, data - n);
-}
+#include <cdc.h>
+#include "device.h"
 
 void main(void)
 {
-    u8_t rbuf[16];
-    u8_t mbuf[16] = {0xDA, 0xDA, 0x81, 0x80};
-    u8_t cbuf[16] = {0xDA, 0xDA, 0x01, 0x03};
-    u8_t ebuf[16] = {0xDA, 0xDA, 0x01, 0x03};
+    startup_device();
 
-    startup_board();
-
-    GPIOA->BSRR = GPIO_BSRR_BS3;
-
-    u32_t tmr;
-    u32_t cnt;
-
-
+    start_cdc_service();
+    set_cdc_timeout(10);
     while (1)
     {
-        debug("--- begin ---\n");
+        yield_thread((condition_t)has_cdc_connection, 0);
+        debug("connected\n");
+        while (has_cdc_connection())
+        {
+            static u8_t buffer[256];
+            const u32_t count = read_cdc_data(buffer, sizeof(buffer));
+            if (count)
+            {
+                write_cdc_data(buffer, count);
+                debug("%m\n", buffer, count);
+            }
+        }
 
-        fc_write(0, mbuf, 4);
-        fc_read(0, rbuf, 16);
-
-        fc_write(0, cbuf, 4);
-        fc_read(0, rbuf, 16);
-
-        sleep(994);
-
-        fc_write(0, ebuf, 4);
-        fc_read(0, rbuf, 16);
-
-        cnt = (u32_t)rbuf[8] + ((u32_t)rbuf[9] << 8) + ((u32_t)rbuf[10] << 16) + ((u32_t)rbuf[11] << 24);
-        tmr = (u32_t)rbuf[12] + ((u32_t)rbuf[13] << 8) + ((u32_t)rbuf[14] << 16) + ((u32_t)rbuf[15] << 24);
-
-        debug("%d / %d\n", cnt, tmr);
-
-        sleep(10);
+        debug("disconnected\n");
     }
-
-    GPIOA->BSRR = GPIO_BSRR_BR3;
-
 }

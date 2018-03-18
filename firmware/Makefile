@@ -24,7 +24,7 @@
 # Project files
 
 TARGET ?= fc
-SCRIPT ?= kernel/target/stm32f042x6.ld
+SCRIPT ?= kernel/target/stm32f042x4.ld
 MODULES ?= kernel cdc fc
 PORT ?= /dev/ttyUSB0
 
