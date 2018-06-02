@@ -24,6 +24,13 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 
+#include <types.h>
+
 void startup_device(void);
+
+void startup_counter(void);
+void shutdown_counter(void);
+void read_counter(u8_t address, u8_t *destination, u32_t size);
+void write_counter(u8_t address, const u8_t *source, u32_t size);
 
 #endif

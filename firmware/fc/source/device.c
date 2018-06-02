@@ -64,15 +64,15 @@ void startup_device(void)
 
     RCC->AHBENR = RCC_AHBENR_SRAMEN | RCC_AHBENR_FLITFEN | RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOBEN;
     RCC->APB1ENR = RCC_APB1ENR_USBEN | RCC_APB1ENR_TIM3EN;
-    RCC->APB2ENR = RCC_APB2ENR_USART1EN | RCC_APB2ENR_TIM17EN | RCC_APB2ENR_ADCEN;
+    RCC->APB2ENR = RCC_APB2ENR_USART1EN | RCC_APB2ENR_TIM17EN | RCC_APB2ENR_ADCEN | RCC_APB2ENR_SPI1EN;
 
-    GPIOA->ODR = 0;
+    GPIOA->ODR = GPIO_ODR_ODR3 | GPIO_ODR_ODR4;
     GPIOA->MODER =
             /* NC      */ GPIO_MODER_GPI(0) |
             /* NC      */ GPIO_MODER_GPI(1) |
             /* NC      */ GPIO_MODER_GPI(2) |
             /* MCU_RST */ GPIO_MODER_GPO(3) |
-            /* MCU_NSS */ GPIO_MODER_AFO(4) |
+            /* MCU_NSS */ GPIO_MODER_GPO(4) |
             /* MCU_SCK */ GPIO_MODER_AFO(5) |
             /* MCU_SDI */ GPIO_MODER_AFO(6) |
             /* MCU_SDO */ GPIO_MODER_AFO(7) |
@@ -84,7 +84,7 @@ void startup_device(void)
             /* SYS_SWD */ GPIO_MODER_GPI(13) |
             /* SYS_SWC */ GPIO_MODER_GPI(14) |
             /* NC      */ GPIO_MODER_GPI(15);
-    GPIOA->AFRL = 0;
+    GPIOA->AFRL = GPIO_AFRL(4, 0) | GPIO_AFRL(5, 0) | GPIO_AFRL(6, 0) | GPIO_AFRL(7, 0);
     GPIOA->AFRH = GPIO_AFRH(9, 1);
 
     GPIOB->ODR = 0;
@@ -118,11 +118,11 @@ void startup_device(void)
     TIM3->CR1 = TIM_CR1_CEN;
 
     TIM17->PSC = 8 - 1;
-    TIM17->ARR = 10 - 1;
-    TIM17->CCR1 = 5;
+    TIM17->ARR = 20 - 1;
+    TIM17->CCR1 = 10;
     TIM17->CCMR1 = TIM_CCMR1_OC1PE | TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1;
     TIM17->CCER = TIM_CCER_CC1E | TIM_CCER_CC1NE;
-    TIM17->BDTR = TIM_BDTR_MOE | 5;
+    TIM17->BDTR = TIM_BDTR_MOE | 10;
     TIM17->CR1 = TIM_CR1_CEN;
 
     ADC1->CFGR1 = ADC_CFGR1_EXTEN_0 | ADC_CFGR1_EXTSEL_1 | ADC_CFGR1_EXTSEL_0;
@@ -139,6 +139,9 @@ void startup_device(void)
     ADC1->CR = ADC_CR_ADEN;
     ADC1->CR = ADC_CR_ADSTART;
 
+    SPI1->CR2 = SPI_CR2_FRXTH | SPI_CR2_DS_0 | SPI_CR2_DS_1 | SPI_CR2_DS_2;
+    SPI1->CR1 = SPI_CR1_MSTR | SPI_CR1_SSI | SPI_CR1_SSM | SPI_CR1_SPE | SPI_CR1_BR_2 | SPI_CR1_BR_1;
+
     start_timers_clock(48000);
 
     debug("hello\n");
@@ -147,7 +150,42 @@ void startup_device(void)
 
 void irq12_handler(void)
 {
-    debug("%d\n", ADC1->DR * 330 / 2048);
     ADC1->ISR = ADC1->ISR;
 }
 
+void startup_counter(void)
+{
+    GPIOA->BSRR = GPIO_BSRR_BR3;
+}
+
+void shutdown_counter(void)
+{
+    GPIOA->BSRR = GPIO_BSRR_BS3;
+}
+
+#define SPI1_DR_8 *(volatile u8_t *)(&SPI1->DR)
+
+static u8_t spi_poll(u8_t value)
+{
+    SPI1_DR_8 = value;
+    wait_for(&SPI1->SR, SPI_SR_RXNE, SPI_SR_RXNE);
+    return SPI1_DR_8;
+}
+
+void read_counter(u8_t address, u8_t *destination, u32_t size)
+{
+    GPIOA->BSRR = GPIO_BSRR_BR4;
+    spi_poll(address);
+    while (size--)
+        *destination++ = spi_poll(0xFF);
+    GPIOA->BSRR = GPIO_BSRR_BS4;
+}
+
+void write_counter(u8_t address, const u8_t *source, u32_t size)
+{
+    GPIOA->BSRR = GPIO_BSRR_BR4;
+    spi_poll(address | 0x80);
+    while (size--)
+        spi_poll(*source++);
+    GPIOA->BSRR = GPIO_BSRR_BS4;
+}
