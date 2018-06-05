@@ -1,0 +1,6 @@
+isEmpty(DEPLOY_VERSION): DEPLOY_VERSION = 0.0.0.$$system(git rev-list --count HEAD)
+
+VERSION = $$DEPLOY_VERSION
+
+DEFINES += \
+    DEPLOY_VERSION=\\\"$$DEPLOY_VERSION\\\"
