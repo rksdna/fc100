@@ -26,6 +26,8 @@
 #include <debug.h>
 #include <cdc.h>
 
+
+#include "hyppo.h"
 #include "device.h"
 
 #define FC_DAC_DAC 0xFF
@@ -123,76 +125,11 @@ void write_rr(const struct fc_regs *regs)
 void main(void)
 {
     startup_device();
-    struct fc_regs regs;
 
-   /* startup_counter();
-
-    sleep(100);
-
-    read_rr(&regs);
-    dump(&regs);
-
-    regs.dac1 = 128;
-    regs.control = 0x40;
-    write_rr(&regs);
-
-    dump(&regs);*/
-
-    while (1)
-    {
-        debug("begin\n");
-        startup_counter();
-
-        sleep(100);
-
-        read_rr(&regs);
-        dump(&regs);
-
-        regs.dac_1 = 255;
-        write_rr(&regs);
-        dump(&regs);
-
-        sleep(100);
-
-        regs.ctrl = FC_CTRL_STRT;
-        write_rr(&regs);
-        dump(&regs);
-
-        sleep(1000);
-
-        regs.ctrl = FC_CTRL_STRT | FC_CTRL_STOP;
-        write_rr(&regs);
-        dump(&regs);
-
-        sleep(100);
-
-        read_rr(&regs);
-        dump(&regs);
-
-        shutdown_counter();
-
-        sleep(1000);
-    }
-
- /*   u8_t a = 0;
-    u8_t c = 0x40;
-    write_counter(3, &c, 1);
-
-
-    u8_t s = 0;
-    while (1)
-    {
-        write_counter(0, &a, 1);
-        write_counter(1, &a, 1);
-
-        read_counter(3, &s, 1);
-        debug("%x\n", s);
-
-        a++;
-        c ^= 0x40;
-
-        sleep(100);
-    }*/
+    struct hyppo_socket socket;
+    socket.size = 0;
+    socket.read = read_cdc_data;
+    socket.write = write_cdc_data;
 
     start_cdc_service();
     set_cdc_timeout(10);
@@ -201,16 +138,7 @@ void main(void)
         yield_thread((condition_t)has_cdc_connection, 0);
         debug("connected\n");
         while (has_cdc_connection())
-        {
-            static u8_t buffer[256];
-            const u32_t count = read_cdc_data(buffer, sizeof(buffer));
-            if (count)
-            {
-                write_cdc_data(buffer, count);
-                debug("%m\n", buffer, count);
-            }
-        }
-
+            poll_hyppo(&socket);
         debug("disconnected\n");
     }
 }

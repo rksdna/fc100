@@ -2,3 +2,4 @@ fc/include
 cdc/include
 kernel/include
 kernel/include/stm32
+fc/source

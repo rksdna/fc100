@@ -5,6 +5,4 @@ MainWidget::MainWidget(QWidget *parent)
 {
 
 
-
-
 }
