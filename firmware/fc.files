@@ -43,5 +43,6 @@ kernel/source/startup.c
 kernel/source/threads.c
 kernel/source/timers.c
 kernel/source/tools.c
-fc/source/hyppo.c
-fc/include/hyppo.h
+fc/source/shp.c
+fc/include/shp.h
+fc/include/counter.h

@@ -25,79 +25,19 @@
 #include <timers.h>
 #include <debug.h>
 #include <cdc.h>
-
-
-#include "hyppo.h"
+#include "counter.h"
 #include "device.h"
+#include "shp.h"
 
-#define FC_DAC_DAC 0xFF
+/*static struct counter cnt;
 
-#define FC_MODE_STRT 0x03
-#define FC_MODE_STRT_0 0x01
-#define FC_MODE_STRT_1 0x02
-
-#define FC_MODE_STRT_CH1R 0x00
-#define FC_MODE_STRT_CH1F 0x01
-#define FC_MODE_STRT_CH2R 0x02
-#define FC_MODE_STRT_CH2F 0x03
-
-#define FC_MODE_STOP 0x0C
-#define FC_MODE_STOP_0 0x04
-#define FC_MODE_STOP_1 0x08
-#define FC_MODE_STOP_CH1R 0x00
-#define FC_MODE_STOP_CH1F 0x04
-#define FC_MODE_STOP_CH2R 0x08
-#define FC_MODE_STOP_CH2F 0x0C
-
-#define FC_MODE_CNT 0x30
-#define FC_MODE_CNT_0 0x10
-#define FC_MODE_CNT_1 0x20
-
-#define FC_MODE_CNT_CH1R 0x00
-#define FC_MODE_CNT_CH1F 0x10
-#define FC_MODE_CNT_CH2R 0x20
-#define FC_MODE_CNT_CH2F 0x30
-
-#define FC_MODE_TMR 0x40
-#define FC_MODE_TMR_CLK 0x00
-#define FC_MODE_TMR_REF 0x40
-
-#define FC_MODE_CLR 0x80
-
-#define FC_CTRL_STRT 0x01
-#define FC_CTRL_STOP 0x02
-#define FC_CTRL_CLB_ZS 0x04
-#define FC_CTRL_CLB_FS 0x08
-#define FC_CTRL_HPF_CH1 0x10
-#define FC_CTRL_HPF_CH1 0x20
-#define FC_CTRL_TEST 0x40
-#define FC_CTRL_CLR 0x80
-
-#define FC_TAC_TAC 0xFF
-
-#define FC_ACK_STOP 0x01
-#define FC_ACK_STRT 0x02
-
-#define FC_ID_ID 0xFF
-
-#define FC_CNT_CNT 0xFFFFFFFF
-#define FC_TMR_TMR 0xFFFFFFFF
-
-struct fc_regs
+static void update(struct counter *regs)
 {
-    u8_t dac_1;
-    u8_t dac_2;
-    u8_t mode;
-    u8_t ctrl;
-    u8_t tac_strt;
-    u8_t tac_stop;
-    u8_t ack;
-    u8_t id;
-    u32_t cnt;
-    u32_t tmr;
-};
+    write_counter(0, (void*)regs, 4);
+    read_counter(0, (void*)regs, 16);
+}
 
-static void dump(const struct fc_regs *regs)
+static void dump(const struct counter *regs)
 {
     debug("-----------\n");
     debug(" dac1:\t%d\n", regs->dac_1);
@@ -110,35 +50,28 @@ static void dump(const struct fc_regs *regs)
     debug(" id:\t%x\n", regs->id);
     debug(" counter:\t%d\n", regs->cnt);
     debug(" timer:\t%d\n", regs->tmr);
-}
+}*/
 
-void read_rr(struct fc_regs *regs)
+static void handler(struct shp_socket *socket, void *data, u32_t size)
 {
-    read_counter(0, (void*)regs, 16);
-}
-
-void write_rr(const struct fc_regs *regs)
-{
-    write_counter(0, (void*)regs, 4);
+    send_shp_response(socket, data, size);
 }
 
 void main(void)
 {
     startup_device();
-
-    struct hyppo_socket socket;
-    socket.size = 0;
-    socket.read = read_cdc_data;
-    socket.write = write_cdc_data;
-
     start_cdc_service();
     set_cdc_timeout(10);
     while (1)
     {
+        struct shp_socket socket;
+        bind_shp_socket(&socket, handler, read_cdc_data, write_cdc_data);
+
         yield_thread((condition_t)has_cdc_connection, 0);
         debug("connected\n");
         while (has_cdc_connection())
-            poll_hyppo(&socket);
+            poll_shp_socket(&socket);
+
         debug("disconnected\n");
     }
 }

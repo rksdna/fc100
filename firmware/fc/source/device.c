@@ -172,20 +172,22 @@ static u8_t spi_poll(u8_t value)
     return SPI1_DR_8;
 }
 
-void read_counter(u8_t address, u8_t *destination, u32_t size)
+void read_counter(u8_t address, void *destination, u32_t size)
 {
+    u8_t *ptr = (u8_t *)destination;
     GPIOA->BSRR = GPIO_BSRR_BR4;
     spi_poll(address);
     while (size--)
-        *destination++ = spi_poll(0xFF);
+        *ptr++ = spi_poll(0xFF);
     GPIOA->BSRR = GPIO_BSRR_BS4;
 }
 
-void write_counter(u8_t address, const u8_t *source, u32_t size)
+void write_counter(u8_t address, const void *source, u32_t size)
 {
+    const u8_t *ptr = (const u8_t *)source;
     GPIOA->BSRR = GPIO_BSRR_BR4;
     spi_poll(address | 0x80);
     while (size--)
-        spi_poll(*source++);
+        spi_poll(*ptr++);
     GPIOA->BSRR = GPIO_BSRR_BS4;
 }

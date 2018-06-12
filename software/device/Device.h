@@ -3,6 +3,13 @@
 
 #include <QString>
 
+
+
+struct DeviceInfo
+{
+
+};
+
 class Device
 {
 public:
