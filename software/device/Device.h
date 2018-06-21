@@ -2,16 +2,14 @@
 #define DEVICE_H
 
 #include <QString>
+#include <QObject>
 
+class QSerialPort;
 
-
-struct DeviceInfo
+class Device : public QObject
 {
+    Q_OBJECT
 
-};
-
-class Device
-{
 public:
     enum Coupling
     {
@@ -34,43 +32,39 @@ public:
     };
 
 public:
-    Device();
+    explicit Device(QObject *parent = 0);
 
-
+private:
+    enum State
+    {
+        IdleState,
+        EvenDigitState,
+        OddDigitState
+    };
 
 
 private:
-    /*struct Input
-    {
-        Input();
+    void onReadyRead();
+    void process_message(quint8 value);
+    void begin_message();
+    void complete_message();
+    void drop_message();
 
-        quint8 threshold;
-        Coupling coupling;
-    };
 
-    struct Trigger
-    {
-        Trigger();
-        Edge edge;
+    void read(const QByteArray &data);
+    void write(const QByteArray &data);
 
-        quint8 vernier;
-        quint8 minVernier;
-        quint8 maxVernier;
-    };
+private:
+    static quint8 checksum(const QByteArray &data);
 
-    struct Counter
-    {
-        Counter();
+private:
+    QSerialPort * const m_port;
+    State m_state;
+    quint8 m_byte;
+    QByteArray m_buffer;
 
-        quint32 value;
-    };
 
-    struct Timer
-    {
-        Timer();
 
-        quint32 value;
-    };*/
 
 
 

@@ -150,19 +150,23 @@ void startup_device(void)
     debug("id: %*m flash: %dKbytes\n", sizeof(DES->ID), DES->ID, DES->FSIZE & DES_FSIZE_FSIZE);
 }
 
+#define V_REF 330
+#define V_ON 485
+#define V_OFF 475
+
 void irq12_handler(void)
 {
     static s32_t average = 0;
     static u32_t delay = 25;
 
-    const s32_t sample = (2 * 330 * ADC1->DR + 2048) / 4096;
+    const s32_t sample = (2 * V_REF * ADC1->DR + 2048) / 4096;
     average = (3 * average + sample + 2) / 4;
     ADC1->ISR = ADC1->ISR;
 
     switch (state)
     {
     case DEVICE_OFF:
-        if (average > 485)
+        if (average > V_ON)
         {
             debug("su\n");
             TIM17->BDTR |= TIM_BDTR_MOE;
@@ -173,7 +177,7 @@ void irq12_handler(void)
         break;
 
     case DEVICE_STARTUP:
-        if (average < 475)
+        if (average < V_OFF)
         {
             debug("fa\n");
             TIM17->BDTR &= ~TIM_BDTR_MOE;
@@ -192,7 +196,7 @@ void irq12_handler(void)
         break;
 
     case DEVICE_READY:
-        if (average < 475)
+        if (average < V_OFF)
         {
             debug("fa\n");
             TIM17->BDTR &= ~TIM_BDTR_MOE;
