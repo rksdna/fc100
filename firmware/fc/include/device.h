@@ -26,11 +26,18 @@
 
 #include <types.h>
 
-void startup_device(void);
+enum device_state
+{
+    DEVICE_OFF,
+    DEVICE_STARTUP,
+    DEVICE_READY,
+    DEVICE_FAILURE
+};
 
-void startup_counter(void);
-void shutdown_counter(void);
-void read_counter(u8_t address, void *destination, u32_t size);
-void write_counter(u8_t address, const void *source, u32_t size);
+void startup_device(void);
+enum device_state get_device_state(void);
+
+void read_device_counter(u8_t address, void *destination, u32_t size);
+void write_device_counter(u8_t address, const void *source, u32_t size);
 
 #endif

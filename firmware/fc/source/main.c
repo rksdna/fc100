@@ -54,6 +54,7 @@ static void dump(const struct counter *regs)
 
 static void handler(struct shp_socket *socket, void *data, u32_t size)
 {
+
     send_shp_response(socket, data, size);
 }
 

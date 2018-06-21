@@ -43,9 +43,9 @@ typedef u32_t (* shp_write_t)(const void *data, u32_t size);
 
 enum shp_state
 {
-    IDLE_STATE,
-    EVEN_DIGIT_STATE,
-    ODD_DIGIT_STATE
+    SHP_IDLE,
+    SHP_EVEN_DIGIT,
+    SHP_ODD_DIGIT
 };
 
 struct shp_chunk

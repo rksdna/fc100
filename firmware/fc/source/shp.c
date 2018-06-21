@@ -137,7 +137,7 @@ u8_t shp_checksum(const void *data, u32_t size)
 
 static void begin_message(struct shp_socket *socket)
 {
-    socket->state = EVEN_DIGIT_STATE;
+    socket->state = SHP_EVEN_DIGIT;
     socket->size = 0;
 }
 
@@ -145,38 +145,38 @@ static void process_message(struct shp_socket *socket, u8_t value)
 {
     if (socket->size < sizeof(socket->data))
     {
-        if (socket->state == EVEN_DIGIT_STATE)
+        if (socket->state == SHP_EVEN_DIGIT)
         {
             socket->data[socket->size] = value << 4;
-            socket->state = ODD_DIGIT_STATE;
+            socket->state = SHP_ODD_DIGIT;
             return;
         }
 
-        if (socket->state == ODD_DIGIT_STATE)
+        if (socket->state == SHP_ODD_DIGIT)
         {
             socket->data[socket->size++] += value;
-            socket->state = EVEN_DIGIT_STATE;
+            socket->state = SHP_EVEN_DIGIT;
             return;
         }
     }
 
-    socket->state = IDLE_STATE;
+    socket->state = SHP_IDLE;
 }
 
 static void complete_message(struct shp_socket *socket)
 {
-    if (socket->state == EVEN_DIGIT_STATE)
+    if (socket->state == SHP_EVEN_DIGIT)
     {
         if (socket->size > 1 && shp_checksum(socket->data, socket->size) == 0)
             socket->handler(socket, socket->data, socket->size - 1);
     }
 
-    socket->state = IDLE_STATE;
+    socket->state = SHP_IDLE;
 }
 
 static void drop_message(struct shp_socket *socket)
 {
-    socket->state = IDLE_STATE;
+    socket->state = SHP_IDLE;
 }
 
 void bind_shp_socket(struct shp_socket *socket, shp_handler_t handler, shp_read_t read, shp_write_t write)
@@ -187,7 +187,7 @@ void bind_shp_socket(struct shp_socket *socket, shp_handler_t handler, shp_read_
     socket->write = write;
     clear_chunk(&socket->read_chunk);
     clear_chunk(&socket->write_chunk);
-    socket->state = IDLE_STATE;
+    socket->state = SHP_IDLE;
 }
 
 void poll_shp_socket(struct shp_socket *socket)

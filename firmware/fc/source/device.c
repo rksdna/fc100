@@ -37,6 +37,8 @@
 #include <tools.h>
 #include "device.h"
 
+static enum device_state state = DEVICE_OFF;
+
 static void debug_put(void *data, char value)
 {
     while (~USART1->ISR & USART_ISR_TXE)
@@ -122,7 +124,7 @@ void startup_device(void)
     TIM17->CCR1 = 10;
     TIM17->CCMR1 = TIM_CCMR1_OC1PE | TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1;
     TIM17->CCER = TIM_CCER_CC1E | TIM_CCER_CC1NE;
-    TIM17->BDTR = TIM_BDTR_MOE | 10;
+    TIM17->BDTR = 10;
     TIM17->CR1 = TIM_CR1_CEN;
 
     ADC1->CFGR1 = ADC_CFGR1_EXTEN_0 | ADC_CFGR1_EXTSEL_1 | ADC_CFGR1_EXTSEL_0;
@@ -150,17 +152,65 @@ void startup_device(void)
 
 void irq12_handler(void)
 {
+    static s32_t average = 0;
+    static u32_t delay = 25;
+
+    const s32_t sample = (2 * 330 * ADC1->DR + 2048) / 4096;
+    average = (3 * average + sample + 2) / 4;
     ADC1->ISR = ADC1->ISR;
+
+    switch (state)
+    {
+    case DEVICE_OFF:
+        if (average > 485)
+        {
+            debug("su\n");
+            TIM17->BDTR |= TIM_BDTR_MOE;
+            state = DEVICE_STARTUP;
+            break;
+        }
+
+        break;
+
+    case DEVICE_STARTUP:
+        if (average < 475)
+        {
+            debug("fa\n");
+            TIM17->BDTR &= ~TIM_BDTR_MOE;
+            state = DEVICE_FAILURE;
+            break;
+        }
+
+        if (--delay == 0)
+        {
+            debug("rs\n");
+            GPIOA->BSRR = GPIO_BSRR_BR3;
+            state = DEVICE_READY;
+            break;
+        }
+
+        break;
+
+    case DEVICE_READY:
+        if (average < 475)
+        {
+            debug("fa\n");
+            TIM17->BDTR &= ~TIM_BDTR_MOE;
+            GPIOA->BSRR = GPIO_BSRR_BS3;
+            state = DEVICE_FAILURE;
+            break;
+        }
+
+        break;
+
+    default:
+        break;
+    }
 }
 
-void startup_counter(void)
+enum device_state get_device_state(void)
 {
-    GPIOA->BSRR = GPIO_BSRR_BR3;
-}
-
-void shutdown_counter(void)
-{
-    GPIOA->BSRR = GPIO_BSRR_BS3;
+    return state;
 }
 
 #define SPI1_DR_8 *(volatile u8_t *)(&SPI1->DR)
@@ -172,7 +222,7 @@ static u8_t spi_poll(u8_t value)
     return SPI1_DR_8;
 }
 
-void read_counter(u8_t address, void *destination, u32_t size)
+void read_device_counter(u8_t address, void *destination, u32_t size)
 {
     u8_t *ptr = (u8_t *)destination;
     GPIOA->BSRR = GPIO_BSRR_BR4;
@@ -182,7 +232,7 @@ void read_counter(u8_t address, void *destination, u32_t size)
     GPIOA->BSRR = GPIO_BSRR_BS4;
 }
 
-void write_counter(u8_t address, const void *source, u32_t size)
+void write_device_counter(u8_t address, const void *source, u32_t size)
 {
     const u8_t *ptr = (const u8_t *)source;
     GPIOA->BSRR = GPIO_BSRR_BR4;
@@ -191,3 +241,4 @@ void write_counter(u8_t address, const void *source, u32_t size)
         spi_poll(*ptr++);
     GPIOA->BSRR = GPIO_BSRR_BS4;
 }
+
