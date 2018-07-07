@@ -1,7 +1,6 @@
 #include <QDebug>
 #include <QTimer>
 #include <QSerialPort>
-#include <QSerialPortInfo>
 #include "Device.h"
 
 quint8 Device::checksum(const QByteArray &data)
