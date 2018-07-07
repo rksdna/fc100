@@ -4,6 +4,7 @@
 #include <QString>
 #include <QObject>
 
+class QTimer;
 class QSerialPort;
 
 class Device : public QObject
@@ -32,25 +33,18 @@ public:
     };
 
 public:
+    static quint16 vendorIdentifier();
+    static quint16 productIdentifier();
+
+public:
     explicit Device(QObject *parent = 0);
 
-private:
-    enum State
-    {
-        IdleState,
-        EvenDigitState,
-        OddDigitState
-    };
-
+    void restart(const QString &name);
+    void stop();
 
 private:
     void onReadyRead();
-    void process_message(quint8 value);
-    void begin_message();
-    void complete_message();
-    void drop_message();
-
-
+    void onTimeout();
     void read(const QByteArray &data);
     void write(const QByteArray &data);
 
@@ -59,15 +53,7 @@ private:
 
 private:
     QSerialPort * const m_port;
-    State m_state;
-    quint8 m_byte;
-    QByteArray m_buffer;
-
-
-
-
-
-
+    QTimer * const m_timer;
 };
 
 #endif // DEVICE_H

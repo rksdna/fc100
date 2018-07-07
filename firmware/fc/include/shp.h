@@ -45,7 +45,8 @@ enum shp_state
 {
     SHP_IDLE,
     SHP_EVEN_DIGIT,
-    SHP_ODD_DIGIT
+    SHP_ODD_DIGIT,
+    SHP_CARRIAGE_RETURN
 };
 
 struct shp_chunk

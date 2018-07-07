@@ -1,5 +1,7 @@
 #include <QDebug>
+#include <QTimer>
 #include <QSerialPort>
+#include <QSerialPortInfo>
 #include "Device.h"
 
 quint8 Device::checksum(const QByteArray &data)
@@ -54,87 +56,72 @@ quint8 Device::checksum(const QByteArray &data)
     return crc;
 }
 
+quint16 Device::vendorIdentifier()
+{
+    return 0x0483;
+}
+
+quint16 Device::productIdentifier()
+{
+    return 0x5740;
+}
+
 Device::Device(QObject *parent)
     : QObject(parent),
       m_port(new QSerialPort(this)),
-      m_state(IdleState)
+      m_timer(new QTimer(this))
 {
     connect(m_port, &QSerialPort::readyRead, this, &Device::onReadyRead);
-
-    m_port->setPortName("/dev/ttyACM0");
-    qDebug() << m_port->open(QSerialPort::ReadWrite);
-
-    write("qwe");
-
+    connect(m_timer, &QTimer::timeout, this, &Device::onTimeout);
 }
 
-void Device::begin_message()
+void Device::restart(const QString &name)
 {
-    m_buffer.clear();
-    m_state = EvenDigitState;
-}
+    stop();
 
-void Device::process_message(quint8 value)
-{
-    if (m_state == EvenDigitState)
+    m_port->setPortName(name);
+    if (m_port->open(QSerialPort::ReadWrite))
     {
-        m_byte  = value << 4;
-        m_state = OddDigitState;
-        return;
+        read("qp");
     }
-
-    if (m_state == OddDigitState)
-    {
-        m_byte += value;
-        m_buffer.append(m_byte);
-        m_state = EvenDigitState;
-        return;
-    }
-
-    m_state = IdleState;
 }
 
-void Device::complete_message()
+void Device::stop()
 {
-    if (m_state == EvenDigitState)
-    {
-        if (m_buffer.size() > 1 && checksum(m_buffer) == 0)
-        {
-            m_buffer.chop(1);
-            read(m_buffer);
-        }
-    }
-
-    m_state = IdleState;
+    qDebug() << "stop";
+    m_timer->stop();
+    if (m_port->isOpen())
+        m_port->close();
 }
-
-void Device::drop_message()
-{
-}
-
 
 void Device::onReadyRead()
 {
-    foreach (char ch, m_port->readAll())
+    while (m_port->canReadLine())
     {
-        if (ch == '\r')
-            complete_message();
-        else if (ch == ':')
-            begin_message();
-        else if (ch >= '0' && ch <= '9')
-            process_message(ch - '0');
-        else if (ch >= 'a' && ch <= 'f')
-            process_message(ch - 'a' + 10);
-        else if (ch >= 'A' && ch <= 'F')
-            process_message(ch - 'A' + 10);
-        else
-            drop_message();
+        const QByteArray line = m_port->readLine();
+        if (line.startsWith(':') && line.endsWith("\r\n"))
+        {
+            QByteArray data = QByteArray::fromHex(line);
+            if (data.size() > 1 && checksum(data) == 0)
+            {
+                data.chop(1);
+                read(data);
+            }
+        }
     }
+}
+
+void Device::onTimeout()
+{
+    stop();
 }
 
 void Device::read(const QByteArray &data)
 {
     qDebug() << "rx" << data;
+    write("ping");
+
+    m_timer->start(250);
 }
 
 void Device::write(const QByteArray &data)
@@ -143,6 +130,5 @@ void Device::write(const QByteArray &data)
     frame.append(data);
     frame.append(checksum(data));
 
-    m_port->write(":" + frame.toHex() + "\r");
+    m_port->write(":" + frame.toHex() + "\r\n");
 }
-

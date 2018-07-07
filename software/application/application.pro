@@ -7,6 +7,9 @@ include(../deploy/deploy.pri)
 include(../device/device.pri)
 
 SOURCES += main.cpp \
-    MainWidget.cpp
+    MainWindow.cpp \
+    PortDialog.cpp
 
-HEADERS += MainWidget.h
+HEADERS += \
+    MainWindow.h \
+    PortDialog.h

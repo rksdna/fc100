@@ -24,20 +24,6 @@
 #include "debug.h"
 #include "shp.h"
 
-__attribute__((naked))
-s32_t __gnu_thumb1_case_uqi()
-{
-    asm volatile ("mov r12, r1\n"
-                  "mov r1, lr\n"
-                  "lsr r1, #1\n"
-                  "lsl r1, #1\n"
-                  "ldrb r1, [r1, r0]\n"
-                  "lsl r1, #1\n"
-                  "add lr, lr, r1\n"
-                  "mov r1, r12\n"
-                  "bx lr\n" : : : );
-}
-
 static void clear_chunk(struct shp_chunk *chunk)
 {
     chunk->head = chunk->data;
@@ -126,22 +112,15 @@ u8_t shp_checksum(const void *data, u32_t size)
         crc = table[crc ^ *ptr++];
 
     return crc;
-
-    /*const u8_t *ptr = (const u8_t *)data;
-    u8_t lcr = 0;
-    while (size--)
-        lcr += *ptr++;
-
-    return -lcr;*/
 }
 
-static void begin_message(struct shp_socket *socket)
+static void on_colon(struct shp_socket *socket)
 {
     socket->state = SHP_EVEN_DIGIT;
     socket->size = 0;
 }
 
-static void process_message(struct shp_socket *socket, u8_t value)
+static void on_digit(struct shp_socket *socket, u8_t value)
 {
     if (socket->size < sizeof(socket->data))
     {
@@ -163,10 +142,22 @@ static void process_message(struct shp_socket *socket, u8_t value)
     socket->state = SHP_IDLE;
 }
 
-static void complete_message(struct shp_socket *socket)
+static void on_carriage_return(struct shp_socket *socket)
 {
     if (socket->state == SHP_EVEN_DIGIT)
     {
+        socket->state = SHP_CARRIAGE_RETURN;
+        return;
+    }
+
+    socket->state = SHP_IDLE;
+}
+
+static void on_line_feed(struct shp_socket *socket)
+{
+    if (socket->state == SHP_CARRIAGE_RETURN)
+    {
+
         if (socket->size > 1 && shp_checksum(socket->data, socket->size) == 0)
             socket->handler(socket, socket->data, socket->size - 1);
     }
@@ -174,7 +165,7 @@ static void complete_message(struct shp_socket *socket)
     socket->state = SHP_IDLE;
 }
 
-static void drop_message(struct shp_socket *socket)
+static void on_character(struct shp_socket *socket)
 {
     socket->state = SHP_IDLE;
 }
@@ -193,51 +184,20 @@ void bind_shp_socket(struct shp_socket *socket, shp_handler_t handler, shp_read_
 void poll_shp_socket(struct shp_socket *socket)
 {
     const char ch = get_socket_byte(socket);
-    switch (ch)
-    {
-    case '\r':
-        complete_message(socket);
-        break;
-
-    case '0':
-    case '1':
-    case '2':
-    case '3':
-    case '4':
-    case '5':
-    case '6':
-    case '7':
-    case '8':
-    case '9':
-        process_message(socket, ch - '0');
-        break;
-
-    case 'A':
-    case 'B':
-    case 'C':
-    case 'D':
-    case 'E':
-    case 'F':
-        process_message(socket, ch - 'A' + 10);
-        break;
-
-    case 'a':
-    case 'b':
-    case 'c':
-    case 'd':
-    case 'e':
-    case 'f':
-        process_message(socket, ch - 'a' + 10);
-        break;
-
-    case ':':
-        begin_message(socket);
-        break;
-
-    default:
-        drop_message(socket);
-        break;
-    }
+    if (ch == '\n')
+        on_line_feed(socket);
+    else if (ch == '\r')
+        on_carriage_return(socket);
+    else if (ch == ':')
+        on_colon(socket);
+    else if (ch >= '0' && ch <= '9')
+        on_digit(socket, ch - '0');
+    else if (ch >= 'a' && ch <= 'f')
+        on_digit(socket, ch - 'a' + 10);
+    else if (ch >= 'A' && ch <= 'F')
+        on_digit(socket, ch - 'A' + 10);
+    else
+        on_character(socket);
 }
 
 void send_shp_response(struct shp_socket *socket, const void *data, u32_t size)
@@ -259,6 +219,7 @@ void send_shp_response(struct shp_socket *socket, const void *data, u32_t size)
     put_socket_byte(socket, digits[checksum & 0x0F]);
 
     put_socket_byte(socket, '\r');
+    put_socket_byte(socket, '\n');
 
     write_socket_chunk(socket);
 }
