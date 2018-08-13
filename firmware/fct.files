@@ -1,8 +1,12 @@
-fc/source/main.c
-fc/source/device.c
-fc/include/device.h
 cdc/include/cdc.h
 cdc/source/cdc.c
+fct/include/counter.h
+fct/include/device.h
+fct/include/shp.h
+fct/source/device.c
+fct/source/main.c
+fct/source/shp.c
+kernel/include/debug.h
 kernel/include/stm32/adc.h
 kernel/include/stm32/can.h
 kernel/include/stm32/cec.h
@@ -33,7 +37,6 @@ kernel/include/stm32/tsc.h
 kernel/include/stm32/usart.h
 kernel/include/stm32/usb.h
 kernel/include/stm32/wwdg.h
-kernel/include/debug.h
 kernel/include/threads.h
 kernel/include/timers.h
 kernel/include/tools.h
@@ -43,6 +46,4 @@ kernel/source/startup.c
 kernel/source/threads.c
 kernel/source/timers.c
 kernel/source/tools.c
-fc/source/shp.c
-fc/include/shp.h
-fc/include/counter.h
+

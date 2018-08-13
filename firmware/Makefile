@@ -25,7 +25,7 @@
 
 TARGET ?= fc
 SCRIPT ?= kernel/target/stm32f042x4.ld
-MODULES ?= kernel cdc fc
+MODULES ?= kernel cdc fct
 PORT ?= /dev/ttyUSB0
 
 INCDIRS = $(addsuffix /include, $(MODULES))
