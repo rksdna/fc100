@@ -29,6 +29,19 @@
 #include "device.h"
 #include "shp.h"
 
+/*
+ * MODE START STOP COUNTER DURATION DISPLAY
+ * F    A/B   A/B  A/B     1mS-10S  COUNTER/TIMER, Hz
+ * T    A/B   A/B  A/B     1mS-10S  TIMER/COUNTER, S
+ * RPM  A/B   A/B  A/B     1mS-10S  COUNTER/TIMER * 60, RPM
+ * CNT  A/B   A/B  A/B     inf      COUNTER, 1
+ * tP   A/B   A/B  A/B     0        TIMER, S
+ * tL  !A/B   A/B  A/B     0        TIMER, S
+ * tH   A/B  !A/B  A/B     0        TIMER, S
+ * tD   A/B   B/A  A/B     0        TIMER, S
+ * ARM  B/A  !B/A  A/B     0        COUNTER/TIMER, Hz,
+ */
+
 /*static struct counter cnt;
 
 static void update(struct counter *regs)
@@ -52,7 +65,28 @@ static void dump(const struct counter *regs)
     debug(" timer:\t%d\n", regs->tmr);
 }*/
 
-static struct counter regs;
+enum control_state
+{
+    CONTROL_IDLE_WO,
+    CONTROL_IDLE,
+};
+
+static enum control_state state;
+static struct thread counter_thread;
+static u8_t counter_stack[256];
+
+static void counter(void *data)
+{
+    switch (state)
+    {
+    case CONTROL_IDLE_WO:
+        static struct counter regs;
+
+    case CONTROL_IDLE:
+
+    }
+
+}
 
 static void handler(struct shp_socket *socket, void *data, u32_t size)
 {
@@ -62,6 +96,7 @@ static void handler(struct shp_socket *socket, void *data, u32_t size)
 void main(void)
 {
     startup_device();
+    start_thread(&control_thread, (function_t)control, 0, control_stack, sizeof(control_stack));
     start_cdc_service();
     set_cdc_timeout(10);
     while (1)

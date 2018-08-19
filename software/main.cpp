@@ -28,8 +28,6 @@ int main(int argc, char *argv[])
 
     const QString locale = QLocale::system().bcp47Name();
 
-    qDebug() << QLibraryInfo::location(QLibraryInfo::TranslationsPath);
-
     QTranslator qtTranslator;
     qtTranslator.load(QString("qt_%1.qm").arg(locale), QLibraryInfo::location(QLibraryInfo::TranslationsPath));
     application.installTranslator(&qtTranslator);

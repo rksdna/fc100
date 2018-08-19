@@ -168,7 +168,7 @@ void irq12_handler(void)
     case DEVICE_OFF:
         if (average > V_ON)
         {
-            debug("su\n");
+            debug("su %d\n", sample);
             TIM17->BDTR |= TIM_BDTR_MOE;
             state = DEVICE_STARTUP;
             break;
@@ -179,7 +179,7 @@ void irq12_handler(void)
     case DEVICE_STARTUP:
         if (average < V_OFF)
         {
-            debug("fa\n");
+            debug("fa %d\n", sample);
             TIM17->BDTR &= ~TIM_BDTR_MOE;
             state = DEVICE_FAILURE;
             break;
@@ -187,7 +187,7 @@ void irq12_handler(void)
 
         if (--delay == 0)
         {
-            debug("rs\n");
+            debug("rs %d\n", sample);
             GPIOA->BSRR = GPIO_BSRR_BR3;
             state = DEVICE_READY;
             break;
@@ -198,7 +198,7 @@ void irq12_handler(void)
     case DEVICE_READY:
         if (average < V_OFF)
         {
-            debug("fa\n");
+            debug("fa %d\n", sample);
             TIM17->BDTR &= ~TIM_BDTR_MOE;
             GPIOA->BSRR = GPIO_BSRR_BS3;
             state = DEVICE_FAILURE;

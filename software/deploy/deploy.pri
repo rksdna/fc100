@@ -12,17 +12,21 @@ OTHER_FILES += \
     $$PWD/debian/control \
     $$PWD/debian/copyright \
     $$PWD/debian/changelog \
+    $$PWD/debian/fct.1 \
+    $$PWD/debian/fct.desktop \
+    $$PWD/debian/fct.png \
     $$PWD/windows/deploy.sh \
     $$PWD/windows/i686-w64-mingw32-qt-5.5.1.sh \
     $$PWD/windows/control.wxs \
     $$PWD/windows/changelog.txt \
-    $$PWD/windows/license.txt
+    $$PWD/windows/license.txt \
+    $$PWD/windows/fct.ico
 
 linux {
     target.path = /usr/bin
-    translations.path = /usr/share/$$DEPLOY_PRODUCT
+    translations.path = /usr/share/fct
 
-    docs.path = /usr/share/doc/$$DEPLOY_PRODUCT
+    docs.path = /usr/share/doc/fct
     docs.files = \
         $$PWD/debian/copyright \
         $$PWD/debian/changelog
@@ -45,7 +49,7 @@ linux {
 win32 {
     RC_LANG = 1033
     RC_CODEPAGE = 1252
-    RC_ICONS = $$PWD/windows/$${TARGET}.ico
+    RC_ICONS = $$PWD/windows/fct.ico
 
     QMAKE_TARGET_PRODUCT = $$DEPLOY_PRODUCT
     QMAKE_TARGET_COMPANY = $$DEPLOY_COMPANY
@@ -57,9 +61,3 @@ win32 {
 
     INSTALLS += target translations
 }
-
-DISTFILES += \
-    $$PWD/debian/fct.1 \
-    $$PWD/debian/fct.desktop \
-    $$PWD/debian/fct.png \
-    $$PWD/windows/fct.ico

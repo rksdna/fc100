@@ -45,7 +45,6 @@ struct counter
 #define COUNTER_MODE_STRT ((u8_t)0x03)
 #define COUNTER_MODE_STRT_0 ((u8_t)0x01)
 #define COUNTER_MODE_STRT_1 ((u8_t)0x02)
-
 #define COUNTER_MODE_STRT_CH1R ((u8_t)0x00)
 #define COUNTER_MODE_STRT_CH1F ((u8_t)0x01)
 #define COUNTER_MODE_STRT_CH2R ((u8_t)0x02)
@@ -62,7 +61,6 @@ struct counter
 #define COUNTER_MODE_CNT ((u8_t)0x30)
 #define COUNTER_MODE_CNT_0 ((u8_t)0x10)
 #define COUNTER_MODE_CNT_1 ((u8_t)0x20)
-
 #define COUNTER_MODE_CNT_CH1R ((u8_t)0x00)
 #define COUNTER_MODE_CNT_CH1F ((u8_t)0x10)
 #define COUNTER_MODE_CNT_CH2R ((u8_t)0x20)
