@@ -37,7 +37,10 @@
 #include <tools.h>
 #include "device.h"
 
-static enum device_state state = DEVICE_OFF;
+#define SPI1_DR_8 *(volatile u8_t *)(&SPI1->DR)
+#define V_REF 330
+
+static s32_t voltage = 0;
 
 static void debug_put(void *data, char value)
 {
@@ -150,79 +153,41 @@ void startup_device(void)
     debug("id: %*m flash: %dKbytes\n", sizeof(DES->ID), DES->ID, DES->FSIZE & DES_FSIZE_FSIZE);
 }
 
-#define V_REF 330
-#define V_ON 485
-#define V_OFF 475
-
 void irq12_handler(void)
 {
-    static s32_t average = 0;
-    static u32_t delay = 25;
-
     const s32_t sample = (2 * V_REF * ADC1->DR + 2048) / 4096;
-    average = (3 * average + sample + 2) / 4;
+    voltage = (3 * voltage + sample + 2) / 4;
     ADC1->ISR = ADC1->ISR;
-
-    switch (state)
-    {
-    case DEVICE_OFF:
-        if (average > V_ON)
-        {
-            debug("su %d\n", sample);
-            TIM17->BDTR |= TIM_BDTR_MOE;
-            state = DEVICE_STARTUP;
-            break;
-        }
-
-        break;
-
-    case DEVICE_STARTUP:
-        if (average < V_OFF)
-        {
-            debug("fa %d\n", sample);
-            TIM17->BDTR &= ~TIM_BDTR_MOE;
-            state = DEVICE_FAILURE;
-            break;
-        }
-
-        if (--delay == 0)
-        {
-            debug("rs %d\n", sample);
-            GPIOA->BSRR = GPIO_BSRR_BR3;
-            state = DEVICE_READY;
-            break;
-        }
-
-        break;
-
-    case DEVICE_READY:
-        if (average < V_OFF)
-        {
-            debug("fa %d\n", sample);
-            TIM17->BDTR &= ~TIM_BDTR_MOE;
-            GPIOA->BSRR = GPIO_BSRR_BS3;
-            state = DEVICE_FAILURE;
-            break;
-        }
-
-        break;
-
-    default:
-        break;
-    }
 }
 
-enum device_state get_device_state(void)
+s32_t get_device_voltage(void)
 {
-    return state;
+    return voltage;
 }
 
-#define SPI1_DR_8 *(volatile u8_t *)(&SPI1->DR)
+void switch_on_device_counter(void)
+{
+    TIM17->BDTR |= TIM_BDTR_MOE;
+    GPIOA->BSRR = GPIO_BSRR_BS3;
+}
+
+void startup_device_counter(void)
+{
+    TIM17->BDTR |= TIM_BDTR_MOE;
+    GPIOA->BSRR = GPIO_BSRR_BR3;
+}
+
+void shutdown_device_counter(void)
+{
+    TIM17->BDTR &= ~TIM_BDTR_MOE;
+    GPIOA->BSRR = GPIO_BSRR_BS3;
+}
 
 static u8_t spi_poll(u8_t value)
 {
     SPI1_DR_8 = value;
     wait_for(&SPI1->SR, SPI_SR_RXNE, SPI_SR_RXNE);
+
     return SPI1_DR_8;
 }
 
@@ -233,6 +198,7 @@ void read_device_counter(u8_t address, void *destination, u32_t size)
     spi_poll(address);
     while (size--)
         *ptr++ = spi_poll(0xFF);
+
     GPIOA->BSRR = GPIO_BSRR_BS4;
 }
 
@@ -243,6 +209,20 @@ void write_device_counter(u8_t address, const void *source, u32_t size)
     spi_poll(address | 0x80);
     while (size--)
         spi_poll(*ptr++);
+
     GPIOA->BSRR = GPIO_BSRR_BS4;
 }
 
+__attribute__((naked))
+s32_t __gnu_thumb1_case_uqi()
+{
+    asm volatile ("mov r12, r1\n"
+                  "mov r1, lr\n"
+                  "lsr r1, #1\n"
+                  "lsl r1, #1\n"
+                  "ldrb r1, [r1, r0]\n"
+                  "lsl r1, #1\n"
+                  "add lr, lr, r1\n"
+                  "mov r1, r12\n"
+                  "bx lr\n" : : : );
+}

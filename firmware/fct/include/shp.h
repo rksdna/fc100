@@ -37,7 +37,7 @@
 struct shp_socket;
 enum shp_state;
 
-typedef void (* shp_handler_t)(struct shp_socket *socket, void *data, u32_t size);
+typedef void (* shp_handler_t)(struct shp_socket *socket, const void *data, u32_t size);
 typedef u32_t (* shp_read_t)(void *data, u32_t size);
 typedef u32_t (* shp_write_t)(const void *data, u32_t size);
 

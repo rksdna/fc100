@@ -26,16 +26,12 @@
 
 #include <types.h>
 
-enum device_state
-{
-    DEVICE_OFF,
-    DEVICE_STARTUP,
-    DEVICE_READY,
-    DEVICE_FAILURE
-};
-
 void startup_device(void);
-enum device_state get_device_state(void);
+s32_t get_device_voltage(void);
+
+void switch_on_device_counter(void);
+void startup_device_counter(void);
+void shutdown_device_counter(void);
 
 void read_device_counter(u8_t address, void *destination, u32_t size);
 void write_device_counter(u8_t address, const void *source, u32_t size);
