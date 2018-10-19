@@ -1,9 +1,8 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QSettings>
-#include <QFormLayout>
-#include <QDoubleSpinBox>
 #include "Device.h"
+#include "DeviceWidget.h"
 #include "MainWindow.h"
 #include "PortDialog.h"
 
@@ -21,19 +20,7 @@ MainWindow::MainWindow(QWidget *parent)
     QAction * const quitAction = fileMenu->addAction(tr("Quit"));
     connect(quitAction, &QAction::triggered, this, &MainWindow::close);
 
-
-    QDoubleSpinBox * const ch1ThresholdBox = new QDoubleSpinBox;
-    ch1ThresholdBox->setRange(-5.0, 5.0);
-
-    QDoubleSpinBox * const ch2ThresholdBox = new QDoubleSpinBox;
-    ch2ThresholdBox->setRange(-5.0, 5.0);
-
-
-    QWidget * const widget = new QWidget;
-    QFormLayout * const layout = new QFormLayout(widget);
-
-    layout->addRow(tr("Ch1 threshold"), ch1ThresholdBox);
-    layout->addRow(tr("Ch2 threshold"), ch2ThresholdBox);
+    setCentralWidget(new DeviceWidget(m_device));
 
     QSettings settings;
     restoreGeometry(settings.value("MainWindow/Geometry").toByteArray());

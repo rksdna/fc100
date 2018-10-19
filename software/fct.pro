@@ -9,12 +9,14 @@ include(translations/translations.pri)
 SOURCES += main.cpp \
     MainWindow.cpp \
     PortDialog.cpp \
-    Device.cpp
+    Device.cpp \
+    DeviceWidget.cpp
 
 HEADERS += \
     MainWindow.h \
     PortDialog.h \
-    Device.h
+    Device.h \
+    DeviceWidget.h
 
 RESOURCES += \
     fct.qrc
