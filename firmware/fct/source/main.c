@@ -47,121 +47,224 @@
 #define V_ON 485
 #define V_OFF 475
 #define TIMER_PERIOD 10
+#define CHECK_VOLTAGE if (voltage <= V_OFF) { shutdown_device_counter(); return FAILURE_STATE; }
+#define CHECK_ID if (regs.id != 0xAA) { shutdown_device_counter(); return FAILURE_STATE; }
 
 enum counter_state
 {
-    OFF_STATE,
-    ENTER_STARTUP_STATE,
-    STARTUP_STATE,
-    ENTER_IDLE_STATE,
+    SHUTDOWN_STATE,
+    PREPARE_STATE,
     IDLE_STATE,
-    ENTER_ZS_CALIBRATION_STATE,
     ZS_CALIBRATION_STATE,
-    ENTER_FS_CALIBRATION_STATE,
     FS_CALIBRATION_STATE,
-
-    ENTER_START_STATE,
     START_STATE,
-
-    ENTER_FAILURE_STATE,
-    FAILURE_STATE,
-
+    MEASURE_STATE,
+    STOP_STATE,
+    FAILURE_STATE
 };
 
-struct counter_context
+enum counter_coupling
 {
-    struct counter regs;
+    DC_COUPLING,
+    AC_COUPLING
 };
 
-static void update_regs(struct counter *regs)
+enum counter_edge
 {
-    write_device_counter(0, regs, 4);
-    read_device_counter(0, regs, 16);
+    CH1_RISING_EDGE,
+    CH1_FALLING_EDGE,
+    CH2_RISING_EDGE,
+    CH2_FALLING_EDGE
+};
+
+enum counter_clock
+{
+    INTERNAL_CLOCK,
+    EXTERNAL_CLOCK
+};
+
+struct shp_request
+{
+    u32_t command;
+    u32_t duration;
+    s8_t dac1;
+    s8_t dac2;
+    u8_t ch1_coupling;
+    u8_t ch2_coupling;
+    u8_t start_edge;
+    u8_t stop_edge;
+    u8_t counter_edge;
+    u8_t timer_clock;
+};
+
+struct shp_response
+{
+    u32_t status;
+    u32_t counter;
+    u32_t timer;
+    u8_t tac_start;
+    u8_t tac_stop;
+    u8_t ref_start[2];
+    u8_t ref_stop[2];
+    u8_t padding[2];
+};
+
+struct counter regs;
+struct shp_request request;
+struct shp_response response;
+
+u32_t duration = 0;
+
+static void poll_counter(void)
+{
+    write_device_counter(0, &regs, 4);
+    read_device_counter(0, &regs, 16);
 }
 
-enum counter_state process(struct counter_context *context, enum counter_state state, u32_t elapsed)
+static void control_counter(u8_t mode, u8_t ctrl)
+{
+    regs.dac1 = request.dac1 ^ 0x80;
+    regs.dac2 = request.dac2 ^ 0x80;
+    regs.mode =
+            ((request.start_edge) & COUNTER_MODE_STRT) |
+            ((request.stop_edge << 2) & COUNTER_MODE_STOP) |
+            ((request.counter_edge << 4) & COUNTER_MODE_CNT) |
+            ((request.timer_clock << 6) & COUNTER_MODE_TMR) |
+            mode;
+    regs.ctrl =
+            ((request.ch1_coupling << 4) & COUNTER_MODE_STOP) |
+            ((request.ch2_coupling << 5) & COUNTER_MODE_CNT) |
+            ctrl;
+}
+
+enum counter_state process(enum counter_state state, u32_t elapsed)
 {
     const s32_t voltage = get_device_voltage();
 
-    if (state > OFF_STATE && state < ENTER_FAILURE_STATE && voltage < V_OFF)
-        return ENTER_FAILURE_STATE;
-
-    if (state > ENTER_IDLE_STATE && state < ENTER_FAILURE_STATE && context->regs.id != 0xAA)
-        return ENTER_FAILURE_STATE;
-
     switch (state)
     {
-    case OFF_STATE:
-        if (voltage > V_ON)
-            return ENTER_STARTUP_STATE;
+    case SHUTDOWN_STATE:
+        if (voltage >= V_ON)
+        {
+            prepare_device_counter();
+            return PREPARE_STATE;
+        }
 
         break;
 
-    case ENTER_STARTUP_STATE:
-        switch_on_device_counter();
-
-    case STARTUP_STATE:
+    case PREPARE_STATE:
+        CHECK_VOLTAGE;
         if (elapsed > 25)
-            return ENTER_IDLE_STATE;
-        break;
+        {
+            startup_device_counter();
+            control_counter(COUNTER_MODE_CLR, COUNTER_CTRL_CLR);
+            return IDLE_STATE;
+        }
 
-    case ENTER_IDLE_STATE:
-        debug("idle\n");
-        startup_device_counter();
-        context->regs.mode = COUNTER_MODE_CLR;
-        context->regs.ctrl = COUNTER_CTRL_CLR;
+        break;
 
     case IDLE_STATE:
-        update_regs(&context->regs);
+        CHECK_VOLTAGE;
+        poll_counter();
+        CHECK_ID;
         if (elapsed > 500)
-            return ENTER_ZS_CALIBRATION_STATE;
-        return IDLE_STATE;
-
-    case ENTER_ZS_CALIBRATION_STATE:
-        context->regs.mode = COUNTER_MODE_CLR;
-        context->regs.ctrl = COUNTER_CTRL_CLB_ZS | COUNTER_CTRL_TEST;
-
-    case ZS_CALIBRATION_STATE:
-        update_regs(&context->regs);
-        if ((context->regs.ack & COUNTER_ACK_STRT) && (context->regs.ack & COUNTER_ACK_STOP))
         {
-            debug("zs %d %d\n", context->regs.tac_stop, context->regs.tac_strt);
-            return ENTER_FS_CALIBRATION_STATE;
+            debug("begin\n");
+            control_counter(COUNTER_MODE_CLR, COUNTER_CTRL_CLB_ZS | COUNTER_CTRL_TEST);
+            return ZS_CALIBRATION_STATE;
         }
 
-        return ZS_CALIBRATION_STATE;
-
-    case ENTER_FS_CALIBRATION_STATE:
-        context->regs.mode = COUNTER_MODE_CLR;
-        context->regs.ctrl = COUNTER_CTRL_CLB_FS | COUNTER_CTRL_TEST;
-
-    case FS_CALIBRATION_STATE:
-        update_regs(&context->regs);
-        if ((context->regs.ack & COUNTER_ACK_STRT) && (context->regs.ack & COUNTER_ACK_STOP))
-        {
-            debug("fs %d %d\n", context->regs.tac_stop, context->regs.tac_strt);
-            return ENTER_IDLE_STATE;
-        }
-
-        return FS_CALIBRATION_STATE;
-
-    case ENTER_START_STATE:
-        context->regs.mode = COUNTER_MODE_CLR;
-        context->regs.ctrl = COUNTER_CTRL_STRT | COUNTER_CTRL_TEST;
-        return START_STATE;
-
-    case START_STATE:
-        update_regs(&context->regs);
         break;
 
+    case ZS_CALIBRATION_STATE:
+        CHECK_VOLTAGE;
+        poll_counter();
+        CHECK_ID;
+        if (regs.ack & COUNTER_ACK_STOP)
+        {
+            debug("zs %d %d\n", regs.tac_stop, regs.tac_strt);
+            response.ref_start[0] = regs.tac_strt;
+            response.ref_stop[0] = regs.tac_stop;
+            control_counter(COUNTER_MODE_CLR, COUNTER_CTRL_CLB_FS | COUNTER_CTRL_TEST);
+            return FS_CALIBRATION_STATE;
+        }
 
-    case ENTER_FAILURE_STATE:
-        shutdown_device_counter();
+        break;
+
+    case FS_CALIBRATION_STATE:
+        CHECK_VOLTAGE;
+        poll_counter();
+        CHECK_ID;
+        if (regs.ack & COUNTER_ACK_STOP)
+        {
+            debug("fs %d %d\n", regs.tac_stop, regs.tac_strt);
+            response.ref_start[1] = regs.tac_strt;
+            response.ref_stop[1] = regs.tac_stop;
+            control_counter(COUNTER_MODE_CLR, duration ? COUNTER_CTRL_STRT | COUNTER_CTRL_TEST : COUNTER_CTRL_STRT | COUNTER_CTRL_STOP | COUNTER_CTRL_TEST);
+            return START_STATE;
+        }
+
+        break;
+
+    case START_STATE:
+        CHECK_VOLTAGE;
+        poll_counter();
+        CHECK_ID;
+        if (regs.ack & COUNTER_ACK_STRT)
+        {
+            debug("started\n");
+
+            return MEASURE_STATE;
+        }
+
+        if (elapsed >= duration)
+        {
+            debug("timeout 1\n");
+            control_counter(COUNTER_MODE_CLR, COUNTER_CTRL_CLR);
+            return IDLE_STATE;
+        }
+
+        break;
+
+    case MEASURE_STATE:
+        CHECK_VOLTAGE;
+        poll_counter();
+        CHECK_ID;
+
+        if (elapsed >= duration)
+        {
+            control_counter(0, COUNTER_CTRL_STRT | COUNTER_CTRL_STOP | COUNTER_CTRL_TEST);
+            return STOP_STATE;
+        }
+
+        break;
+
+    case STOP_STATE:
+        CHECK_VOLTAGE;
+        poll_counter();
+        CHECK_ID;
+
+        if (regs.ack & COUNTER_ACK_STOP)
+        {
+            debug("stopped %d %d\n", regs.cnt, regs.tmr);
+            response.counter = regs.cnt;
+            response.timer = regs.tmr;
+            control_counter(COUNTER_MODE_CLR, COUNTER_CTRL_CLR);
+            return IDLE_STATE;
+        }
+
+        if (elapsed >= duration)
+        {
+            debug("timeout 2\n");
+            control_counter(COUNTER_MODE_CLR, COUNTER_CTRL_CLR);
+            return IDLE_STATE;
+        }
+
+        break;
+
     case FAILURE_STATE:
-        return FAILURE_STATE;
-
     default:
-        return ENTER_FAILURE_STATE;
+        break;
     }
 
     return state;
@@ -170,17 +273,13 @@ enum counter_state process(struct counter_context *context, enum counter_state s
 static void control(void *arg)
 {
     WASTE(arg);
-
     u32_t elapsed = 0;
-    struct counter_context context = {{0, 0, 0, 0}};
-    enum counter_state state = OFF_STATE;
-
+    enum counter_state state = SHUTDOWN_STATE;
     struct timer tm;
     start_timer(&tm, TIMER_PERIOD);
-
     while (1)
     {
-        const enum counter_state next = process(&context, state, elapsed);
+        const enum counter_state next = process(state, elapsed);
         if (state != next)
         {
             state = next;
@@ -196,7 +295,11 @@ static void control(void *arg)
 
 static void handler(struct shp_socket *socket, const void *data, u32_t size)
 {
-    send_shp_response(socket, data, size);
+    if (size == sizeof(struct shp_request))
+    {
+        copy(&request, data, size);
+        send_shp_response(socket, &response, sizeof(struct shp_response));
+    }
 }
 
 void main(void)

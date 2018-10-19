@@ -28,8 +28,8 @@
 
 struct counter
 {
-    u8_t dac_1;
-    u8_t dac_2;
+    u8_t dac1;
+    u8_t dac2;
     u8_t mode;
     u8_t ctrl;
     u8_t tac_strt;

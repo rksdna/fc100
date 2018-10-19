@@ -1,7 +1,30 @@
 #include <QDebug>
 #include <QTimer>
+#include <QDataStream>
 #include <QSerialPort>
 #include "Device.h"
+
+Device::Channel::Channel()
+    : coupling(DcCompling),
+      dac(0x80)
+{
+}
+
+void Device::Channel::setThreshold(double value)
+{
+    dac = value;
+}
+
+double Device::Channel::threshold() const
+{
+    return 0.0;
+}
+
+Device::Timer::Timer()
+    : clock(InternalClock),
+      frequency(10000000.0)
+{
+}
 
 quint8 Device::checksum(const QByteArray &data)
 {
@@ -74,15 +97,57 @@ Device::Device(QObject *parent)
     connect(m_timer, &QTimer::timeout, this, &Device::onTimeout);
 }
 
+void Device::setChannelCoupling(int channel, Device::Coupling coupling)
+{
+    Q_ASSERT(channel >= 0 && channel <= 1);
+    m_channels[channel].coupling = coupling;
+}
+
+Device::Coupling Device::channelCoupling(int channel) const
+{
+    Q_ASSERT(channel >= 0 && channel <= 1);
+    return m_channels[channel].coupling;
+}
+
+void Device::setChannelThreshold(int channel, double threshold)
+{
+    Q_ASSERT(channel >= 0 && channel <= 1);
+    m_channels[channel].setThreshold(threshold);
+}
+
+double Device::channelThreshold(int channel) const
+{
+    Q_ASSERT(channel >= 0 && channel <= 1);
+    return m_channels[channel].threshold();
+}
+
+void Device::setTimerClock(Device::Clock clock)
+{
+    m_timer1.clock = clock;
+}
+
+Device::Clock Device::timerClock() const
+{
+    return m_timer1.clock;
+}
+
+void Device::setTimerFrequency(double frequency)
+{
+    m_timer1.frequency = frequency;
+}
+
+double Device::getTimerFrequency() const
+{
+    return m_timer1.frequency;
+}
+
 void Device::restart(const QString &name)
 {
     stop();
 
     m_port->setPortName(name);
     if (m_port->open(QSerialPort::ReadWrite))
-    {
-        read("qp");
-    }
+        read(QByteArray());
 }
 
 void Device::stop()
@@ -117,10 +182,28 @@ void Device::onTimeout()
 
 void Device::read(const QByteArray &data)
 {
-    qDebug() << "rx" << data;
-    write("ping");
+    if (data.size() == 20)
+    {
+        qDebug() << data.toHex();
+        m_timer->start(250);
+    }
 
-    m_timer->start(250);
+    QByteArray request;
+
+    QDataStream stream(&request, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::LittleEndian);
+    stream << quint32(0);
+    stream << quint32(0);
+    stream << quint8(m_channels[0].dac);
+    stream << quint8(m_channels[1].dac);
+    stream << quint8(m_channels[0].coupling);
+    stream << quint8(m_channels[1].coupling);
+    stream << quint8(0);
+    stream << quint8(0);
+    stream << quint8(0);
+    stream << quint8(m_timer1.clock);
+
+    write(request);
 }
 
 void Device::write(const QByteArray &data)
@@ -131,3 +214,5 @@ void Device::write(const QByteArray &data)
 
     m_port->write(":" + frame.toHex() + "\r\n");
 }
+
+

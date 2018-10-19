@@ -29,7 +29,7 @@
 void startup_device(void);
 s32_t get_device_voltage(void);
 
-void switch_on_device_counter(void);
+void prepare_device_counter(void);
 void startup_device_counter(void);
 void shutdown_device_counter(void);
 

@@ -165,7 +165,7 @@ s32_t get_device_voltage(void)
     return voltage;
 }
 
-void switch_on_device_counter(void)
+void prepare_device_counter(void)
 {
     TIM17->BDTR |= TIM_BDTR_MOE;
     GPIOA->BSRR = GPIO_BSRR_BS3;
