@@ -149,7 +149,7 @@ void startup_device(void)
 
     start_timers_clock(48000);
 
-    debug("hello\n");
+    debug("fc100\n");
     debug("id: %*m flash: %dKbytes\n", sizeof(DES->ID), DES->ID, DES->FSIZE & DES_FSIZE_FSIZE);
 }
 

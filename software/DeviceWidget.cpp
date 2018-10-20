@@ -9,11 +9,11 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
       m_device(device)
 {
     QComboBox * const ch1Box = new QComboBox;
-    ch1Box->addItem(tr("DC"), Device::DcCompling);
+    ch1Box->addItem(tr("DC"), Device::DcCoupling);
     ch1Box->addItem(tr("AC"), Device::AcCoupling);
 
     QComboBox * const ch2Box = new QComboBox;
-    ch2Box->addItem(tr("DC"), Device::DcCompling);
+    ch2Box->addItem(tr("DC"), Device::DcCoupling);
     ch2Box->addItem(tr("AC"), Device::AcCoupling);
 
     QDoubleSpinBox * const ch1ThresholdBox = new QDoubleSpinBox;

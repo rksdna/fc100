@@ -167,10 +167,10 @@ begin
         4'h1 : mem_din = dac_2_reg;        
         4'h2 : mem_din = {clr_reg, mode_reg};        
         4'h3 : mem_din = {clr_reg, ctrl_reg};                                
-        4'h4 : mem_din = strt_dout;
-        4'h5 : mem_din = stop_dout;
-        4'h6 : mem_din = {6'h0, strt_ack, stop_ack};
-        4'h7 : mem_din = 8'hAA;        
+        4'h4 : mem_din = 8'hAA;
+        4'h5 : mem_din = {6'h0, strt_ack, stop_ack};       
+        4'h6 : mem_din = strt_dout;
+        4'h7 : mem_din = stop_dout;
         4'h8 : mem_din = cnt_dout[7:0];
         4'h9 : mem_din = cnt_dout[15:8];
         4'hA : mem_din = cnt_dout[23:16];

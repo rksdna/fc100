@@ -14,16 +14,16 @@ class Device : public QObject
 public:
     enum Coupling
     {
-        DcCompling,
+        DcCoupling,
         AcCoupling
     };
 
     enum Edge
     {
-        Ch1RisingEdge,
         Ch1FallingEdge,
-        Ch2RisingEdge,
+        Ch1RisingEdge,
         Ch2FallingEdge,
+        Ch2RisingEdge
     };
 
     enum Clock
@@ -39,41 +39,72 @@ public:
 public:
     explicit Device(QObject *parent = 0);
 
-    void setChannelCoupling(int channel, Coupling coupling);
-    Coupling channelCoupling(int channel) const;
-
-    void setChannelThreshold(int channel, double threshold);
-    double channelThreshold(int channel) const;
-
-    void setTimerClock(Clock clock);
-    Clock timerClock() const;
-
-    void setTimerFrequency(double frequency);
-    double getTimerFrequency() const;
-
-
     void restart(const QString &name);
     void stop();
 
 private:
-    struct Channel
+    enum Command
     {
-        Channel();
-
-        void setThreshold(double value);
-        double threshold() const;
-
-        Coupling coupling;
-        quint8 dac;
+        PollCommand,
+        MeasureCommand,
+        MeasureBurstCommand
     };
 
-    struct Timer
+    enum State
     {
-        Timer();
-
-        Clock clock;
-        double frequency;
+        OffState,
+        IdleState,
+        ReadyState,
+        TriggerState,
+        TriggerBurstState,
+        WaitStartState,
+        MeasureState,
+        WaitStopState,
+        Calibration1State,
+        Calibration0State
     };
+
+    struct Request
+    {
+        Request();
+
+        QByteArray serialize() const;
+
+        Command command;
+        double threshold1;
+        double threshold2;
+        Coupling coupling1;
+        Coupling coupling2;
+        quint16 duration;
+        Edge counterEdge;
+        Clock timerClock;
+        Edge startEdge;
+        Edge stopEdge;
+
+        qint8 tToV(double val) const;
+    };
+
+    struct Response
+    {
+        Response();
+
+        bool deserialize(const QByteArray &data);
+
+        quint16 state;
+        quint16 voltage;
+        quint32 counter;
+        quint32 timer;
+        quint8 startDivident;
+        quint8 startDivider;
+        quint8 stopDivident;
+        quint8 stopDivider;
+
+        double toTime(double clock) const;
+        double toFrequency(double clock) const;
+    };
+
+private:
+    friend QDebug operator <<(QDebug debug, const Device::Response &value);
 
 private:
     void onReadyRead();
@@ -87,10 +118,8 @@ private:
 private:
     QSerialPort * const m_port;
     QTimer * const m_timer;
-
-private:
-    Channel m_channels[2];
-    Timer m_timer1;
 };
+
+QDebug operator <<(QDebug debug, const Device::Response &value);
 
 #endif // DEVICE_H

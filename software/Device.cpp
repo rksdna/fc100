@@ -1,29 +1,132 @@
 #include <QDebug>
 #include <QTimer>
+#include <QDateTime>
 #include <QDataStream>
 #include <QSerialPort>
 #include "Device.h"
 
-Device::Channel::Channel()
-    : coupling(DcCompling),
-      dac(0x80)
+/*
+ * MODE START STOP COUNTER DURATION DISPLAY
+ * F    A/B   A/B  A/B     1mS-10S  COUNTER/TIMER, Hz
+ * T    A/B   A/B  A/B     1mS-10S  TIMER/COUNTER, S
+ * RPM  A/B   A/B  A/B     1mS-10S  COUNTER/TIMER * 60, RPM
+ * CNT  A/B   A/B  A/B     inf      COUNTER, 1
+ * ARM  B/A  !B/A  A/B     0        COUNTER/TIMER
+ * tP   A/B   A/B  A/B     0        TIMER, S
+ * tL  !A/B   A/B  A/B     0        TIMER, S
+ * tH   A/B  !A/B  A/B     0        TIMER, S
+ * tD   A/B   B/A  A/B     0        TIMER, S
+ */
+
+Device::Request::Request()
+    : command(PollCommand),
+      threshold1(0.0),
+      threshold2(0.0),
+      coupling1(DcCoupling),
+      coupling2(DcCoupling),
+      duration(100),
+      counterEdge(Ch1RisingEdge),
+      timerClock(InternalClock),
+      startEdge(Ch1RisingEdge),
+      stopEdge(Ch1RisingEdge)
 {
 }
 
-void Device::Channel::setThreshold(double value)
+qint8 Device::Request::tToV(double val) const
 {
-    dac = value;
+    return val;
 }
 
-double Device::Channel::threshold() const
+QByteArray Device::Request::serialize() const
 {
-    return 0.0;
+    QByteArray data;
+    QDataStream stream(&data, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::LittleEndian);
+
+    stream << tToV(threshold1);
+    stream << tToV(threshold2);
+    stream << quint8(coupling1);
+    stream << quint8(coupling2);
+
+    if (command != PollCommand)
+    {
+        stream << quint16(command == MeasureBurstCommand);
+        stream << quint16(duration);
+        stream << quint8(counterEdge);
+        stream << quint8(timerClock);
+        stream << quint8(startEdge);
+        stream << quint8(stopEdge);
+    }
+
+    return data;
 }
 
-Device::Timer::Timer()
-    : clock(InternalClock),
-      frequency(10000000.0)
+Device::Response::Response()
+    : state(0),
+      voltage(0),
+      counter(0),
+      timer(0),
+      startDivident(0),
+      startDivider(0),
+      stopDivident(0),
+      stopDivider(0)
 {
+}
+
+bool Device::Response::deserialize(const QByteArray &data)
+{
+    QDataStream stream(data);
+    stream.setByteOrder(QDataStream::LittleEndian);
+
+
+    stream >> state;
+    stream >> voltage;
+
+    if (state == ReadyState)
+    {
+        stream >> counter;
+        stream >> timer;
+        stream >> startDivident;
+        stream >> startDivider;
+        stream >> stopDivident;
+        stream >> stopDivider;
+    }
+
+    return stream.status() == QDataStream::Ok && stream.atEnd();
+}
+
+double Device::Response::toTime(double clock) const
+{
+    const double start = double(startDivident) / startDivider;
+    const double stop = double(stopDivident) / stopDivider;
+    const double time = double(timer) + start - stop;
+    return time / clock;
+}
+
+double Device::Response::toFrequency(double clock) const
+{
+    const double events = counter;
+    const double start = double(startDivident) / startDivider;
+    const double stop = double(stopDivident) / stopDivider;
+    const double time = double(timer) + start - stop;
+    return clock * events / time;
+}
+
+QDebug operator <<(QDebug debug, const Device::Response &value)
+{
+    QDebugStateSaver saver(debug);
+
+    debug.nospace();
+    debug << "(status: " << value.state;
+    debug << ", counter: " << value.counter;
+    debug << ", timer: " << value.timer;
+    debug << ", start: " << value.startDivident;
+    debug << "/" << value.startDivider;
+    debug << ", stop: " << value.stopDivident;
+    debug << "/" << value.stopDivider;
+    debug << ")";
+
+    return debug;
 }
 
 quint8 Device::checksum(const QByteArray &data)
@@ -97,50 +200,6 @@ Device::Device(QObject *parent)
     connect(m_timer, &QTimer::timeout, this, &Device::onTimeout);
 }
 
-void Device::setChannelCoupling(int channel, Device::Coupling coupling)
-{
-    Q_ASSERT(channel >= 0 && channel <= 1);
-    m_channels[channel].coupling = coupling;
-}
-
-Device::Coupling Device::channelCoupling(int channel) const
-{
-    Q_ASSERT(channel >= 0 && channel <= 1);
-    return m_channels[channel].coupling;
-}
-
-void Device::setChannelThreshold(int channel, double threshold)
-{
-    Q_ASSERT(channel >= 0 && channel <= 1);
-    m_channels[channel].setThreshold(threshold);
-}
-
-double Device::channelThreshold(int channel) const
-{
-    Q_ASSERT(channel >= 0 && channel <= 1);
-    return m_channels[channel].threshold();
-}
-
-void Device::setTimerClock(Device::Clock clock)
-{
-    m_timer1.clock = clock;
-}
-
-Device::Clock Device::timerClock() const
-{
-    return m_timer1.clock;
-}
-
-void Device::setTimerFrequency(double frequency)
-{
-    m_timer1.frequency = frequency;
-}
-
-double Device::getTimerFrequency() const
-{
-    return m_timer1.frequency;
-}
-
 void Device::restart(const QString &name)
 {
     stop();
@@ -182,28 +241,40 @@ void Device::onTimeout()
 
 void Device::read(const QByteArray &data)
 {
-    if (data.size() == 20)
+    bool pcs = false;
+
+    Response response;
+    if (response.deserialize(data))
     {
-        qDebug() << data.toHex();
-        m_timer->start(250);
+        const double clock = 10E+6 - 2.0;
+
+        if (response.state == OffState)
+        {
+            stop();
+            return;
+        }
+
+        if (response.state == ReadyState)
+        {
+            qDebug() << response;
+            qDebug().noquote() << "F =" << QDateTime::currentDateTime().toString(Qt::ISODate) << QString::number(response.toFrequency(clock), 'f', 3);
+            pcs = true;
+        }
+
+        else if (response.state == IdleState)
+        {
+            qDebug().noquote() << "---";
+            pcs = true;
+        }
+
+        m_timer->start(100);
     }
 
-    QByteArray request;
+    Request request;
+    request.command = pcs ? MeasureBurstCommand : PollCommand;
+    request.duration = 10;
 
-    QDataStream stream(&request, QIODevice::WriteOnly);
-    stream.setByteOrder(QDataStream::LittleEndian);
-    stream << quint32(0);
-    stream << quint32(0);
-    stream << quint8(m_channels[0].dac);
-    stream << quint8(m_channels[1].dac);
-    stream << quint8(m_channels[0].coupling);
-    stream << quint8(m_channels[1].coupling);
-    stream << quint8(0);
-    stream << quint8(0);
-    stream << quint8(0);
-    stream << quint8(m_timer1.clock);
-
-    write(request);
+    write(request.serialize());
 }
 
 void Device::write(const QByteArray &data)
