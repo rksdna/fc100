@@ -20,10 +20,10 @@ public:
 
     enum Edge
     {
-        Ch1FallingEdge,
         Ch1RisingEdge,
-        Ch2FallingEdge,
-        Ch2RisingEdge
+        Ch1FallingEdge,
+        Ch2RisingEdge,
+        Ch2FallingEdge
     };
 
     enum Clock
@@ -52,16 +52,14 @@ private:
 
     enum State
     {
-        OffState,
         IdleState,
         ReadyState,
         TriggerState,
-        TriggerBurstState,
-        WaitStartState,
-        MeasureState,
-        WaitStopState,
+        Busy1State,
+        Busy2State,
+        Busy3State,
         Calibration1State,
-        Calibration0State
+        Calibration2State
     };
 
     struct Request
@@ -104,9 +102,6 @@ private:
     };
 
 private:
-    friend QDebug operator <<(QDebug debug, const Device::Response &value);
-
-private:
     void onReadyRead();
     void onTimeout();
     void read(const QByteArray &data);
@@ -119,7 +114,5 @@ private:
     QSerialPort * const m_port;
     QTimer * const m_timer;
 };
-
-QDebug operator <<(QDebug debug, const Device::Response &value);
 
 #endif // DEVICE_H

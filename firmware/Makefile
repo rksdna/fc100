@@ -23,7 +23,7 @@
 
 # Project files
 
-TARGET ?= fc
+TARGET ?= fct
 SCRIPT ?= kernel/target/stm32f042x4.ld
 MODULES ?= kernel cdc fct
 PORT ?= /dev/ttyUSB0

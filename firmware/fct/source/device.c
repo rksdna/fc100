@@ -38,9 +38,12 @@
 #include "device.h"
 
 #define SPI1_DR_8 *(volatile u8_t *)(&SPI1->DR)
-#define V_REF 330
 
-static s32_t voltage = 0;
+#define V_REF 330
+#define V_ON 485
+#define V_OFF 475
+
+static s32_t voltage;
 
 static void debug_put(void *data, char value)
 {
@@ -145,12 +148,32 @@ void startup_device(void)
     ADC1->CR = ADC_CR_ADSTART;
 
     SPI1->CR2 = SPI_CR2_FRXTH | SPI_CR2_DS_0 | SPI_CR2_DS_1 | SPI_CR2_DS_2;
-    SPI1->CR1 = SPI_CR1_MSTR | SPI_CR1_SSI | SPI_CR1_SSM | SPI_CR1_SPE | SPI_CR1_BR_2 | SPI_CR1_BR_1;
+    SPI1->CR1 = SPI_CR1_MSTR | SPI_CR1_SSI | SPI_CR1_SSM | SPI_CR1_SPE | SPI_CR1_BR_2 | SPI_CR1_BR_1 | SPI_CR1_BR_0;
 
     start_timers_clock(48000);
 
-    debug("fc100\n");
+    debug("hello\n");
     debug("id: %*m flash: %dKbytes\n", sizeof(DES->ID), DES->ID, DES->FSIZE & DES_FSIZE_FSIZE);
+
+    sleep(250);
+    if (voltage < V_ON)
+    {
+        debug("low voltage, bye\n");
+        stop();
+    }
+
+    TIM17->BDTR |= TIM_BDTR_MOE;
+
+    sleep(250);
+    if (voltage < V_OFF)
+    {
+        debug("low power bye\n");
+        TIM17->BDTR &= ~TIM_BDTR_MOE;
+        stop();
+    }
+
+    GPIOA->BSRR = GPIO_BSRR_BR3;
+    debug("device started\n");
 }
 
 void irq12_handler(void)
@@ -165,24 +188,6 @@ s32_t get_device_voltage(void)
     return voltage;
 }
 
-void prepare_device_counter(void)
-{
-    TIM17->BDTR |= TIM_BDTR_MOE;
-    GPIOA->BSRR = GPIO_BSRR_BS3;
-}
-
-void startup_device_counter(void)
-{
-    TIM17->BDTR |= TIM_BDTR_MOE;
-    GPIOA->BSRR = GPIO_BSRR_BR3;
-}
-
-void shutdown_device_counter(void)
-{
-    TIM17->BDTR &= ~TIM_BDTR_MOE;
-    GPIOA->BSRR = GPIO_BSRR_BS3;
-}
-
 static u8_t spi_poll(u8_t value)
 {
     SPI1_DR_8 = value;
@@ -195,10 +200,13 @@ void read_device_counter(u8_t address, void *destination, u32_t size)
 {
     u8_t *ptr = (u8_t *)destination;
     GPIOA->BSRR = GPIO_BSRR_BR4;
+    yield_thread(0, 0);
+
     spi_poll(address);
     while (size--)
         *ptr++ = spi_poll(0xFF);
 
+    yield_thread(0, 0);
     GPIOA->BSRR = GPIO_BSRR_BS4;
 }
 
@@ -206,10 +214,13 @@ void write_device_counter(u8_t address, const void *source, u32_t size)
 {
     const u8_t *ptr = (const u8_t *)source;
     GPIOA->BSRR = GPIO_BSRR_BR4;
+    yield_thread(0, 0);
+
     spi_poll(address | 0x80);
     while (size--)
         spi_poll(*ptr++);
 
+    yield_thread(0, 0);
     GPIOA->BSRR = GPIO_BSRR_BS4;
 }
 

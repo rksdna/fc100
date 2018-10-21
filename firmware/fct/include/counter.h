@@ -32,39 +32,50 @@ struct counter
     u8_t dac2;
     u8_t mode;
     u8_t ctrl;
+    u8_t id;
+    u8_t ack;
     u8_t tac_strt;
     u8_t tac_stop;
-    u8_t ack;
-    u8_t id;
     u32_t cnt;
     u32_t tmr;
 };
+
+#define COUNTER_DAC1 ((u8_t)0x00)
+#define COUNTER_DAC2 ((u8_t)0x01)
+#define COUNTER_MODE ((u8_t)0x02)
+#define COUNTER_CTRL ((u8_t)0x03)
+#define COUNTER_ID ((u8_t)0x04)
+#define COUNTER_ACK ((u8_t)0x05)
+#define COUNTER_TAC_START ((u8_t)0x06)
+#define COUNTER_TAC_STOP ((u8_t)0x07)
+#define COUNTER_CNT ((u8_t)0x08)
+#define COUNTER_TMR ((u8_t)0x0C)
 
 #define COUNTER_DAC_DAC ((u8_t)0xFF)
 
 #define COUNTER_MODE_STRT ((u8_t)0x03)
 #define COUNTER_MODE_STRT_0 ((u8_t)0x01)
 #define COUNTER_MODE_STRT_1 ((u8_t)0x02)
-#define COUNTER_MODE_STRT_CH1F ((u8_t)0x00)
-#define COUNTER_MODE_STRT_CH1R ((u8_t)0x01)
-#define COUNTER_MODE_STRT_CH2F ((u8_t)0x02)
-#define COUNTER_MODE_STRT_CH2R ((u8_t)0x03)
+#define COUNTER_MODE_STRT_CH1R ((u8_t)0x00)
+#define COUNTER_MODE_STRT_CH1F ((u8_t)0x01)
+#define COUNTER_MODE_STRT_CH2R ((u8_t)0x02)
+#define COUNTER_MODE_STRT_CH2F ((u8_t)0x03)
 
 #define COUNTER_MODE_STOP ((u8_t)0x0C)
 #define COUNTER_MODE_STOP_0 ((u8_t)0x04)
 #define COUNTER_MODE_STOP_1 ((u8_t)0x08)
-#define COUNTER_MODE_STOP_CH1F ((u8_t)0x00)
-#define COUNTER_MODE_STOP_CH1R ((u8_t)0x04)
-#define COUNTER_MODE_STOP_CH2F ((u8_t)0x08)
-#define COUNTER_MODE_STOP_CH2R ((u8_t)0x0C)
+#define COUNTER_MODE_STOP_CH1R ((u8_t)0x00)
+#define COUNTER_MODE_STOP_CH1F ((u8_t)0x04)
+#define COUNTER_MODE_STOP_CH2R ((u8_t)0x08)
+#define COUNTER_MODE_STOP_CH2F ((u8_t)0x0C)
 
 #define COUNTER_MODE_CNT ((u8_t)0x30)
 #define COUNTER_MODE_CNT_0 ((u8_t)0x10)
 #define COUNTER_MODE_CNT_1 ((u8_t)0x20)
-#define COUNTER_MODE_CNT_CH1F ((u8_t)0x00)
-#define COUNTER_MODE_CNT_CH1R ((u8_t)0x10)
-#define COUNTER_MODE_CNT_CH2F ((u8_t)0x20)
-#define COUNTER_MODE_CNT_CH2R ((u8_t)0x30)
+#define COUNTER_MODE_CNT_CH1R ((u8_t)0x00)
+#define COUNTER_MODE_CNT_CH1F ((u8_t)0x10)
+#define COUNTER_MODE_CNT_CH2R ((u8_t)0x20)
+#define COUNTER_MODE_CNT_CH2F ((u8_t)0x30)
 
 #define COUNTER_MODE_TMR ((u8_t)0x40)
 #define COUNTER_MODE_TMR_CLK ((u8_t)0x00)

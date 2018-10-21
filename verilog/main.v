@@ -132,16 +132,16 @@ assign ch2_hpf = ctrl_reg[5];
 assign test = ctrl_reg[6];
 
 spi spi(rst, clk, spi_clk, spi_mosi, spi_miso, spi_ss, mem_addr, mem_din, mem_dout, mem_wrt);
-counter counter(clr_reg || rst, clk, ref_clk, ch1_clk, ch2_clk, strt, strt_mode, strt_tac_out, strt_tac_fb, strt_dout, strt_ack, stop, stop_mode, stop_tac_out, stop_tac_fb, stop_dout, stop_ack, cnt_mode, cnt_dout, tmr_mode, tmr_dout, clb_zs, clb_fs);
+counter counter(clr_reg || rst, clk, ref_clk, !ch1_clk, !ch2_clk, strt, strt_mode, strt_tac_out, strt_tac_fb, strt_dout, strt_ack, stop, stop_mode, stop_tac_out, stop_tac_fb, stop_dout, stop_ack, cnt_mode, cnt_dout, tmr_mode, tmr_dout, clb_zs, clb_fs);
 
 always @(posedge clk or posedge rst)
 begin
     if (rst)
     begin
-        dac_1_reg <= 8'b0;
-        dac_2_reg <= 8'b0;
-        mode_reg <= 7'b0;
-        ctrl_reg <= 7'b0; 
+        dac_1_reg <= 8'h80;
+        dac_2_reg <= 8'h80;
+        mode_reg <= 7'h0;
+        ctrl_reg <= 7'h0; 
 	clr_reg <= 1'b0;
     end
     else

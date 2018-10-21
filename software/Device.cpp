@@ -78,7 +78,6 @@ bool Device::Response::deserialize(const QByteArray &data)
     QDataStream stream(data);
     stream.setByteOrder(QDataStream::LittleEndian);
 
-
     stream >> state;
     stream >> voltage;
 
@@ -90,6 +89,8 @@ bool Device::Response::deserialize(const QByteArray &data)
         stream >> startDivider;
         stream >> stopDivident;
         stream >> stopDivider;
+
+        //qDebug() << startDivident << startDivider << stopDivident << stopDivider << counter << timer;
     }
 
     return stream.status() == QDataStream::Ok && stream.atEnd();
@@ -97,10 +98,11 @@ bool Device::Response::deserialize(const QByteArray &data)
 
 double Device::Response::toTime(double clock) const
 {
+    const double events = counter;
     const double start = double(startDivident) / startDivider;
     const double stop = double(stopDivident) / stopDivider;
     const double time = double(timer) + start - stop;
-    return time / clock;
+    return time / clock / events;
 }
 
 double Device::Response::toFrequency(double clock) const
@@ -110,23 +112,6 @@ double Device::Response::toFrequency(double clock) const
     const double stop = double(stopDivident) / stopDivider;
     const double time = double(timer) + start - stop;
     return clock * events / time;
-}
-
-QDebug operator <<(QDebug debug, const Device::Response &value)
-{
-    QDebugStateSaver saver(debug);
-
-    debug.nospace();
-    debug << "(status: " << value.state;
-    debug << ", counter: " << value.counter;
-    debug << ", timer: " << value.timer;
-    debug << ", start: " << value.startDivident;
-    debug << "/" << value.startDivider;
-    debug << ", stop: " << value.stopDivident;
-    debug << "/" << value.stopDivider;
-    debug << ")";
-
-    return debug;
 }
 
 quint8 Device::checksum(const QByteArray &data)
@@ -241,23 +226,26 @@ void Device::onTimeout()
 
 void Device::read(const QByteArray &data)
 {
+
     bool pcs = false;
 
     Response response;
     if (response.deserialize(data))
     {
-        const double clock = 10E+6 - 2.0;
-
-        if (response.state == OffState)
-        {
-            stop();
-            return;
-        }
+        const double clock = 10E+6;
 
         if (response.state == ReadyState)
         {
-            qDebug() << response;
-            qDebug().noquote() << "F =" << QDateTime::currentDateTime().toString(Qt::ISODate) << QString::number(response.toFrequency(clock), 'f', 3);
+            static double prev = 0;
+            static double prev1 = 0;
+
+            double value = response.toFrequency(clock);
+            double error = value - 1000.655;
+
+            prev = 0.95 * prev + 0.05 * error;
+            prev1 = 0.95 * prev1 + 0.05 * value;
+
+            qDebug().noquote() << "F =" << QString::number(value, 'f', 3) << QString::number(error, 'f', 6);
             pcs = true;
         }
 
@@ -272,6 +260,15 @@ void Device::read(const QByteArray &data)
 
     Request request;
     request.command = pcs ? MeasureBurstCommand : PollCommand;
+    request.coupling1 = DcCoupling;
+
+    request.startEdge = Ch2RisingEdge;
+    request.stopEdge = Ch2RisingEdge;
+    request.counterEdge = Ch2RisingEdge;
+    request.coupling2 = DcCoupling;
+
+    request.timerClock = InternalClock;
+
     request.duration = 10;
 
     write(request.serialize());
