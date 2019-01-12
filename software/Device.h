@@ -3,6 +3,7 @@
 
 #include <QString>
 #include <QObject>
+#include "DeviceChannel.h"
 
 class QTimer;
 class QSerialPort;
@@ -12,12 +13,6 @@ class Device : public QObject
     Q_OBJECT
 
 public:
-    enum Coupling
-    {
-        DcCoupling,
-        AcCoupling
-    };
-
     enum Edge
     {
         Ch1RisingEdge,
@@ -38,6 +33,10 @@ public:
 
 public:
     explicit Device(QObject *parent = 0);
+    ~Device();
+
+    DeviceChannel *channel1();
+    DeviceChannel *channel2();
 
     void restart(const QString &name);
     void stop();
@@ -68,18 +67,16 @@ private:
 
         QByteArray serialize() const;
 
-        Command command;
-        double threshold1;
-        double threshold2;
-        Coupling coupling1;
-        Coupling coupling2;
+        qint8 threshold1;
+        qint8 threshold2;
+        quint8 coupling1;
+        quint8 coupling2;
+        quint16 command;
         quint16 duration;
-        Edge counterEdge;
-        Clock timerClock;
-        Edge startEdge;
-        Edge stopEdge;
-
-        qint8 tToV(double val) const;
+        quint8 counterEdge;
+        quint8 timerClock;
+        quint8 startEdge;
+        quint8 stopEdge;
     };
 
     struct Response
@@ -108,11 +105,18 @@ private:
     void write(const QByteArray &data);
 
 private:
+    static qreal dac8(int code);
     static quint8 checksum(const QByteArray &data);
 
 private:
+    DeviceChannel m_channel1;
+    DeviceChannel m_channel2;
+
     QSerialPort * const m_port;
     QTimer * const m_timer;
+
+
+
 };
 
 #endif // DEVICE_H

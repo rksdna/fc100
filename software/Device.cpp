@@ -19,22 +19,17 @@
  */
 
 Device::Request::Request()
-    : command(PollCommand),
-      threshold1(0.0),
-      threshold2(0.0),
-      coupling1(DcCoupling),
-      coupling2(DcCoupling),
+    : threshold1(0),
+      threshold2(0),
+      coupling1(0),
+      coupling2(0),
+      command(0),
       duration(100),
-      counterEdge(Ch1RisingEdge),
-      timerClock(InternalClock),
-      startEdge(Ch1RisingEdge),
-      stopEdge(Ch1RisingEdge)
+      counterEdge(0),
+      timerClock(0),
+      startEdge(0),
+      stopEdge(0)
 {
-}
-
-qint8 Device::Request::tToV(double val) const
-{
-    return val;
 }
 
 QByteArray Device::Request::serialize() const
@@ -43,12 +38,12 @@ QByteArray Device::Request::serialize() const
     QDataStream stream(&data, QIODevice::WriteOnly);
     stream.setByteOrder(QDataStream::LittleEndian);
 
-    stream << tToV(threshold1);
-    stream << tToV(threshold2);
-    stream << quint8(coupling1);
-    stream << quint8(coupling2);
+    stream << threshold1;
+    stream << threshold2;
+    stream << coupling1;
+    stream << coupling2;
 
-    if (command != PollCommand)
+   /* if (command != PollCommand)
     {
         stream << quint16(command == MeasureBurstCommand);
         stream << quint16(duration);
@@ -56,7 +51,7 @@ QByteArray Device::Request::serialize() const
         stream << quint8(timerClock);
         stream << quint8(startEdge);
         stream << quint8(stopEdge);
-    }
+    }*/
 
     return data;
 }
@@ -166,6 +161,11 @@ quint8 Device::checksum(const QByteArray &data)
     return crc;
 }
 
+qreal Device::dac8(int code)
+{
+    return 5.0 * code / 128;
+}
+
 quint16 Device::vendorIdentifier()
 {
     return 0x0483;
@@ -178,11 +178,27 @@ quint16 Device::productIdentifier()
 
 Device::Device(QObject *parent)
     : QObject(parent),
+      m_channel1(-128, 127, dac8(-128), dac8(127)),
+      m_channel2(-128, 127, dac8(-128), dac8(127)),
       m_port(new QSerialPort(this)),
       m_timer(new QTimer(this))
 {
     connect(m_port, &QSerialPort::readyRead, this, &Device::onReadyRead);
     connect(m_timer, &QTimer::timeout, this, &Device::onTimeout);
+}
+
+Device::~Device()
+{
+}
+
+DeviceChannel *Device::channel1()
+{
+    return &m_channel1;
+}
+
+DeviceChannel *Device::channel2()
+{
+    return &m_channel2;
 }
 
 void Device::restart(const QString &name)
@@ -260,12 +276,16 @@ void Device::read(const QByteArray &data)
 
     Request request;
     request.command = pcs ? MeasureBurstCommand : PollCommand;
-    request.coupling1 = DcCoupling;
+    request.threshold1 = qint8(m_channel1.threshold());
+    request.threshold2 = qint8(m_channel2.threshold());
+    request.coupling1 = quint8(m_channel1.coupling());
+    request.coupling2 = quint8(m_channel2.coupling());
+
+    qDebug() << request.threshold1;
 
     request.startEdge = Ch2RisingEdge;
     request.stopEdge = Ch2RisingEdge;
     request.counterEdge = Ch2RisingEdge;
-    request.coupling2 = DcCoupling;
 
     request.timerClock = InternalClock;
 
@@ -282,5 +302,3 @@ void Device::write(const QByteArray &data)
 
     m_port->write(":" + frame.toHex() + "\r\n");
 }
-
-

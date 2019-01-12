@@ -1,33 +1,18 @@
-#include <QComboBox>
-#include <QFormLayout>
-#include <QDoubleSpinBox>
+#include <QBoxLayout>
 #include "Device.h"
 #include "DeviceWidget.h"
+#include "DeviceChannelWidget.h"
 
 DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     : QFrame(parent),
       m_device(device)
 {
-    QComboBox * const ch1Box = new QComboBox;
-    ch1Box->addItem(tr("DC"), Device::DcCoupling);
-    ch1Box->addItem(tr("AC"), Device::AcCoupling);
+    DeviceChannelWidget * const channel1Widget = new DeviceChannelWidget("Ch1", tr("Channel 1"), device->channel1());
+    DeviceChannelWidget * const channel2Widget = new DeviceChannelWidget("Ch2", tr("Channel 2"), device->channel2());
 
-    QComboBox * const ch2Box = new QComboBox;
-    ch2Box->addItem(tr("DC"), Device::DcCoupling);
-    ch2Box->addItem(tr("AC"), Device::AcCoupling);
-
-    QDoubleSpinBox * const ch1ThresholdBox = new QDoubleSpinBox;
-    ch1ThresholdBox->setRange(-5.0, 5.0);
-
-    QDoubleSpinBox * const ch2ThresholdBox = new QDoubleSpinBox;
-    ch2ThresholdBox->setRange(-5.0, 5.0);
-
-    QFormLayout * const layout = new QFormLayout(this);
-
-    layout->addRow(tr("Ch1 threshold"), ch1ThresholdBox);
-    layout->addRow(tr("Ch1 mode"), ch1Box);
-    layout->addRow(tr("Ch2 threshold"), ch2ThresholdBox);
-    layout->addRow(tr("Ch1 mode"), ch2Box);
+    QBoxLayout * const layout = new QVBoxLayout(this);
+    layout->addWidget(channel1Widget);
+    layout->addWidget(channel2Widget);
 
     updateDevice();
 }

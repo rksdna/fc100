@@ -10,13 +10,17 @@ SOURCES += main.cpp \
     MainWindow.cpp \
     PortDialog.cpp \
     Device.cpp \
-    DeviceWidget.cpp
+    DeviceWidget.cpp \
+    DeviceChannelWidget.cpp \
+    DeviceChannel.cpp
 
 HEADERS += \
     MainWindow.h \
     PortDialog.h \
     Device.h \
-    DeviceWidget.h
+    DeviceWidget.h \
+    DeviceChannelWidget.h \
+    DeviceChannel.h
 
 RESOURCES += \
     fct.qrc
