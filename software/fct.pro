@@ -19,7 +19,8 @@ SOURCES += main.cpp \
     DeviceDisplayWidget.cpp \
     DeviceDisplay.cpp \
     DeviceSample.cpp \
-    ButtonGroup.cpp
+    ButtonGroup.cpp \
+    DeviceSampleFilter.cpp
 
 HEADERS += \
     MainWindow.h \
@@ -34,7 +35,8 @@ HEADERS += \
     DeviceDisplayWidget.h \
     DeviceDisplay.h \
     DeviceSample.h \
-    ButtonGroup.h
+    ButtonGroup.h \
+    DeviceSampleFilter.h
 
 RESOURCES += \
     fct.qrc

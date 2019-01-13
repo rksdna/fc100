@@ -1,16 +1,20 @@
 #include <QDebug>
+#include <QLabel>
 #include <QGridLayout>
 #include <QToolButton>
 #include "Device.h"
 #include "DeviceSample.h"
 #include "DeviceWidget.h"
 #include "DeviceModeWidget.h"
-#include "DeviceDisplayWidget.h"
 #include "DeviceChannelWidget.h"
+
+#include <QFontDatabase>
 
 DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     : QFrame(parent),
       m_device(device),
+      m_valueLabel(new QLabel),
+      m_timeLabel(new QLabel),
       m_triggerButton(new QToolButton),
       m_burstButton(new QToolButton)
 {
@@ -18,13 +22,25 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     connect(m_device, &Device::connectionStateChanged, this, &DeviceWidget::setEnabled);
     connect(m_device, &Device::samplingFinished, this, &DeviceWidget::processSample);
 
+    QFont font = QFontDatabase::systemFont(QFontDatabase::FixedFont);
+    const int fontSize = font.pointSize();
+
+    font.setPointSize(3 * fontSize);
+    m_valueLabel->setFont(font);
+    m_valueLabel->setAlignment(Qt::AlignVCenter | Qt::AlignRight);
+
+    font.setPointSize(2 * fontSize);
+    m_timeLabel->setFont(font);
+    m_timeLabel->setAlignment(Qt::AlignVCenter | Qt::AlignRight);
+
+
+
+
     m_triggerButton->setText(tr("run"));
     connect(m_triggerButton, &QToolButton::clicked, m_device, &Device::startSampling);
 
     m_burstButton->setText("Burst");
     m_burstButton->setCheckable(true);
-
-    DeviceDisplayWidget * const display = new DeviceDisplayWidget(device->display());
 
     DeviceChannelWidget * const channel1Widget = new DeviceChannelWidget(tr("Channel 1"));
     connect(channel1Widget, &DeviceChannelWidget::deviceChannelChanged, m_device, &Device::setChannel1);
@@ -35,7 +51,8 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     DeviceModeWidget * const modeWidget = new DeviceModeWidget("Mode", tr("Mode"), device->mode());
 
     QGridLayout * const layout = new QGridLayout(this);
-    layout->addWidget(display, 0, 0, 1, 3);
+    layout->addWidget(m_valueLabel, 0, 0, 1, 2);
+    layout->addWidget(m_timeLabel, 0, 2, 1, 3);
 
     layout->addWidget(channel1Widget, 1, 0);
     layout->addWidget(modeWidget, 1, 1);
@@ -47,10 +64,13 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
 
 void DeviceWidget::processSample(const DeviceSample &sample)
 {
-    if (sample.valid)
-        qDebug().noquote() << "F =" << sample.counter / sample.timer;
-    else
-        qDebug() << "---";
+    qreal value = 0.0;
+    bool isValueValid = sample.convert(DeviceSample::FrequencyFormat, value);
+    m_valueLabel->setText(isValueValid ? tr("%1 Hz").arg(value, 12, 'f', 3) : tr("--- Hz"));
+
+    qreal time = 0.0;
+    bool timeValid = sample.convert(DeviceSample::TimeFormat, time);
+    m_timeLabel->setText(timeValid ? tr("%1 S").arg(time, 12, 'f', 3) : tr("--- S"));
 
     if (m_burstButton->isChecked())
         m_device->startSampling();

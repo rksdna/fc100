@@ -34,7 +34,7 @@ int DeviceChannel::decimals() const
 
 qreal DeviceChannel::voltage() const
 {
-    const qreal voltage = 10.0 * (threshold - 127) / 256;
+    const qreal voltage = 10.0 * (threshold - 128) / 256;
     switch (probe)
     {
     case x1Probe:

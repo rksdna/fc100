@@ -248,7 +248,7 @@ void Device::read(const QByteArray &data)
     {
         if (response.state == ShpResponse::ReadyState)
         {
-            const qreal clock = 10E+6;
+            const qreal clock = 10E+6 - 1;
             const qreal counter = response.counter;
             const qreal start = qreal(response.startDivident) / response.startDivider;
             const qreal stop = qreal(response.stopDivident) / response.stopDivider;

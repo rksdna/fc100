@@ -3,6 +3,7 @@
 
 #include <QFrame>
 
+class QLabel;
 class QToolButton;
 class Device;
 class DeviceSample;
@@ -19,6 +20,8 @@ private:
 
 private:
     Device * const m_device;
+    QLabel * const m_valueLabel;
+    QLabel * const m_timeLabel;
     QToolButton * const m_triggerButton;
     QToolButton * const m_burstButton;
 };
