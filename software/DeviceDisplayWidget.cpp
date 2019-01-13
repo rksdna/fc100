@@ -11,8 +11,6 @@ DeviceDisplayWidget::DeviceDisplayWidget(DeviceDisplay *display, QWidget *parent
       m_secondLabel(new QLabel)
 
 {
-    //connect(m_display, &DeviceDisplay::displayChanged, this, &DeviceDisplayWidget::updateDeviceDisplayWidget);
-
     QFont font = QFontDatabase::systemFont(QFontDatabase::FixedFont);
     const int s = font.pointSize();
 
