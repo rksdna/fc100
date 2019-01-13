@@ -1,6 +1,6 @@
 QT += core gui widgets serialport
 
-TARGET = fct
+TARGET = fc100
 TEMPLATE = app
 
 include(deploy/deploy.pri)
@@ -39,4 +39,4 @@ HEADERS += \
     DeviceSampleFilter.h
 
 RESOURCES += \
-    fct.qrc
+    fc100.qrc

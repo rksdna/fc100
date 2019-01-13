@@ -16,14 +16,14 @@ test -d "$DEB_SOURCE_DIR" -a -d "$DEB_DEPLOY_DIR"
 DEB_BUILD_DIR=$(mktemp -d -p /tmp)
 DEB_INSTALL_DIR=$(mktemp -d -p /tmp)
 
-DEB_PRODUCT="fct"
+DEB_PRODUCT="fc100"
 DEB_VERSION="1.0.0.$(cd "$DEB_SOURCE_DIR" && git rev-list --count master)"
 
 echo $DEB_PRODUCT $DEB_VERSION
 
 DEB_FILE="$DEB_DEPLOY_DIR/$DEB_PRODUCT""_""$DEB_VERSION""_""$DEB_ARCHITECTURE.deb"
 DEB_MAINTANER="rksdna <rksdna@mail.ru>"
-DEB_WEBSITE="https://bitbucket.org/rksdna/fct"
+DEB_WEBSITE="https://github.com/rksdna/fc100"
 
 # Build and install
 

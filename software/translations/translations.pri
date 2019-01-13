@@ -1,5 +1,5 @@
 TRANSLATIONS += \
-    $$PWD/fct_ru.ts
+    $$PWD/fc100_ru.ts
 
 lrelease.input = TRANSLATIONS
 lrelease.output = ${QMAKE_FILE_BASE}.qm

@@ -17,7 +17,7 @@ test -d "$MSI_SOURCE_DIR" -a -d "$MSI_DEPLOY_DIR"
 MSI_BUILD_DIR=$(mktemp -d -p /tmp)
 MSI_INSTALL_DIR=$(mktemp -d -p /tmp)
 
-MSI_PRODUCT="fct"
+MSI_PRODUCT="fc100"
 MSI_VERSION="1.0.0.$(cd "$MSI_SOURCE_DIR" && git rev-list --count master)"
 
 MSI_FILE="$MSI_DEPLOY_DIR/$MSI_PRODUCT""_""$MSI_VERSION""_""$MSI_ARCHITECTURE.msi"

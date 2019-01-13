@@ -15,14 +15,14 @@ int main(int argc, char *argv[])
     application.setApplicationDisplayName(QApplication::tr("%1 %2").arg(DEPLOY_PRODUCT, DEPLOY_VERSION));
 
     QIcon icon;
-    icon.addFile(":/arts/fct_16");
-    icon.addFile(":/arts/fct_24");
-    icon.addFile(":/arts/fct_32");
-    icon.addFile(":/arts/fct_48");
-    icon.addFile(":/arts/fct_64");
-    icon.addFile(":/arts/fct_72");
-    icon.addFile(":/arts/fct_96");
-    icon.addFile(":/arts/fct_128");
+    icon.addFile(":/arts/fc100_16");
+    icon.addFile(":/arts/fc100_24");
+    icon.addFile(":/arts/fc100_32");
+    icon.addFile(":/arts/fc100_48");
+    icon.addFile(":/arts/fc100_64");
+    icon.addFile(":/arts/fc100_72");
+    icon.addFile(":/arts/fc100_96");
+    icon.addFile(":/arts/fc100_128");
 
     application.setWindowIcon(icon);
 
@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
     application.installTranslator(&qtBaseTranslator);
 
     QTranslator appTranslator;
-    appTranslator.load(QStandardPaths::locate(QStandardPaths::AppDataLocation, QString("fct_%1.qm").arg(locale)));
+    appTranslator.load(QStandardPaths::locate(QStandardPaths::AppDataLocation, QString("fc100_%1.qm").arg(locale)));
     application.installTranslator(&appTranslator);
 
     MainWindow widget;

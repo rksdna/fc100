@@ -23,9 +23,9 @@
 
 # Project files
 
-TARGET ?= fct
+TARGET ?= fc100
 SCRIPT ?= kernel/target/stm32f042x4.ld
-MODULES ?= kernel cdc fct
+MODULES ?= kernel cdc fc100
 PORT ?= /dev/ttyUSB0
 
 INCDIRS = $(addsuffix /include, $(MODULES))
