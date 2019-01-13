@@ -3,7 +3,9 @@
 
 #include <QFrame>
 
+class QToolButton;
 class Device;
+class DeviceSample;
 
 class DeviceWidget : public QFrame
 {
@@ -13,10 +15,12 @@ public:
     explicit DeviceWidget(Device *device, QWidget *parent = 0);
 
 private:
-    void updateDevice();
+    void processSample(const DeviceSample &sample);
 
 private:
     Device * const m_device;
+    QToolButton * const m_triggerButton;
+    QToolButton * const m_burstButton;
 };
 
 #endif // DEVICEWIDGET_H

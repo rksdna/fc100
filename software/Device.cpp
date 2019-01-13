@@ -18,12 +18,12 @@
  * tD   A/B   B/A  A/B     0        TIMER, S
  */
 
-Device::Request::Request()
+Device::ShpRequest::ShpRequest()
     : threshold1(0),
       threshold2(0),
       coupling1(0),
       coupling2(0),
-      command(0),
+      burst(0),
       duration(100),
       counterEdge(0),
       timerClock(0),
@@ -32,7 +32,7 @@ Device::Request::Request()
 {
 }
 
-QByteArray Device::Request::serialize() const
+QByteArray Device::ShpRequest::serialize(bool request) const
 {
     QByteArray data;
     QDataStream stream(&data, QIODevice::WriteOnly);
@@ -43,20 +43,20 @@ QByteArray Device::Request::serialize() const
     stream << coupling1;
     stream << coupling2;
 
-   /* if (command != PollCommand)
+    if (request)
     {
-        stream << quint16(command == MeasureBurstCommand);
-        stream << quint16(duration);
-        stream << quint8(counterEdge);
-        stream << quint8(timerClock);
-        stream << quint8(startEdge);
-        stream << quint8(stopEdge);
-    }*/
+        stream << burst;
+        stream << duration;
+        stream << counterEdge;
+        stream << timerClock;
+        stream << startEdge;
+        stream << stopEdge;
+    }
 
     return data;
 }
 
-Device::Response::Response()
+Device::ShpResponse::ShpResponse()
     : state(0),
       voltage(0),
       counter(0),
@@ -68,7 +68,7 @@ Device::Response::Response()
 {
 }
 
-bool Device::Response::deserialize(const QByteArray &data)
+bool Device::ShpResponse::deserialize(const QByteArray &data)
 {
     QDataStream stream(data);
     stream.setByteOrder(QDataStream::LittleEndian);
@@ -84,29 +84,87 @@ bool Device::Response::deserialize(const QByteArray &data)
         stream >> startDivider;
         stream >> stopDivident;
         stream >> stopDivider;
-
-        //qDebug() << startDivident << startDivider << stopDivident << stopDivider << counter << timer;
     }
 
     return stream.status() == QDataStream::Ok && stream.atEnd();
 }
 
-double Device::Response::toTime(double clock) const
+quint16 Device::vendorIdentifier()
 {
-    const double events = counter;
-    const double start = double(startDivident) / startDivider;
-    const double stop = double(stopDivident) / stopDivider;
-    const double time = double(timer) + start - stop;
-    return time / clock / events;
+    return 0x0483;
 }
 
-double Device::Response::toFrequency(double clock) const
+quint16 Device::productIdentifier()
 {
-    const double events = counter;
-    const double start = double(startDivident) / startDivider;
-    const double stop = double(stopDivident) / stopDivider;
-    const double time = double(timer) + start - stop;
-    return clock * events / time;
+    return 0x5740;
+}
+
+Device::Device(QObject *parent)
+    : QObject(parent),
+      m_port(new QSerialPort(this)),
+      m_timer(new QTimer(this)),
+      m_state(IdleState)
+{
+    connect(m_port, &QSerialPort::readyRead, this, &Device::onReadyRead);
+    connect(m_timer, &QTimer::timeout, this, &Device::onTimeout);
+}
+
+Device::~Device()
+{
+    disconnectFromDevice();
+}
+
+bool Device::isDeviceConnected() const
+{
+    return m_port->isOpen();
+}
+
+void Device::connectToDevice(const QString &name)
+{
+    disconnectFromDevice();
+
+    m_port->setPortName(name);
+    if (m_port->open(QSerialPort::ReadWrite))
+    {
+        read(QByteArray());
+        emit connectionStateChanged(true);
+    }
+}
+
+void Device::disconnectFromDevice()
+{
+    m_timer->stop();
+    if (m_port->isOpen())
+    {
+        m_port->close();
+        emit connectionStateChanged(false);
+    }
+}
+
+void Device::startSampling()
+{
+    finish(DeviceSample());
+    m_state = TriggerState;
+}
+
+void Device::setChannel1(const DeviceChannel &channel)
+{
+    m_channel1 = channel;
+}
+
+void Device::setChannel2(const DeviceChannel &channel)
+{
+    m_channel2 = channel;
+}
+
+DeviceDisplay *Device::display()
+{
+    return &m_display;
+}
+
+DeviceMode *Device::mode()
+{
+    return &m_mode;
 }
 
 quint8 Device::checksum(const QByteArray &data)
@@ -161,63 +219,6 @@ quint8 Device::checksum(const QByteArray &data)
     return crc;
 }
 
-qreal Device::dac8(int code)
-{
-    return 5.0 * code / 128;
-}
-
-quint16 Device::vendorIdentifier()
-{
-    return 0x0483;
-}
-
-quint16 Device::productIdentifier()
-{
-    return 0x5740;
-}
-
-Device::Device(QObject *parent)
-    : QObject(parent),
-      m_channel1(-128, 127, dac8(-128), dac8(127)),
-      m_channel2(-128, 127, dac8(-128), dac8(127)),
-      m_port(new QSerialPort(this)),
-      m_timer(new QTimer(this))
-{
-    connect(m_port, &QSerialPort::readyRead, this, &Device::onReadyRead);
-    connect(m_timer, &QTimer::timeout, this, &Device::onTimeout);
-}
-
-Device::~Device()
-{
-}
-
-DeviceChannel *Device::channel1()
-{
-    return &m_channel1;
-}
-
-DeviceChannel *Device::channel2()
-{
-    return &m_channel2;
-}
-
-void Device::restart(const QString &name)
-{
-    stop();
-
-    m_port->setPortName(name);
-    if (m_port->open(QSerialPort::ReadWrite))
-        read(QByteArray());
-}
-
-void Device::stop()
-{
-    qDebug() << "stop";
-    m_timer->stop();
-    if (m_port->isOpen())
-        m_port->close();
-}
-
 void Device::onReadyRead()
 {
     while (m_port->canReadLine())
@@ -237,61 +238,46 @@ void Device::onReadyRead()
 
 void Device::onTimeout()
 {
-    stop();
+    disconnectFromDevice();
 }
 
 void Device::read(const QByteArray &data)
 {
-
-    bool pcs = false;
-
-    Response response;
+    ShpResponse response;
     if (response.deserialize(data))
     {
-        const double clock = 10E+6;
-
-        if (response.state == ReadyState)
+        if (response.state == ShpResponse::ReadyState)
         {
-            static double prev = 0;
-            static double prev1 = 0;
+            const qreal clock = 10E+6;
+            const qreal counter = response.counter;
+            const qreal start = qreal(response.startDivident) / response.startDivider;
+            const qreal stop = qreal(response.stopDivident) / response.stopDivider;
+            const qreal timer = qreal(response.timer) + start - stop;
 
-            double value = response.toFrequency(clock);
-            double error = value - 1000.655;
-
-            prev = 0.95 * prev + 0.05 * error;
-            prev1 = 0.95 * prev1 + 0.05 * value;
-
-            qDebug().noquote() << "F =" << QString::number(value, 'f', 3) << QString::number(error, 'f', 6);
-            pcs = true;
+            finish(DeviceSample(counter, timer / clock));
         }
-
-        else if (response.state == IdleState)
+        else if (response.state == ShpResponse::IdleState)
         {
-            qDebug().noquote() << "---";
-            pcs = true;
+            finish(DeviceSample());
         }
-
-        m_timer->start(100);
     }
 
-    Request request;
-    request.command = pcs ? MeasureBurstCommand : PollCommand;
-    request.threshold1 = qint8(m_channel1.threshold());
-    request.threshold2 = qint8(m_channel2.threshold());
-    request.coupling1 = quint8(m_channel1.coupling());
-    request.coupling2 = quint8(m_channel2.coupling());
+    ShpRequest request;
+    request.threshold1 = qint8(m_channel1.threshold);
+    request.threshold2 = qint8(m_channel2.threshold);
+    request.coupling1 = quint8(m_channel1.coupling);
+    request.coupling2 = quint8(m_channel2.coupling);
 
-    qDebug() << request.threshold1;
+    request.burst = quint16(m_mode.duration() != 0);
+    request.duration = quint16(m_mode.duration());
+    request.startEdge = quint8(m_mode.startEdge());
+    request.stopEdge = quint8(m_mode.stopEdge());
+    request.counterEdge = quint8(m_mode.counterEdge());
+    request.timerClock = quint8(m_mode.timerClock());
 
-    request.startEdge = Ch2RisingEdge;
-    request.stopEdge = Ch2RisingEdge;
-    request.counterEdge = Ch2RisingEdge;
+    write(request.serialize(reset()));
 
-    request.timerClock = InternalClock;
-
-    request.duration = 10;
-
-    write(request.serialize());
+    m_timer->start(250);
 }
 
 void Device::write(const QByteArray &data)
@@ -302,3 +288,24 @@ void Device::write(const QByteArray &data)
 
     m_port->write(":" + frame.toHex() + "\r\n");
 }
+
+bool Device::reset()
+{
+    if (m_state == TriggerState)
+    {
+        m_state = WaitState;
+        return true;
+    }
+
+    return false;
+}
+
+void Device::finish(const DeviceSample &sample)
+{
+    if (m_state == WaitState)
+    {
+        m_state = IdleState;
+        emit samplingFinished(sample);
+    }
+}
+

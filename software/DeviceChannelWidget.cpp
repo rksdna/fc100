@@ -1,76 +1,55 @@
 #include <QDial>
-#include <QDebug>
-#include <QtMath>
-#include <QSettings>
 #include <QGridLayout>
-#include <QToolButton>
-#include <QButtonGroup>
+#include "ButtonGroup.h"
 #include "DeviceChannel.h"
 #include "DeviceChannelWidget.h"
 
-DeviceChannelWidget::DeviceChannelWidget(const QString &tag, const QString &title, DeviceChannel *channel, QWidget *parent)
+DeviceChannelWidget::DeviceChannelWidget(const QString &title, QWidget *parent)
     : QGroupBox(parent),
-      m_tag(tag),
       m_title(title),
-      m_channel(channel),
-      m_dial(new QDial),
-      m_couplingGroup(new QButtonGroup(this)),
-      m_attenuationGroup(new QButtonGroup(this))
+      m_couplingButtons(new ButtonGroup),
+      m_probeButtons(new ButtonGroup),
+      m_thresholdDial(new QDial)
 {
-    m_dial->setRange(m_channel->minThreshold(), m_channel->maxThreshold());
-    connect(m_dial, &QDial::valueChanged, this, &DeviceChannelWidget::updateDeviceChannel);
-
-    m_couplingGroup->setExclusive(true);
-    connect(m_couplingGroup, static_cast<void (QButtonGroup::*)(int, bool)>(&QButtonGroup::buttonToggled), this, &DeviceChannelWidget::updateDeviceChannel);
-
-    m_attenuationGroup->setExclusive(true);
-    connect(m_attenuationGroup, static_cast<void (QButtonGroup::*)(int, bool)>(&QButtonGroup::buttonToggled), this, &DeviceChannelWidget::updateDeviceChannel);
+    m_thresholdDial->setRange(DeviceChannel::min(), DeviceChannel::max());
+    connect(m_thresholdDial, &QDial::valueChanged, this, &DeviceChannelWidget::updateChannel);
 
     QGridLayout * const layout = new QGridLayout(this);
-    layout->addWidget(createButton(m_attenuationGroup, tr("x1"), 0), 0, 0);
-    layout->addWidget(createButton(m_attenuationGroup, tr("x10"), 1), 1, 0);
-    layout->addWidget(createButton(m_attenuationGroup, tr("x100"), 2), 2, 0);
 
-    layout->addWidget(createButton(m_couplingGroup, tr("DC"), DeviceChannel::DcCoupling), 2, 1);
-    layout->addWidget(createButton(m_couplingGroup, tr("AC"), DeviceChannel::AcCoupling), 2, 2);
+    layout->addWidget(m_thresholdDial, 0, 1, 2, 2);
 
-    layout->addWidget(m_dial, 0, 1, 2, 2);
+    layout->addWidget(m_couplingButtons->addDataButton(tr("DC"), DeviceChannel::DcCoupling), 2, 1);
+    layout->addWidget(m_couplingButtons->addDataButton(tr("AC"), DeviceChannel::AcCoupling), 2, 2);
+    connect(m_couplingButtons, &ButtonGroup::currentDataChanged, this, &DeviceChannelWidget::updateChannel);
 
-    QSettings settings;
-    settings.beginGroup(m_tag);
-    m_attenuationGroup->button(settings.value("AttenuationGroup").toInt())->setChecked(true);
-    m_couplingGroup->button(settings.value("CouplingGroup").toInt())->setChecked(true);
-    m_dial->setValue(settings.value("Dial").toInt());
+    layout->addWidget(m_probeButtons->addDataButton("1:1", DeviceChannel::x1Probe), 0, 0);
+    layout->addWidget(m_probeButtons->addDataButton("1:10", DeviceChannel::x10Probe), 1, 0);
+    layout->addWidget(m_probeButtons->addDataButton("1:100", DeviceChannel::x100Probe), 2, 0);
+    connect(m_probeButtons, &ButtonGroup::currentDataChanged, this, &DeviceChannelWidget::updateChannel);
 
-    updateDeviceChannel();
+    updateChannel();
 }
 
-DeviceChannelWidget::~DeviceChannelWidget()
+DeviceChannel DeviceChannelWidget::deviceChannel() const
 {
-    QSettings settings;
-    settings.beginGroup(m_tag);
-    settings.setValue("AttenuationGroup", m_attenuationGroup->checkedId());
-    settings.setValue("CouplingGroup", m_couplingGroup->checkedId());
-    settings.setValue("Dial", m_dial->value());
+    return DeviceChannel(DeviceChannel::Coupling(m_couplingButtons->currentData().toInt()),
+                         DeviceChannel::Probe(m_probeButtons->currentData().toInt()),
+                         m_thresholdDial->value());
 }
 
-QToolButton *DeviceChannelWidget::createButton(QButtonGroup *group, const QString &text, int id)
+void DeviceChannelWidget::setDeviceChannel(const DeviceChannel &channel)
 {
-    QToolButton * const button = new QToolButton;
-    button->setText(text);
-    button->setCheckable(true);
-    button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::MinimumExpanding);
-
-    group->addButton(button, id);
-    return button;
+    m_couplingButtons->setCurrentData(channel.coupling);
+    m_probeButtons->setCurrentData(channel.probe);
+    m_thresholdDial->setValue(channel.threshold);
+    updateChannel();
 }
 
-void DeviceChannelWidget::updateDeviceChannel()
+void DeviceChannelWidget::updateChannel()
 {
-    m_channel->setCoupling(DeviceChannel::Coupling(m_couplingGroup->checkedId()));
-    m_channel->setThreshold(m_dial->value());
+    const DeviceChannel value = deviceChannel();
+    setTitle(tr("%1: %2V").arg(m_title).arg(value.voltage(), 0, 'f', value.decimals()));
 
-    const int decimals = m_attenuationGroup->checkedId();
-    setTitle(tr("%1: %2V").arg(m_title).arg(m_channel->thresholdVoltage() * qPow(10, decimals), 0, 'f', 2 - decimals));
+    emit deviceChannelChanged(value);
 }
 

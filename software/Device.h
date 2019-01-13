@@ -1,8 +1,10 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 
-#include <QString>
 #include <QObject>
+#include "DeviceMode.h"
+#include "DeviceSample.h"
+#include "DeviceDisplay.h"
 #include "DeviceChannel.h"
 
 class QTimer;
@@ -13,21 +15,6 @@ class Device : public QObject
     Q_OBJECT
 
 public:
-    enum Edge
-    {
-        Ch1RisingEdge,
-        Ch1FallingEdge,
-        Ch2RisingEdge,
-        Ch2FallingEdge
-    };
-
-    enum Clock
-    {
-        InternalClock,
-        ExternalClock
-    };
-
-public:
     static quint16 vendorIdentifier();
     static quint16 productIdentifier();
 
@@ -35,43 +22,40 @@ public:
     explicit Device(QObject *parent = 0);
     ~Device();
 
-    DeviceChannel *channel1();
-    DeviceChannel *channel2();
+    bool isDeviceConnected() const;
+    void connectToDevice(const QString &name);
+    void disconnectFromDevice();
 
-    void restart(const QString &name);
-    void stop();
+    void startSampling();
+    void setChannel1(const DeviceChannel &channel);
+    void setChannel2(const DeviceChannel &channel);
+
+    DeviceDisplay *display();
+    DeviceMode *mode();
+
+signals:
+    void connectionStateChanged(bool connected);
+    void samplingFinished(const DeviceSample &sample);
 
 private:
-    enum Command
-    {
-        PollCommand,
-        MeasureCommand,
-        MeasureBurstCommand
-    };
-
     enum State
     {
         IdleState,
-        ReadyState,
         TriggerState,
-        Busy1State,
-        Busy2State,
-        Busy3State,
-        Calibration1State,
-        Calibration2State
+        WaitState
     };
 
-    struct Request
+    struct ShpRequest
     {
-        Request();
+        ShpRequest();
 
-        QByteArray serialize() const;
+        QByteArray serialize(bool request = false) const;
 
-        qint8 threshold1;
-        qint8 threshold2;
+        quint8 threshold1;
+        quint8 threshold2;
         quint8 coupling1;
         quint8 coupling2;
-        quint16 command;
+        quint16 burst;
         quint16 duration;
         quint8 counterEdge;
         quint8 timerClock;
@@ -79,9 +63,21 @@ private:
         quint8 stopEdge;
     };
 
-    struct Response
+    struct ShpResponse
     {
-        Response();
+        enum
+        {
+            IdleState,
+            ReadyState,
+            TriggerState,
+            Busy1State,
+            Busy2State,
+            Busy3State,
+            Calibration1State,
+            Calibration2State
+        };
+
+        ShpResponse();
 
         bool deserialize(const QByteArray &data);
 
@@ -93,30 +89,28 @@ private:
         quint8 startDivider;
         quint8 stopDivident;
         quint8 stopDivider;
-
-        double toTime(double clock) const;
-        double toFrequency(double clock) const;
     };
+
+private:
+    static quint8 checksum(const QByteArray &data);
 
 private:
     void onReadyRead();
     void onTimeout();
     void read(const QByteArray &data);
     void write(const QByteArray &data);
+    bool reset();
+    void finish(const DeviceSample &sample);
 
 private:
-    static qreal dac8(int code);
-    static quint8 checksum(const QByteArray &data);
-
-private:
+    QSerialPort * const m_port;
+    QTimer * const m_timer;
+    State m_state;
     DeviceChannel m_channel1;
     DeviceChannel m_channel2;
 
-    QSerialPort * const m_port;
-    QTimer * const m_timer;
-
-
-
+    DeviceDisplay m_display;
+    DeviceMode m_mode;
 };
 
 #endif // DEVICE_H

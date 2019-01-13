@@ -2,32 +2,32 @@
 #define DEVICECHANNELWIDGET_H
 
 #include <QGroupBox>
+#include "DeviceChannel.h"
 
 class QDial;
-class QToolButton;
-class QButtonGroup;
-
-class DeviceChannel;
+class ButtonGroup;
 
 class DeviceChannelWidget : public QGroupBox
 {
     Q_OBJECT
 
 public:
-    DeviceChannelWidget(const QString &tag, const QString &title, DeviceChannel *channel, QWidget *parent = 0);
-    ~DeviceChannelWidget();
+    explicit DeviceChannelWidget(const QString &title, QWidget *parent = 0);
+
+    DeviceChannel deviceChannel() const;
+    void setDeviceChannel(const DeviceChannel &channel);
+
+Q_SIGNALS:
+    void deviceChannelChanged(const DeviceChannel &channel);
 
 private:
-    QToolButton *createButton(QButtonGroup *group, const QString &text, int id);
-    void updateDeviceChannel();
+    void updateChannel();
 
 private:
-    const QString m_tag;
     const QString m_title;
-    DeviceChannel * const m_channel;
-    QDial * const m_dial;
-    QButtonGroup * const m_couplingGroup;
-    QButtonGroup * const m_attenuationGroup;
+    ButtonGroup * const m_couplingButtons;
+    ButtonGroup * const m_probeButtons;
+    QDial * const m_thresholdDial;
 };
 
 #endif // DEVICECHANNELWIDGET_H

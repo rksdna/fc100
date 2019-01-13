@@ -40,7 +40,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 void MainWindow::restartDevice()
 {
-    m_device->restart(PortDialog::portName());
+    m_device->connectToDevice(PortDialog::portName());
 }
 
 void MainWindow::openPortDialog()

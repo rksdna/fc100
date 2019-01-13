@@ -1,37 +1,35 @@
 #ifndef DEVICECHANNEL_H
 #define DEVICECHANNEL_H
 
-#include <QString>
+#include <QtGlobal>
 
-class DeviceChannel
+struct DeviceChannel
 {
-public:
+    enum Probe
+    {
+        x1Probe,
+        x10Probe,
+        x100Probe
+    };
+
     enum Coupling
     {
         DcCoupling,
         AcCoupling
     };
 
-public:
-    DeviceChannel(int min, int max, qreal minVoltage, qreal maxVoltage);
+    static int min();
+    static int max();
 
-    Coupling coupling() const;
-    void setCoupling(Coupling value);
+    DeviceChannel(Coupling coupling = DcCoupling, Probe probe = x1Probe, int threshold = 0);
 
-    int minThreshold() const;
-    int maxThreshold() const;
-    int threshold() const;
-    void setThreshold(int value);
+    int decimals() const;
+    qreal voltage() const;
 
-    qreal thresholdVoltage() const;
+    Coupling coupling;
+    Probe probe;
+    int threshold;
 
-private:
-    const int m_min;
-    const int m_max;
-    const qreal m_minVoltage;
-    const qreal m_maxVoltage;
-    Coupling m_coupling;
-    int m_threshold;
 };
 
 #endif // DEVICECHANNEL_H

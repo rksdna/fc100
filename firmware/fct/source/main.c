@@ -53,8 +53,8 @@ struct shp_short_request
 
 struct shp_long_request
 {
-    s8_t threshold1;
-    s8_t threshold2;
+    u8_t threshold1;
+    u8_t threshold2;
     u8_t coupling1;
     u8_t coupling2;
 
@@ -91,8 +91,8 @@ struct counter_params
     u32_t duration;
     u32_t burst;
 
-    s8_t dac1;
-    s8_t dac2;
+    u8_t dac1;
+    u8_t dac2;
     u8_t coupling1;
     u8_t coupling2;
     u8_t start_edge;
@@ -115,8 +115,8 @@ static struct counter_params params;
 
 static u32_t update(u32_t state, u8_t mode, u8_t ctrl)
 {
-    regs.dac1 = params.dac1 ^ 0x80;
-    regs.dac2 = params.dac2 ^ 0x80;
+    regs.dac1 = 255 - params.dac1;
+    regs.dac2 = 255 - params.dac2;
 
     regs.ctrl = ctrl |
             ((params.coupling1 << 4) & COUNTER_CTRL_HPF_CH1) |
