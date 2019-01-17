@@ -10,7 +10,8 @@ PopupButton::PopupButton(QWidget *parent)
     //setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
     setMenu(new QMenu(this));
     setPopupMode(InstantPopup);
-    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+    setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
+    setMinimumWidth(80);
 }
 
 void PopupButton::addData(const QString &text, const QVariant &data)
