@@ -266,9 +266,9 @@ void HardwareDevice::read(const QByteArray &data)
 
     request.burst = quint16(m_mode.duration != 0);
     request.duration = quint16(m_mode.duration);
-    request.startEvent = quint8(m_mode.startEvent);
-    request.stopEvent = quint8(m_mode.stopEvent);
-    request.counterEvent = quint8(m_mode.counterEvent);
+    request.startEvent = quint8(m_mode.startEdge);
+    request.stopEvent = quint8(m_mode.stopEdge);
+    request.counterEvent = quint8(m_mode.counterEgde);
     request.timerClock = quint8(m_mode.timerClock);
 
     write(request.serialize(reset()));

@@ -21,7 +21,7 @@ struct DeviceChannel
     static int min();
     static int max();
 
-    DeviceChannel(Coupling coupling = DcCoupling, Probe probe = x1Probe, int threshold = 0);
+    DeviceChannel(Coupling coupling = DcCoupling, Probe probe = x1Probe, int threshold = 128);
 
     int decimals() const;
     qreal voltage() const;

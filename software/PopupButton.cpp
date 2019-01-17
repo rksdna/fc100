@@ -13,31 +13,31 @@ PopupButton::PopupButton(QWidget *parent)
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 }
 
-void PopupButton::appendItem(const QString &text, const QVariant &data)
+void PopupButton::addData(const QString &text, const QVariant &data)
 {
     QAction * const action = menu()->addAction(text);
     action->setData(data);
     connect(action, &QAction::triggered, this, &PopupButton::onTriggered);
 }
 
-QVariant PopupButton::data() const
+QVariant PopupButton::currentData() const
 {
     return m_data;
 }
 
-void PopupButton::setData(const QVariant &value)
+void PopupButton::setCurrentData(const QVariant &data)
 {
     QAction *selected = menu()->actions().first();
     foreach (QAction *action, menu()->actions())
-        if (action->data() == value)
+        if (action->data() == data)
         {
             selected = action;
             break;
         }
 
     setText(selected->text());
-    m_data = value;
-    emit dataChanged();
+    m_data = data;
+    emit currentDataChanged();
 }
 
 void PopupButton::paintEvent(QPaintEvent *event)
@@ -53,5 +53,5 @@ void PopupButton::paintEvent(QPaintEvent *event)
 
 void PopupButton::onTriggered()
 {
-    setData(static_cast<QAction *>(sender())->data());
+    setCurrentData(static_cast<QAction *>(sender())->data());
 }

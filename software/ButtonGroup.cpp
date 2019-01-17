@@ -33,6 +33,12 @@ void ButtonGroup::setCurrentData(const QVariant &data)
             button->setChecked(true);
 }
 
+void ButtonGroup::setEnabled(bool enabled)
+{
+    foreach (QAbstractButton *button, buttons())
+        button->setEnabled(enabled);
+}
+
 void ButtonGroup::updateCurrentData(QAbstractButton *button, bool checked)
 {
     if (checked)

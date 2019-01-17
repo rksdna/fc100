@@ -3,7 +3,7 @@
 
 struct DeviceMode
 {
-    enum Event
+    enum Edge
     {
         Ch1RisingEvent,
         Ch1FallingEvent,
@@ -17,11 +17,11 @@ struct DeviceMode
         ExternalClock
     };
 
-    DeviceMode(Event startEvent = Ch1RisingEvent, Event stopEvent = Ch1RisingEvent, Event counterEvent = Ch1RisingEvent, Clock timerClock = InternalClock, int duration = 100);
+    DeviceMode(Edge startEdge = Ch1RisingEvent, Edge stopEdge = Ch1RisingEvent, Edge counterEgde = Ch1RisingEvent, Clock timerClock = InternalClock, int duration = 100);
 
-    Event startEvent;
-    Event stopEvent;
-    Event counterEvent;
+    Edge startEdge;
+    Edge stopEdge;
+    Edge counterEgde;
     Clock timerClock;
     int duration;
 };

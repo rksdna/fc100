@@ -1,9 +1,9 @@
 #include "DeviceMode.h"
 
-DeviceMode::DeviceMode(DeviceMode::Event startEvent, DeviceMode::Event stopEvent, DeviceMode::Event counterEvent, DeviceMode::Clock timerClock, int duration)
-    : startEvent(startEvent),
-      stopEvent(stopEvent),
-      counterEvent(counterEvent),
+DeviceMode::DeviceMode(DeviceMode::Edge startEvent, DeviceMode::Edge stopEvent, DeviceMode::Edge counterEvent, DeviceMode::Clock timerClock, int duration)
+    : startEdge(startEvent),
+      stopEdge(stopEvent),
+      counterEgde(counterEvent),
       timerClock(timerClock),
       duration(duration)
 {

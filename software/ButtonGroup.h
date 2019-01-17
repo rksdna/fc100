@@ -17,6 +17,8 @@ public:
     QVariant currentData() const;
     void setCurrentData(const QVariant &data);
 
+    void setEnabled(bool enabled);
+
 Q_SIGNALS:
     void currentDataChanged(const QVariant &data);
 

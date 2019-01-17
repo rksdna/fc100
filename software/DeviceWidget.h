@@ -2,12 +2,14 @@
 #define DEVICEWIDGET_H
 
 #include <QFrame>
+#include "DeviceFilter.h"
 
 class QLabel;
-class QToolButton;
 class Device;
+class PopupButton;
 class DeviceSample;
-class ButtonGroup;
+class DeviceChannelWidget;
+class DeviceControlWidget;
 
 class DeviceWidget : public QFrame
 {
@@ -18,45 +20,18 @@ public:
 
 private:
     void clearSamples();
-    void updateMode();
     void updateWidget();
+    void updateDevice();
     void processSample(const DeviceSample &sample);
-
-private:
-    struct Samples
-    {
-        enum Type
-        {
-            LastType,
-            MinValue,
-            MaxValue,
-            BandValue,
-            DeviationValue,
-            AverageValue
-        };
-
-        Samples();
-
-        void append(qreal value);
-        qreal toValue(Type parameter) const;
-
-        qreal first;
-        qreal min;
-        qreal max;
-        qreal average;
-        qreal last;
-    };
 
 private:
     Device * const m_device;
     QLabel * const m_valueLabel;
-    QLabel * const m_timeLabel;
-    ButtonGroup * const m_modeButtons;
-    ButtonGroup * const m_proButtons;
-    QToolButton * const m_runButton;
-    QToolButton * const m_clearButton;
-    QToolButton * const m_burstButton;
-    Samples m_sample;
+    QLabel * const m_auxLabel;
+    DeviceChannelWidget * const m_channel1Widget;
+    DeviceChannelWidget * const m_channel2Widget;
+    DeviceControlWidget * const m_controlWidget;
+    DeviceFilter m_filter;
 };
 
 #endif // DEVICEWIDGET_H

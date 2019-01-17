@@ -13,11 +13,12 @@ SOURCES += main.cpp \
     DeviceWidget.cpp \
     DeviceChannelWidget.cpp \
     DeviceChannel.cpp \
-    DeviceModeWidget.cpp \
     DeviceMode.cpp \
     PopupButton.cpp \
     DeviceSample.cpp \
-    ButtonGroup.cpp
+    ButtonGroup.cpp \
+    DeviceFilter.cpp \
+    DeviceControlWidget.cpp
 
 HEADERS += \
     MainWindow.h \
@@ -26,11 +27,12 @@ HEADERS += \
     DeviceWidget.h \
     DeviceChannelWidget.h \
     DeviceChannel.h \
-    DeviceModeWidget.h \
     DeviceMode.h \
     PopupButton.h \
     DeviceSample.h \
-    ButtonGroup.h
+    ButtonGroup.h \
+    DeviceFilter.h \
+    DeviceControlWidget.h
 
 RESOURCES += \
     fc100.qrc
