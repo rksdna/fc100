@@ -2,12 +2,12 @@
 #define DEVICECHANNELWIDGET_H
 
 #include <QGroupBox>
-#include "DeviceChannel.h"
+#include "ChannelOptions.h"
 
 class QDial;
 class PopupButton;
 
-class DeviceChannelWidget : public QGroupBox
+class ChannelWidget : public QGroupBox
 {
     Q_OBJECT
 
@@ -20,16 +20,16 @@ public:
     };
 
 public:
-    explicit DeviceChannelWidget(const QString &title, QWidget *parent = 0);
+    explicit ChannelWidget(const QString &title, QWidget *parent = 0);
 
     Probe probe() const;
     void setProbe(Probe probe);
 
-    DeviceChannel deviceChannel() const;
-    void setDeviceChannel(const DeviceChannel &channel);
+    ChannelOptions options() const;
+    void setOptions(const ChannelOptions &options);
 
 signals:
-    void deviceChannelChanged();
+    void optionsChanged();
 
 private:
     void updateWidget();

@@ -1,4 +1,3 @@
-#include <QDebug>
 #include <QTranslator>
 #include <QApplication>
 #include <QLibraryInfo>

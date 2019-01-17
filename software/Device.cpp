@@ -1,23 +1,9 @@
-#include <QDebug>
 #include <QtMath>
 #include <QTimer>
 #include <QDateTime>
 #include <QDataStream>
 #include <QSerialPort>
 #include "Device.h"
-
-/*
- * MODE START STOP COUNTER DURATION DISPLAY
- * F    A/B   A/B  A/B     1mS-10S  COUNTER/TIMER, Hz
- * T    A/B   A/B  A/B     1mS-10S  TIMER/COUNTER, S
- * RPM  A/B   A/B  A/B     1mS-10S  COUNTER/TIMER * 60, RPM
- * CNT  A/B   A/B  A/B     inf      COUNTER, 1
- * ARM  B/A  !B/A  A/B     0        COUNTER/TIMER
- * tP   A/B   A/B  A/B     0        TIMER, S
- * tL  !A/B   A/B  A/B     0        TIMER, S
- * tH   A/B  !A/B  A/B     0        TIMER, S
- * tD   A/B   B/A  A/B     0        TIMER, S
- */
 
 quint16 Device::vendorIdentifier()
 {
@@ -34,6 +20,21 @@ Device::Device(QObject *parent)
 {
 }
 
+void Device::setCh1Options(const ChannelOptions &options)
+{
+    m_ch1Options = options;
+}
+
+void Device::setCh2Options(const ChannelOptions &options)
+{
+    m_ch2Options = options;
+}
+
+void Device::setOptions(const ControlOptions &options)
+{
+    m_options = options;
+}
+
 HardwareDevice::ShpRequest::ShpRequest()
     : threshold1(0),
       threshold2(0),
@@ -43,8 +44,8 @@ HardwareDevice::ShpRequest::ShpRequest()
       duration(100),
       counterEvent(0),
       timerClock(0),
-      startEvent(0),
-      stopEvent(0)
+      startEdge(0),
+      stopEdge(0)
 {
 }
 
@@ -65,8 +66,8 @@ QByteArray HardwareDevice::ShpRequest::serialize(bool request) const
         stream << duration;
         stream << counterEvent;
         stream << timerClock;
-        stream << startEvent;
-        stream << stopEvent;
+        stream << startEdge;
+        stream << stopEdge;
     }
 
     return data;
@@ -132,6 +133,12 @@ void HardwareDevice::connectToDevice(const QString &name)
     }
 }
 
+void HardwareDevice::startSampling()
+{
+    finish(Sample());
+    m_state = TriggerState;
+}
+
 void HardwareDevice::disconnectFromDevice()
 {
     m_timer->stop();
@@ -140,27 +147,6 @@ void HardwareDevice::disconnectFromDevice()
         m_port->close();
         emit connectionStateChanged(false);
     }
-}
-
-void HardwareDevice::startSampling()
-{
-    finish(DeviceSample());
-    m_state = TriggerState;
-}
-
-void HardwareDevice::setChannel1(const DeviceChannel &channel)
-{
-    m_channel1 = channel;
-}
-
-void HardwareDevice::setChannel2(const DeviceChannel &channel)
-{
-    m_channel2 = channel;
-}
-
-void HardwareDevice::setMode(const DeviceMode &mode)
-{
-    m_mode = mode;
 }
 
 quint8 HardwareDevice::checksum(const QByteArray &data)
@@ -250,26 +236,26 @@ void HardwareDevice::read(const QByteArray &data)
             const qreal stop = qreal(response.stopDivident) / response.stopDivider;
             const qreal timer = qreal(response.timer) + start - stop;
 
-            finish(DeviceSample(counter, timer / clock));
+            finish(Sample(counter, timer / clock));
         }
         else if (response.state == ShpResponse::IdleState)
         {
-            finish(DeviceSample());
+            finish(Sample());
         }
     }
 
     ShpRequest request;
-    request.threshold1 = qint8(m_channel1.threshold);
-    request.threshold2 = qint8(m_channel2.threshold);
-    request.coupling1 = quint8(m_channel1.coupling);
-    request.coupling2 = quint8(m_channel2.coupling);
+    request.threshold1 = qint8(m_ch1Options.threshold);
+    request.threshold2 = qint8(m_ch2Options.threshold);
+    request.coupling1 = quint8(m_ch1Options.coupling);
+    request.coupling2 = quint8(m_ch2Options.coupling);
 
-    request.burst = quint16(m_mode.duration != 0);
-    request.duration = quint16(m_mode.duration);
-    request.startEvent = quint8(m_mode.startEdge);
-    request.stopEvent = quint8(m_mode.stopEdge);
-    request.counterEvent = quint8(m_mode.counterEgde);
-    request.timerClock = quint8(m_mode.timerClock);
+    request.burst = quint16(m_options.burst);
+    request.duration = quint16(m_options.duration);
+    request.startEdge = quint8(m_options.startEdge);
+    request.stopEdge = quint8(m_options.stopEdge);
+    request.counterEvent = quint8(m_options.counterEgde);
+    request.timerClock = quint8(m_options.timerClock);
 
     write(request.serialize(reset()));
 
@@ -285,6 +271,15 @@ void HardwareDevice::write(const QByteArray &data)
     m_port->write(":" + frame.toHex() + "\r\n");
 }
 
+void HardwareDevice::finish(const Sample &sample)
+{
+    if (m_state == WaitState)
+    {
+        m_state = IdleState;
+        emit samplingFinished(sample);
+    }
+}
+
 bool HardwareDevice::reset()
 {
     if (m_state == TriggerState)
@@ -294,15 +289,6 @@ bool HardwareDevice::reset()
     }
 
     return false;
-}
-
-void HardwareDevice::finish(const DeviceSample &sample)
-{
-    if (m_state == WaitState)
-    {
-        m_state = IdleState;
-        emit samplingFinished(sample);
-    }
 }
 
 TestDevice::TestDevice(QObject *parent)
@@ -329,6 +315,11 @@ void TestDevice::connectToDevice(const QString &name)
     emit connectionStateChanged(true);
 }
 
+void TestDevice::startSampling()
+{
+    m_timer->start(m_options.duration);
+}
+
 void TestDevice::disconnectFromDevice()
 {
     if (m_connected)
@@ -338,30 +329,10 @@ void TestDevice::disconnectFromDevice()
     }
 }
 
-void TestDevice::startSampling()
-{
-    m_timer->start(m_mode.duration);
-}
-
-void TestDevice::setChannel1(const DeviceChannel &channel)
-{
-    Q_UNUSED(channel)
-}
-
-void TestDevice::setChannel2(const DeviceChannel &channel)
-{
-    Q_UNUSED(channel)
-}
-
-void TestDevice::setMode(const DeviceMode &mode)
-{
-    m_mode = mode;
-}
-
 void TestDevice::onTimeout()
 {
-    const qreal timer = 0.001 * (m_mode.duration + qrand() % 2);
+    const qreal timer = 0.001 * (m_options.duration + qrand() % 2);
     const qreal counter = (1000.0 + 500.0 * qSin(2 * M_PI * 0.1 * QDateTime::currentMSecsSinceEpoch() * 0.001)) * timer;
 
-    emit samplingFinished(DeviceSample(counter, timer));
+    emit samplingFinished(Sample(counter, timer));
 }

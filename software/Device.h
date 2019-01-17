@@ -2,9 +2,9 @@
 #define DEVICE_H
 
 #include <QObject>
-#include "DeviceMode.h"
-#include "DeviceSample.h"
-#include "DeviceChannel.h"
+#include "Sample.h"
+#include "ChannelOptions.h"
+#include "ControlOptions.h"
 
 class QTimer;
 class QSerialPort;
@@ -22,16 +22,21 @@ public:
 
     virtual bool isDeviceConnected() const = 0;
     virtual void connectToDevice(const QString &name) = 0;
+    virtual void startSampling() = 0;
     virtual void disconnectFromDevice() = 0;
 
-    virtual void startSampling() = 0;
-    virtual void setChannel1(const DeviceChannel &channel) = 0;
-    virtual void setChannel2(const DeviceChannel &channel) = 0;
-    virtual void setMode(const DeviceMode &mode) = 0;
+    void setCh1Options(const ChannelOptions &options);
+    void setCh2Options(const ChannelOptions &options);
+    void setOptions(const ControlOptions &options);
 
 signals:
     void connectionStateChanged(bool connected);
-    void samplingFinished(const DeviceSample &sample);
+    void samplingFinished(const Sample &sample);
+
+protected:
+    ChannelOptions m_ch1Options;
+    ChannelOptions m_ch2Options;
+    ControlOptions m_options;
 };
 
 class HardwareDevice : public Device
@@ -43,12 +48,8 @@ public:
 
     bool isDeviceConnected() const;
     void connectToDevice(const QString &name);
-    void disconnectFromDevice();
-
     void startSampling();
-    void setChannel1(const DeviceChannel &channel);
-    void setChannel2(const DeviceChannel &channel);
-    void setMode(const DeviceMode &mode);
+    void disconnectFromDevice();
 
 private:
     enum State
@@ -72,8 +73,8 @@ private:
         quint16 duration;
         quint8 counterEvent;
         quint8 timerClock;
-        quint8 startEvent;
-        quint8 stopEvent;
+        quint8 startEdge;
+        quint8 stopEdge;
     };
 
     struct ShpResponse
@@ -112,16 +113,13 @@ private:
     void onTimeout();
     void read(const QByteArray &data);
     void write(const QByteArray &data);
+    void finish(const Sample &sample);
     bool reset();
-    void finish(const DeviceSample &sample);
 
 private:
     QSerialPort * const m_port;
     QTimer * const m_timer;
     State m_state;
-    DeviceChannel m_channel1;
-    DeviceChannel m_channel2;
-    DeviceMode m_mode;
 };
 
 class TestDevice : public Device
@@ -131,12 +129,8 @@ public:
 
     virtual bool isDeviceConnected() const;
     virtual void connectToDevice(const QString &name);
-    virtual void disconnectFromDevice();
-
     virtual void startSampling();
-    virtual void setChannel1(const DeviceChannel &channel);
-    virtual void setChannel2(const DeviceChannel &channel);
-    virtual void setMode(const DeviceMode &mode);
+    virtual void disconnectFromDevice();
 
 private:
     void onTimeout();
@@ -144,7 +138,6 @@ private:
 private:
     QTimer * const m_timer;
     bool m_connected;
-    DeviceMode m_mode;
 };
 
 #endif // DEVICE_H

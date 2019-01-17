@@ -11,28 +11,28 @@ SOURCES += main.cpp \
     PortDialog.cpp \
     Device.cpp \
     DeviceWidget.cpp \
-    DeviceChannelWidget.cpp \
-    DeviceChannel.cpp \
-    DeviceMode.cpp \
     PopupButton.cpp \
-    DeviceSample.cpp \
-    ButtonGroup.cpp \
-    DeviceFilter.cpp \
-    DeviceControlWidget.cpp
+    DisplayWidget.cpp \
+    Sample.cpp \
+    Computer.cpp \
+    ChannelOptions.cpp \
+    ChannelWidget.cpp \
+    ControlOptions.cpp \
+    ControlWidget.cpp
 
 HEADERS += \
     MainWindow.h \
     PortDialog.h \
     Device.h \
     DeviceWidget.h \
-    DeviceChannelWidget.h \
-    DeviceChannel.h \
-    DeviceMode.h \
     PopupButton.h \
-    DeviceSample.h \
-    ButtonGroup.h \
-    DeviceFilter.h \
-    DeviceControlWidget.h
+    DisplayWidget.h \
+    Sample.h \
+    Computer.h \
+    ChannelOptions.h \
+    ChannelWidget.h \
+    ControlOptions.h \
+    ControlWidget.h
 
 RESOURCES += \
     fc100.qrc

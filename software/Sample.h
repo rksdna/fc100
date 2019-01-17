@@ -1,9 +1,9 @@
-#ifndef DEVICESAMPLE_H
-#define DEVICESAMPLE_H
+#ifndef SAMPLE_H
+#define SAMPLE_H
 
 #include <QtGlobal>
 
-struct DeviceSample
+struct Sample
 {
     enum Type
     {
@@ -14,8 +14,8 @@ struct DeviceSample
         TimeType
     };
 
-    DeviceSample();
-    DeviceSample(qreal counter, qreal timer);
+    Sample();
+    Sample(qreal counter, qreal timer);
 
     qreal counter;
     qreal timer;
@@ -23,4 +23,4 @@ struct DeviceSample
     qreal toValue(Type type) const;
 };
 
-#endif // DEVICESAMPLE_H
+#endif // SAMPLE_H

@@ -1,18 +1,18 @@
-#include "DeviceSample.h"
+#include "Sample.h"
 
-DeviceSample::DeviceSample()
+Sample::Sample()
     : counter(qQNaN()),
       timer(qQNaN())
 {
 }
 
-DeviceSample::DeviceSample(qreal counter, qreal timer)
+Sample::Sample(qreal counter, qreal timer)
     : counter(counter),
       timer(timer)
 {
 }
 
-qreal DeviceSample::toValue(DeviceSample::Type type) const
+qreal Sample::toValue(Sample::Type type) const
 {
     switch (type)
     {

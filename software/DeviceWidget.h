@@ -2,14 +2,13 @@
 #define DEVICEWIDGET_H
 
 #include <QFrame>
-#include "DeviceFilter.h"
+#include "Computer.h"
 
-class QLabel;
 class Device;
-class PopupButton;
-class DeviceSample;
-class DeviceChannelWidget;
-class DeviceControlWidget;
+class Sample;
+class DisplayWidget;
+class ChannelWidget;
+class ControlWidget;
 
 class DeviceWidget : public QFrame
 {
@@ -22,16 +21,15 @@ private:
     void clearFilter();
     void updateWidget();
     void updateDevice();
-    void processSample(const DeviceSample &sample);
+    void processSample(const Sample &sample);
 
 private:
     Device * const m_device;
-    QLabel * const m_valueLabel;
-    QLabel * const m_auxLabel;
-    DeviceChannelWidget * const m_channel1Widget;
-    DeviceChannelWidget * const m_channel2Widget;
-    DeviceControlWidget * const m_controlWidget;
-    DeviceFilter m_filter;
+    DisplayWidget * const m_displayWidget;
+    ChannelWidget * const m_channel1Widget;
+    ChannelWidget * const m_channel2Widget;
+    ControlWidget * const m_controlWidget;
+    Computer m_filter;
 };
 
 #endif // DEVICEWIDGET_H

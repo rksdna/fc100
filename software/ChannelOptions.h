@@ -1,9 +1,9 @@
-#ifndef DEVICECHANNEL_H
-#define DEVICECHANNEL_H
+#ifndef CHANNELOPTIONS_H
+#define CHANNELOPTIONS_H
 
 #include <QtGlobal>
 
-struct DeviceChannel
+struct ChannelOptions
 {
     enum Coupling
     {
@@ -14,7 +14,7 @@ struct DeviceChannel
     static int min();
     static int max();
 
-    DeviceChannel(Coupling coupling = DcCoupling, int threshold = 128);
+    ChannelOptions(Coupling coupling = DcCoupling, int threshold = 128);
 
     qreal voltage() const;
 
@@ -22,4 +22,4 @@ struct DeviceChannel
     int threshold;
 };
 
-#endif // DEVICECHANNEL_H
+#endif // CHANNELOPTIONS_H
