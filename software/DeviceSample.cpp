@@ -1,61 +1,45 @@
 #include "DeviceSample.h"
 
 DeviceSample::DeviceSample()
-    : counter(0),
-      timer(0),
-      valid(false)
+    : counter(qQNaN()),
+      timer(qQNaN())
 {
 }
 
-DeviceSample::DeviceSample(int counter, qreal timer)
+DeviceSample::DeviceSample(qreal counter, qreal timer)
     : counter(counter),
-      timer(timer),
-      valid(true)
+      timer(timer)
 {
 }
 
-bool DeviceSample::convert(DeviceSample::Format format, qreal &value) const
+qreal DeviceSample::toValue(DeviceSample::Type type) const
 {
-    if (!valid)
-        return false;
-
-    switch (format)
+    switch (type)
     {
-    case FrequencyFormat:
-        if (!qFuzzyIsNull(timer))
-        {
-            value = counter / timer;
-            return true;
-        }
+    case FrequencyType:
+        if (qIsFinite(counter) && qIsFinite(timer) && !qFuzzyIsNull(timer))
+            return counter / timer;
 
         break;
 
-    case RpmFormat:
-        if (!qFuzzyIsNull(timer))
-        {
-            value = 60.0 * counter / timer;
-            return true;
-        }
+    case RpmType:
+        if (qIsFinite(counter) && qIsFinite(timer) && !qFuzzyIsNull(timer))
+            return 60.0 * counter / timer;
 
         break;
 
-    case PeriodFormat:
-        if (!qFuzzyIsNull(counter))
-        {
-            value = timer / counter;
-            return true;
-        }
+    case PeriodType:
+        if (qIsFinite(counter) && qIsFinite(timer) && !qFuzzyIsNull(counter))
+            return timer / counter;
 
         break;
 
-    case EventsFormat:
-        value = counter;
-        return true;
+    case EventsType:
+        return counter;
 
-    case TimeFormat:
-        value = timer;
-        return true;
+    case TimeType:
+        return timer;
     }
 
-    return false;
+    return qQNaN();
 }

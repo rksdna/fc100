@@ -5,23 +5,22 @@
 
 struct DeviceSample
 {
-    enum Format
+    enum Type
     {
-        FrequencyFormat,
-        RpmFormat,
-        PeriodFormat,
-        EventsFormat,
-        TimeFormat
+        FrequencyType,
+        RpmType,
+        PeriodType,
+        EventsType,
+        TimeType
     };
 
     DeviceSample();
-    DeviceSample(int counter, qreal timer);
+    DeviceSample(qreal counter, qreal timer);
 
     qreal counter;
     qreal timer;
-    bool valid;
 
-    bool convert(Format format, qreal &value) const;
+    qreal toValue(Type type) const;
 };
 
 #endif // DEVICESAMPLE_H

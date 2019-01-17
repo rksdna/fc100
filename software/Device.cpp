@@ -361,7 +361,7 @@ void TestDevice::setMode(const DeviceMode &mode)
 void TestDevice::onTimeout()
 {
     const qreal timer = 0.001 * (m_mode.duration + qrand() % 2);
-    const qreal counter = (1000.0 + 500.0 * qSin(2 * M_PI * QDateTime::currentMSecsSinceEpoch() * 0.001)) * timer;
+    const qreal counter = (1000.0 + 500.0 * qSin(2 * M_PI * 0.1 * QDateTime::currentMSecsSinceEpoch() * 0.001)) * timer;
 
     emit samplingFinished(DeviceSample(counter, timer));
 }
