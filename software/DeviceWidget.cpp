@@ -35,18 +35,18 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     m_auxLabel->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
     m_auxLabel->setAlignment(Qt::AlignVCenter | Qt::AlignRight);
 
-    connect(m_channel1Widget, &DeviceChannelWidget::deviceChannelChanged, m_device, &Device::setChannel1);
+    connect(m_channel1Widget, &DeviceChannelWidget::deviceChannelChanged, this, &DeviceWidget::updateDevice);
 
-    connect(m_channel2Widget, &DeviceChannelWidget::deviceChannelChanged, m_device, &Device::setChannel2);
+    connect(m_channel2Widget, &DeviceChannelWidget::deviceChannelChanged, this, &DeviceWidget::updateDevice);
 
     connect(m_controlWidget, &DeviceControlWidget::startRequested, m_device, &Device::startSampling);
-    connect(m_controlWidget, &DeviceControlWidget::clearRequested, this, &DeviceWidget::clearSamples);
+
+    connect(m_controlWidget, &DeviceControlWidget::clearRequested, this, &DeviceWidget::clearFilter);
     connect(m_controlWidget, &DeviceControlWidget::clearRequested, this, &DeviceWidget::updateWidget);
 
+    connect(m_controlWidget, &DeviceControlWidget::modeChanged, this, &DeviceWidget::clearFilter);
     connect(m_controlWidget, &DeviceControlWidget::modeChanged, this, &DeviceWidget::updateDevice);
     connect(m_controlWidget, &DeviceControlWidget::modeChanged, this, &DeviceWidget::updateWidget);
-    connect(m_controlWidget, &DeviceControlWidget::deviceModeChanged, this, &DeviceWidget::updateDevice);
-    connect(m_controlWidget, &DeviceControlWidget::deviceModeChanged, this, &DeviceWidget::updateWidget);
 
     connect(m_controlWidget, &DeviceControlWidget::viewChanged, this, &DeviceWidget::updateWidget);
 
@@ -58,18 +58,22 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     layout->addWidget(m_controlWidget, 2, 1);
     layout->addWidget(m_channel2Widget, 2, 2);
 
+    m_channel1Widget->setProbe(DeviceChannelWidget::x1Probe);
     m_channel1Widget->setDeviceChannel(DeviceChannel());
+
+    m_channel2Widget->setProbe(DeviceChannelWidget::x1Probe);
     m_channel2Widget->setDeviceChannel(DeviceChannel());
 
     m_controlWidget->setMode(DeviceSample::FrequencyType);
     m_controlWidget->setView(DeviceFilter::LastType);
-    m_controlWidget->setBurst(true);
+    m_controlWidget->setBurstEnabled(true);
     m_controlWidget->setDeviceMode(DeviceMode());
 
-    processSample(DeviceSample());
+    updateDevice();
+    m_device->startSampling();
 }
 
-void DeviceWidget::clearSamples()
+void DeviceWidget::clearFilter()
 {
     m_filter = DeviceFilter();
 }
@@ -119,32 +123,7 @@ void DeviceWidget::updateDevice()
 {
     m_device->setChannel1(m_channel1Widget->deviceChannel());
     m_device->setChannel2(m_channel2Widget->deviceChannel());
-
-
-
-    /*const DeviceSample::Type type = DeviceSample::Type(m_modeButton->currentData().toInt());
-
-    const DeviceMode::Edge start = DeviceMode::Edge(m_startEdgeButton->currentData().toInt());
-    const DeviceMode::Edge stop = DeviceMode::Edge(m_stopEdgeButton->currentData().toInt());
-    const DeviceMode::Edge counter = DeviceMode::Edge(m_counterEdgeButton->currentData().toInt());
-    const DeviceMode::Clock timer = DeviceMode::Clock(m_timerClockButton->currentData().toInt());
-    const int duration = m_durationDial->value() + 100;
-
-    switch (type)
-    {
-    case DeviceSample::FrequencyType:
-    case DeviceSample::RpmType:
-    case DeviceSample::PeriodType:
-        m_device->setMode(DeviceMode(counter, counter, counter, timer, duration));
-        break;
-
-    case DeviceSample::TimeType:
-        m_device->setMode(DeviceMode(start, stop, counter, timer, duration));
-        break;
-
-    default:
-        break;
-    }*/
+    m_device->setMode(m_controlWidget->fixedDeviceMode());
 }
 
 void DeviceWidget::processSample(const DeviceSample &sample)
@@ -153,6 +132,6 @@ void DeviceWidget::processSample(const DeviceSample &sample)
 
     updateWidget();
 
-    if (m_controlWidget->isBurst())
+    if (m_controlWidget->isBurstEnabled())
         m_device->startSampling();
 }

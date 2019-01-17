@@ -8,7 +8,6 @@
 
 class QDial;
 class QToolButton;
-class DeviceMode;
 class PopupButton;
 
 class DeviceControlWidget : public QGroupBox
@@ -24,23 +23,21 @@ public:
     DeviceFilter::Type view() const;
     void setView(DeviceFilter::Type view);
 
-    bool isBurst() const;
-    void setBurst(bool value);
+    bool isBurstEnabled() const;
+    void setBurstEnabled(bool enabled);
 
     DeviceMode deviceMode() const;
+    DeviceMode fixedDeviceMode() const;
     void setDeviceMode(const DeviceMode &mode);
 
 signals:
     void startRequested();
     void clearRequested();
-    void modeChanged(DeviceSample::Type mode);
-    void viewChanged(DeviceFilter::Type view);
-    void deviceModeChanged(const DeviceMode &mode);
+    void modeChanged();
+    void viewChanged();
 
 private:
-    void updateMode();
-    void updateView();
-    void updateDeviceMode();
+    void updateWidget();
 
 private:
     PopupButton * const m_startEdgeButton;
@@ -48,10 +45,8 @@ private:
     PopupButton * const m_counterEdgeButton;
     PopupButton * const m_timerClockButton;
     QDial * const m_durationDial;
-
     PopupButton * const m_modeButton;
     PopupButton * const m_viewButton;
-
     QToolButton * const m_startButton;
     QToolButton * const m_clearButton;
     QToolButton * const m_burstButton;

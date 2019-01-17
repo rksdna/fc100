@@ -19,7 +19,7 @@ public:
     explicit DeviceWidget(Device *device, QWidget *parent = 0);
 
 private:
-    void clearSamples();
+    void clearFilter();
     void updateWidget();
     void updateDevice();
     void processSample(const DeviceSample &sample);

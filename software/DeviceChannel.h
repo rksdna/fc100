@@ -5,13 +5,6 @@
 
 struct DeviceChannel
 {
-    enum Probe
-    {
-        x1Probe,
-        x10Probe,
-        x100Probe
-    };
-
     enum Coupling
     {
         DcCoupling,
@@ -21,13 +14,11 @@ struct DeviceChannel
     static int min();
     static int max();
 
-    DeviceChannel(Coupling coupling = DcCoupling, Probe probe = x1Probe, int threshold = 128);
+    DeviceChannel(Coupling coupling = DcCoupling, int threshold = 128);
 
-    int decimals() const;
     qreal voltage() const;
 
     Coupling coupling;
-    Probe probe;
     int threshold;
 };
 

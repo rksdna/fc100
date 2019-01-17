@@ -13,7 +13,7 @@ void DeviceFilter::append(qreal value)
 {
     if (qIsFinite(value))
     {
-        const qreal factor = 0.75;
+        const qreal factor = 0.99;
         first = qIsFinite(first) ? first : value;
         min = qIsFinite(min) ? qMin(min, value) : value;
         max = qIsFinite(max) ? qMax(max, value) : value;

@@ -12,16 +12,27 @@ class DeviceChannelWidget : public QGroupBox
     Q_OBJECT
 
 public:
+    enum Probe
+    {
+        x1Probe,
+        x10Probe,
+        x100Probe
+    };
+
+public:
     explicit DeviceChannelWidget(const QString &title, QWidget *parent = 0);
+
+    Probe probe() const;
+    void setProbe(Probe probe);
 
     DeviceChannel deviceChannel() const;
     void setDeviceChannel(const DeviceChannel &channel);
 
 signals:
-    void deviceChannelChanged(const DeviceChannel &channel);
+    void deviceChannelChanged();
 
 private:
-    void updateChannel();
+    void updateWidget();
 
 private:
     const QString m_title;
