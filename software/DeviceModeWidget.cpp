@@ -4,7 +4,7 @@
 #include "DeviceMode.h"
 #include "DeviceModeWidget.h"
 
-DeviceModeWidget::DeviceModeWidget(const QString &tag, const QString &title, DeviceMode *mode, QWidget *parent)
+/*DeviceModeWidget::DeviceModeWidget(const QString &tag, const QString &title, DeviceMode *mode, QWidget *parent)
     : QGroupBox(title, parent),
       m_tag(tag),
       m_mode(mode),
@@ -16,22 +16,22 @@ DeviceModeWidget::DeviceModeWidget(const QString &tag, const QString &title, Dev
 {
     setAlignment(Qt::AlignRight);
 
-    m_startButton->appendItem(tr("B1⭜"), DeviceMode::Ch1RisingEdge);
-    m_startButton->appendItem(tr("B1⮯"), DeviceMode::Ch1FallingEdge);
-    m_startButton->appendItem(tr("B2⮭"), DeviceMode::Ch2RisingEdge);
-    m_startButton->appendItem(tr("B2⮯"), DeviceMode::Ch2FallingEdge);
+    m_startButton->appendItem(tr("B1⭜"), DeviceMode::Ch1RisingEvent);
+    m_startButton->appendItem(tr("B1⮯"), DeviceMode::Ch1FallingEvent);
+    m_startButton->appendItem(tr("B2⮭"), DeviceMode::Ch2RisingEvent);
+    m_startButton->appendItem(tr("B2⮯"), DeviceMode::Ch2FallingEvent);
     connect(m_startButton, &PopupButton::dataChanged, this, &DeviceModeWidget::updateDeviceMode);
 
-    m_stopButton->appendItem(tr("E1⮭"), DeviceMode::Ch1RisingEdge);
-    m_stopButton->appendItem(tr("E1⮯"), DeviceMode::Ch1FallingEdge);
-    m_stopButton->appendItem(tr("E2⮭"), DeviceMode::Ch2RisingEdge);
-    m_stopButton->appendItem(tr("E2⮯"), DeviceMode::Ch2FallingEdge);
+    m_stopButton->appendItem(tr("E1⮭"), DeviceMode::Ch1RisingEvent);
+    m_stopButton->appendItem(tr("E1⮯"), DeviceMode::Ch1FallingEvent);
+    m_stopButton->appendItem(tr("E2⮭"), DeviceMode::Ch2RisingEvent);
+    m_stopButton->appendItem(tr("E2⮯"), DeviceMode::Ch2FallingEvent);
     connect(m_stopButton, &PopupButton::dataChanged, this, &DeviceModeWidget::updateDeviceMode);
 
-    m_counterButton->appendItem(tr("C1⮭"), DeviceMode::Ch1RisingEdge);
-    m_counterButton->appendItem(tr("C1⮯"), DeviceMode::Ch1FallingEdge);
-    m_counterButton->appendItem(tr("C2⮭"), DeviceMode::Ch2RisingEdge);
-    m_counterButton->appendItem(tr("C2⮯"), DeviceMode::Ch2FallingEdge);
+    m_counterButton->appendItem(tr("C1⮭"), DeviceMode::Ch1RisingEvent);
+    m_counterButton->appendItem(tr("C1⮯"), DeviceMode::Ch1FallingEvent);
+    m_counterButton->appendItem(tr("C2⮭"), DeviceMode::Ch2RisingEvent);
+    m_counterButton->appendItem(tr("C2⮯"), DeviceMode::Ch2FallingEvent);
     connect(m_counterButton, &PopupButton::dataChanged, this, &DeviceModeWidget::updateDeviceMode);
 
     m_timerButton->appendItem(tr("INT"),  DeviceMode::InternalClock);
@@ -79,10 +79,11 @@ DeviceModeWidget::~DeviceModeWidget()
 
 void DeviceModeWidget::updateDeviceMode()
 {
-    m_mode->setStartEdge(DeviceMode::Edge(m_startButton->data().toInt()));
-    m_mode->setStopEdge(DeviceMode::Edge(m_stopButton->data().toInt()));
-    m_mode->setCounterEdge(DeviceMode::Edge(m_counterButton->data().toInt()));
+    m_mode->setStartEvent(DeviceMode::Event(m_startButton->data().toInt()));
+    m_mode->setStopEvent(DeviceMode::Event(m_stopButton->data().toInt()));
+    m_mode->setCounterEvent(DeviceMode::Event(m_counterButton->data().toInt()));
     m_mode->setTimerClock(DeviceMode::Clock(m_timerButton->data().toInt()));
     m_mode->setDuration(m_durationButton->data().toInt());
 }
 
+*/

@@ -1,7 +1,7 @@
 #ifndef DEVICEMODEWIDGET_H
 #define DEVICEMODEWIDGET_H
 
-#include <QGroupBox>
+/*#include <QGroupBox>
 
 class DeviceMode;
 class PopupButton;
@@ -25,6 +25,6 @@ private:
     PopupButton * const m_counterButton;
     PopupButton * const m_timerButton;
     PopupButton * const m_durationButton;
-};
+};*/
 
 #endif // DEVICEMODEWIDGET_H

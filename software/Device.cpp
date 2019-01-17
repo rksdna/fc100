@@ -1,4 +1,5 @@
 #include <QDebug>
+#include <QtMath>
 #include <QTimer>
 #include <QDateTime>
 #include <QDataStream>
@@ -18,21 +19,36 @@
  * tD   A/B   B/A  A/B     0        TIMER, S
  */
 
-Device::ShpRequest::ShpRequest()
+quint16 Device::vendorIdentifier()
+{
+    return 0x0483;
+}
+
+quint16 Device::productIdentifier()
+{
+    return 0x5740;
+}
+
+Device::Device(QObject *parent)
+    : QObject(parent)
+{
+}
+
+HardwareDevice::ShpRequest::ShpRequest()
     : threshold1(0),
       threshold2(0),
       coupling1(0),
       coupling2(0),
       burst(0),
       duration(100),
-      counterEdge(0),
+      counterEvent(0),
       timerClock(0),
-      startEdge(0),
-      stopEdge(0)
+      startEvent(0),
+      stopEvent(0)
 {
 }
 
-QByteArray Device::ShpRequest::serialize(bool request) const
+QByteArray HardwareDevice::ShpRequest::serialize(bool request) const
 {
     QByteArray data;
     QDataStream stream(&data, QIODevice::WriteOnly);
@@ -47,16 +63,16 @@ QByteArray Device::ShpRequest::serialize(bool request) const
     {
         stream << burst;
         stream << duration;
-        stream << counterEdge;
+        stream << counterEvent;
         stream << timerClock;
-        stream << startEdge;
-        stream << stopEdge;
+        stream << startEvent;
+        stream << stopEvent;
     }
 
     return data;
 }
 
-Device::ShpResponse::ShpResponse()
+HardwareDevice::ShpResponse::ShpResponse()
     : state(0),
       voltage(0),
       counter(0),
@@ -68,7 +84,7 @@ Device::ShpResponse::ShpResponse()
 {
 }
 
-bool Device::ShpResponse::deserialize(const QByteArray &data)
+bool HardwareDevice::ShpResponse::deserialize(const QByteArray &data)
 {
     QDataStream stream(data);
     stream.setByteOrder(QDataStream::LittleEndian);
@@ -89,37 +105,22 @@ bool Device::ShpResponse::deserialize(const QByteArray &data)
     return stream.status() == QDataStream::Ok && stream.atEnd();
 }
 
-quint16 Device::vendorIdentifier()
-{
-    return 0x0483;
-}
-
-quint16 Device::productIdentifier()
-{
-    return 0x5740;
-}
-
-Device::Device(QObject *parent)
-    : QObject(parent),
+HardwareDevice::HardwareDevice(QObject *parent)
+    : Device(parent),
       m_port(new QSerialPort(this)),
       m_timer(new QTimer(this)),
       m_state(IdleState)
 {
-    connect(m_port, &QSerialPort::readyRead, this, &Device::onReadyRead);
-    connect(m_timer, &QTimer::timeout, this, &Device::onTimeout);
+    connect(m_port, &QSerialPort::readyRead, this, &HardwareDevice::onReadyRead);
+    connect(m_timer, &QTimer::timeout, this, &HardwareDevice::onTimeout);
 }
 
-Device::~Device()
-{
-    disconnectFromDevice();
-}
-
-bool Device::isDeviceConnected() const
+bool HardwareDevice::isDeviceConnected() const
 {
     return m_port->isOpen();
 }
 
-void Device::connectToDevice(const QString &name)
+void HardwareDevice::connectToDevice(const QString &name)
 {
     disconnectFromDevice();
 
@@ -131,7 +132,7 @@ void Device::connectToDevice(const QString &name)
     }
 }
 
-void Device::disconnectFromDevice()
+void HardwareDevice::disconnectFromDevice()
 {
     m_timer->stop();
     if (m_port->isOpen())
@@ -141,33 +142,28 @@ void Device::disconnectFromDevice()
     }
 }
 
-void Device::startSampling()
+void HardwareDevice::startSampling()
 {
     finish(DeviceSample());
     m_state = TriggerState;
 }
 
-void Device::setChannel1(const DeviceChannel &channel)
+void HardwareDevice::setChannel1(const DeviceChannel &channel)
 {
     m_channel1 = channel;
 }
 
-void Device::setChannel2(const DeviceChannel &channel)
+void HardwareDevice::setChannel2(const DeviceChannel &channel)
 {
     m_channel2 = channel;
 }
 
-DeviceDisplay *Device::display()
+void HardwareDevice::setMode(const DeviceMode &mode)
 {
-    return &m_display;
+    m_mode = mode;
 }
 
-DeviceMode *Device::mode()
-{
-    return &m_mode;
-}
-
-quint8 Device::checksum(const QByteArray &data)
+quint8 HardwareDevice::checksum(const QByteArray &data)
 {
     // CRC-8
     // Poly 0x07
@@ -219,7 +215,7 @@ quint8 Device::checksum(const QByteArray &data)
     return crc;
 }
 
-void Device::onReadyRead()
+void HardwareDevice::onReadyRead()
 {
     while (m_port->canReadLine())
     {
@@ -236,12 +232,12 @@ void Device::onReadyRead()
     }
 }
 
-void Device::onTimeout()
+void HardwareDevice::onTimeout()
 {
     disconnectFromDevice();
 }
 
-void Device::read(const QByteArray &data)
+void HardwareDevice::read(const QByteArray &data)
 {
     ShpResponse response;
     if (response.deserialize(data))
@@ -268,19 +264,19 @@ void Device::read(const QByteArray &data)
     request.coupling1 = quint8(m_channel1.coupling);
     request.coupling2 = quint8(m_channel2.coupling);
 
-    request.burst = quint16(m_mode.duration() != 0);
-    request.duration = quint16(m_mode.duration());
-    request.startEdge = quint8(m_mode.startEdge());
-    request.stopEdge = quint8(m_mode.stopEdge());
-    request.counterEdge = quint8(m_mode.counterEdge());
-    request.timerClock = quint8(m_mode.timerClock());
+    request.burst = quint16(m_mode.duration != 0);
+    request.duration = quint16(m_mode.duration);
+    request.startEvent = quint8(m_mode.startEvent);
+    request.stopEvent = quint8(m_mode.stopEvent);
+    request.counterEvent = quint8(m_mode.counterEvent);
+    request.timerClock = quint8(m_mode.timerClock);
 
     write(request.serialize(reset()));
 
     m_timer->start(250);
 }
 
-void Device::write(const QByteArray &data)
+void HardwareDevice::write(const QByteArray &data)
 {
     QByteArray frame;
     frame.append(data);
@@ -289,7 +285,7 @@ void Device::write(const QByteArray &data)
     m_port->write(":" + frame.toHex() + "\r\n");
 }
 
-bool Device::reset()
+bool HardwareDevice::reset()
 {
     if (m_state == TriggerState)
     {
@@ -300,7 +296,7 @@ bool Device::reset()
     return false;
 }
 
-void Device::finish(const DeviceSample &sample)
+void HardwareDevice::finish(const DeviceSample &sample)
 {
     if (m_state == WaitState)
     {
@@ -309,3 +305,63 @@ void Device::finish(const DeviceSample &sample)
     }
 }
 
+TestDevice::TestDevice(QObject *parent)
+    : Device(parent),
+      m_timer(new QTimer(this)),
+      m_connected(false)
+{
+    m_timer->setSingleShot(true);
+    connect(m_timer, &QTimer::timeout, this, &TestDevice::onTimeout);
+}
+
+bool TestDevice::isDeviceConnected() const
+{
+    return m_connected;
+}
+
+void TestDevice::connectToDevice(const QString &name)
+{
+    Q_UNUSED(name)
+
+    disconnectFromDevice();
+
+    m_connected = true;
+    emit connectionStateChanged(true);
+}
+
+void TestDevice::disconnectFromDevice()
+{
+    if (m_connected)
+    {
+        m_connected = false;
+        emit connectionStateChanged(false);
+    }
+}
+
+void TestDevice::startSampling()
+{
+    m_timer->start(m_mode.duration);
+}
+
+void TestDevice::setChannel1(const DeviceChannel &channel)
+{
+    Q_UNUSED(channel)
+}
+
+void TestDevice::setChannel2(const DeviceChannel &channel)
+{
+    Q_UNUSED(channel)
+}
+
+void TestDevice::setMode(const DeviceMode &mode)
+{
+    m_mode = mode;
+}
+
+void TestDevice::onTimeout()
+{
+    const qreal timer = 0.001 * (m_mode.duration + qrand() % 2);
+    const qreal counter = (1000.0 + 500.0 * qSin(2 * M_PI * QDateTime::currentMSecsSinceEpoch() * 0.001)) * timer;
+
+    emit samplingFinished(DeviceSample(counter, timer));
+}

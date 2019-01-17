@@ -29,7 +29,6 @@ struct DeviceChannel
     Coupling coupling;
     Probe probe;
     int threshold;
-
 };
 
 #endif // DEVICECHANNEL_H

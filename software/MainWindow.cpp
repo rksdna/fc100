@@ -8,7 +8,7 @@
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent),
-      m_device(new Device(this))
+      m_device(new TestDevice(this))
 {
     QMenu * const fileMenu = menuBar()->addMenu(tr("File"));
 

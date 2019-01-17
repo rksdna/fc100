@@ -5,16 +5,20 @@
 #include "Device.h"
 #include "DeviceSample.h"
 #include "DeviceWidget.h"
-#include "DeviceModeWidget.h"
+//#include "DeviceModeWidget.h"
 #include "DeviceChannelWidget.h"
+#include "ButtonGroup.h"
 
 #include <QFontDatabase>
+
+
 
 DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     : QFrame(parent),
       m_device(device),
       m_valueLabel(new QLabel),
       m_timeLabel(new QLabel),
+      m_modeButtons(new ButtonGroup),
       m_triggerButton(new QToolButton),
       m_burstButton(new QToolButton)
 {
@@ -33,8 +37,7 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     m_timeLabel->setFont(font);
     m_timeLabel->setAlignment(Qt::AlignVCenter | Qt::AlignRight);
 
-
-
+    connect(m_modeButtons, &ButtonGroup::currentDataChanged, this, &DeviceWidget::updateMode);
 
     m_triggerButton->setText(tr("run"));
     connect(m_triggerButton, &QToolButton::clicked, m_device, &Device::startSampling);
@@ -48,18 +51,27 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     DeviceChannelWidget * const channel2Widget = new DeviceChannelWidget(tr("Channel 2"));
     connect(channel2Widget, &DeviceChannelWidget::deviceChannelChanged, m_device, &Device::setChannel2);
 
-    DeviceModeWidget * const modeWidget = new DeviceModeWidget("Mode", tr("Mode"), device->mode());
+
+
 
     QGridLayout * const layout = new QGridLayout(this);
     layout->addWidget(m_valueLabel, 0, 0, 1, 2);
     layout->addWidget(m_timeLabel, 0, 2, 1, 3);
 
     layout->addWidget(channel1Widget, 1, 0);
-    layout->addWidget(modeWidget, 1, 1);
     layout->addWidget(channel2Widget, 1, 2);
 
     layout->addWidget(m_triggerButton, 2, 0);
     layout->addWidget(m_burstButton, 2, 1);
+
+    layout->addWidget(m_modeButtons->addDataButton(tr("Frequency"), FrequencyMode), 3, 0);
+    layout->addWidget(m_modeButtons->addDataButton(tr("Period"), PeriodMode), 3, 1);
+    layout->addWidget(m_modeButtons->addDataButton(tr("RPM"), RpmMode), 3, 2);
+}
+
+void DeviceWidget::updateMode()
+{
+
 }
 
 void DeviceWidget::processSample(const DeviceSample &sample)

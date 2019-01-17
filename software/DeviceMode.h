@@ -1,15 +1,14 @@
 #ifndef DEVICEMODE_H
 #define DEVICEMODE_H
 
-class DeviceMode
+struct DeviceMode
 {
-public:
-    enum Edge
+    enum Event
     {
-        Ch1RisingEdge,
-        Ch1FallingEdge,
-        Ch2RisingEdge,
-        Ch2FallingEdge
+        Ch1RisingEvent,
+        Ch1FallingEvent,
+        Ch2RisingEvent,
+        Ch2FallingEvent
     };
 
     enum Clock
@@ -18,30 +17,13 @@ public:
         ExternalClock
     };
 
-public:
-    DeviceMode();
+    DeviceMode(Event startEvent = Ch1RisingEvent, Event stopEvent = Ch1RisingEvent, Event counterEvent = Ch1RisingEvent, Clock timerClock = InternalClock, int duration = 100);
 
-    Edge startEdge() const;
-    void setStartEdge(Edge value);
-
-    Edge stopEdge() const;
-    void setStopEdge(Edge value);
-
-    Edge counterEdge() const;
-    void setCounterEdge(Edge value);
-
-    Clock timerClock() const;
-    void setTimerClock(Clock value);
-
-    int duration() const;
-    void setDuration(int value);
-
-private:
-    Edge m_startEdge;
-    Edge m_stopEdge;
-    Edge m_counterEdge;
-    Clock m_timerClock;
-    int m_duration;
+    Event startEvent;
+    Event stopEvent;
+    Event counterEvent;
+    Clock timerClock;
+    int duration;
 };
 
 #endif // DEVICEMODE_H
