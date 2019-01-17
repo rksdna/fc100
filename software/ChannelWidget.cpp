@@ -15,14 +15,14 @@ ChannelWidget::ChannelWidget(const QString &title, QWidget *parent)
     connect(m_thresholdDial, &QDial::valueChanged, this, &ChannelWidget::updateWidget);
     connect(m_thresholdDial, &QDial::valueChanged, this, &ChannelWidget::optionsChanged);
 
-    m_couplingButtons->addData(tr("DC"), ChannelOptions::DcCoupling);
-    m_couplingButtons->addData(tr("AC"), ChannelOptions::AcCoupling);
+    m_couplingButtons->appendData(tr("DC"), ChannelOptions::DcCoupling);
+    m_couplingButtons->appendData(tr("AC"), ChannelOptions::AcCoupling);
     connect(m_couplingButtons, &PopupButton::currentDataChanged, this, &ChannelWidget::updateWidget);
     connect(m_couplingButtons, &PopupButton::currentDataChanged, this, &ChannelWidget::optionsChanged);
 
-    m_probeButtons->addData("1:1", x1Probe);
-    m_probeButtons->addData("1:10", x10Probe);
-    m_probeButtons->addData("1:100", x100Probe);
+    m_probeButtons->appendData("1:1", x1Probe);
+    m_probeButtons->appendData("1:10", x10Probe);
+    m_probeButtons->appendData("1:100", x100Probe);
     connect(m_probeButtons, &PopupButton::currentDataChanged, this, &ChannelWidget::updateWidget);
 
     QGridLayout * const layout = new QGridLayout(this);

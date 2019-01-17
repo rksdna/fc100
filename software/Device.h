@@ -22,7 +22,7 @@ public:
 
     virtual bool isDeviceConnected() const = 0;
     virtual void connectToDevice(const QString &name) = 0;
-    virtual void startSampling() = 0;
+    virtual void startMeasure() = 0;
     virtual void disconnectFromDevice() = 0;
 
     void setCh1Options(const ChannelOptions &options);
@@ -31,7 +31,7 @@ public:
 
 signals:
     void connectionStateChanged(bool connected);
-    void samplingFinished(const Sample &sample);
+    void measureFinished(const Sample &sample);
 
 protected:
     ChannelOptions m_ch1Options;
@@ -48,7 +48,7 @@ public:
 
     bool isDeviceConnected() const;
     void connectToDevice(const QString &name);
-    void startSampling();
+    void startMeasure();
     void disconnectFromDevice();
 
 private:
@@ -129,7 +129,7 @@ public:
 
     virtual bool isDeviceConnected() const;
     virtual void connectToDevice(const QString &name);
-    virtual void startSampling();
+    virtual void startMeasure();
     virtual void disconnectFromDevice();
 
 private:

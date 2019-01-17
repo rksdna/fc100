@@ -11,7 +11,7 @@ class PopupButton : public QToolButton
 public:
     explicit PopupButton(QWidget *parent = 0);
 
-    void addData(const QString &text, const QVariant &data);
+    void appendData(const QString &text, const QVariant &data);
 
     QVariant currentData() const;
     void setCurrentData(const QVariant &data);

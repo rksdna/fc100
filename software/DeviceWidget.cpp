@@ -9,6 +9,7 @@
 DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     : QFrame(parent),
       m_device(device),
+      m_computer(new Computer(this)),
       m_displayWidget(new DisplayWidget(tr("Display"))),
       m_channel1Widget(new ChannelWidget(tr("Channel 1"))),
       m_channel2Widget(new ChannelWidget(tr("Channel 2"))),
@@ -16,22 +17,22 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
 {
     setEnabled(false);
     connect(m_device, &Device::connectionStateChanged, this, &DeviceWidget::setEnabled);
-    connect(m_device, &Device::samplingFinished, this, &DeviceWidget::processSample);
+    connect(m_device, &Device::measureFinished, this, &DeviceWidget::processMeasure);
+    connect(m_device, &Device::measureFinished, this, &DeviceWidget::updateWidget);
 
     connect(m_channel1Widget, &ChannelWidget::optionsChanged, this, &DeviceWidget::updateDevice);
-
     connect(m_channel2Widget, &ChannelWidget::optionsChanged, this, &DeviceWidget::updateDevice);
 
-    connect(m_controlWidget, &ControlWidget::startRequested, m_device, &Device::startSampling);
-
-    connect(m_controlWidget, &ControlWidget::clearRequested, this, &DeviceWidget::clearFilter);
-    connect(m_controlWidget, &ControlWidget::clearRequested, this, &DeviceWidget::updateWidget);
-
-    connect(m_controlWidget, &ControlWidget::typeChanged, this, &DeviceWidget::clearFilter);
+    connect(m_controlWidget, &ControlWidget::typeChanged, m_computer, &Computer::clear);
     connect(m_controlWidget, &ControlWidget::typeChanged, this, &DeviceWidget::updateDevice);
     connect(m_controlWidget, &ControlWidget::typeChanged, this, &DeviceWidget::updateWidget);
-
     connect(m_controlWidget, &ControlWidget::functionChanged, this, &DeviceWidget::updateWidget);
+    connect(m_controlWidget, &ControlWidget::optionsChanged, m_computer, &Computer::clear);
+    connect(m_controlWidget, &ControlWidget::optionsChanged, this, &DeviceWidget::updateDevice);
+    connect(m_controlWidget, &ControlWidget::optionsChanged, this, &DeviceWidget::updateWidget);
+    connect(m_controlWidget, &ControlWidget::startRequested, m_device, &Device::startMeasure);
+    connect(m_controlWidget, &ControlWidget::clearRequested, m_computer, &Computer::clear);
+    connect(m_controlWidget, &ControlWidget::clearRequested, this, &DeviceWidget::updateWidget);
 
     QGridLayout * const layout = new QGridLayout(this);
     layout->addWidget(m_displayWidget, 0, 0, 1, 3);
@@ -51,18 +52,13 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     m_controlWidget->setOptions(ControlOptions());
 
     updateDevice();
-    m_device->startSampling();
-}
-
-void DeviceWidget::clearFilter()
-{
-    m_filter = Computer();
+    m_device->startMeasure();
 }
 
 void DeviceWidget::updateWidget()
 {
     m_displayWidget->display(m_controlWidget->type(),
-                             m_filter.toValue(m_controlWidget->function()),
+                             m_computer->toValue(m_controlWidget->function()),
                              0);
 }
 
@@ -70,15 +66,12 @@ void DeviceWidget::updateDevice()
 {
     m_device->setCh1Options(m_channel1Widget->options());
     m_device->setCh2Options(m_channel2Widget->options());
-    m_device->setOptions(m_controlWidget->fixedOptions());
+    m_device->setOptions(m_controlWidget->options());
 }
 
-void DeviceWidget::processSample(const Sample &sample)
+void DeviceWidget::processMeasure(const Sample &sample)
 {
-    m_filter.process(sample.toValue(m_controlWidget->type()));
-
-    updateWidget();
-
+    m_computer->process(sample.toValue(m_controlWidget->type()));
     if (m_controlWidget->isBurstEnabled())
-        m_device->startSampling();
+        m_device->startMeasure();
 }

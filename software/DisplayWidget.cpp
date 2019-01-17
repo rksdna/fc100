@@ -26,7 +26,7 @@ DisplayWidget::DisplayWidget(const QString &title, QWidget *parent)
 
     QGridLayout * const layout = new QGridLayout(this);
     layout->addWidget(m_firstLabel, 0, 0);
-    layout->addWidget(m_secondLabel, 1, 0);
+    layout->addWidget(m_secondLabel, 0, 0);
 }
 
 void DisplayWidget::display(Sample::Type type, qreal first, qreal second)

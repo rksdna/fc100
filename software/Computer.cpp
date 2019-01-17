@@ -1,12 +1,18 @@
 #include "Computer.h"
 
-Computer::Computer()
-    : m_first(qQNaN()),
-      m_min(qQNaN()),
-      m_max(qQNaN()),
-      m_average(qQNaN()),
-      m_last(qQNaN())
+Computer::Computer(QObject *parent)
+    : QObject(parent)
 {
+    clear();
+}
+
+void Computer::clear()
+{
+    m_first = qQNaN();
+    m_min = qQNaN();
+    m_max = qQNaN();
+    m_average = qQNaN();
+    m_last = qQNaN();
 }
 
 void Computer::process(qreal value)

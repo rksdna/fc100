@@ -1,10 +1,12 @@
 #ifndef COMPUTER_H
 #define COMPUTER_H
 
-#include <QtGlobal>
+#include <QObject>
 
-class Computer
+class Computer : public QObject
 {
+    Q_OBJECT
+
 public:
     enum Function
     {
@@ -17,8 +19,9 @@ public:
     };
 
 public:
-    Computer();
+    explicit Computer(QObject *parent = 0);
 
+    void clear();
     void process(qreal value);
     qreal toValue(Function function) const;
 

@@ -24,7 +24,6 @@ public:
     void setFunction(Computer::Function function);
 
     ControlOptions options() const;
-    ControlOptions fixedOptions() const;
     void setOptions(const ControlOptions &options);
 
     bool isBurstEnabled() const;

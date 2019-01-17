@@ -133,7 +133,7 @@ void HardwareDevice::connectToDevice(const QString &name)
     }
 }
 
-void HardwareDevice::startSampling()
+void HardwareDevice::startMeasure()
 {
     finish(Sample());
     m_state = TriggerState;
@@ -276,7 +276,7 @@ void HardwareDevice::finish(const Sample &sample)
     if (m_state == WaitState)
     {
         m_state = IdleState;
-        emit samplingFinished(sample);
+        emit measureFinished(sample);
     }
 }
 
@@ -315,7 +315,7 @@ void TestDevice::connectToDevice(const QString &name)
     emit connectionStateChanged(true);
 }
 
-void TestDevice::startSampling()
+void TestDevice::startMeasure()
 {
     m_timer->start(m_options.duration);
 }
@@ -334,5 +334,5 @@ void TestDevice::onTimeout()
     const qreal timer = 0.001 * (m_options.duration + qrand() % 2);
     const qreal counter = (1000.0 + 500.0 * qSin(2 * M_PI * 0.1 * QDateTime::currentMSecsSinceEpoch() * 0.001)) * timer;
 
-    emit samplingFinished(Sample(counter, timer));
+    emit measureFinished(Sample(counter, timer));
 }

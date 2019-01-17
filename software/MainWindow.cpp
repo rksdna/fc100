@@ -18,6 +18,7 @@ MainWindow::MainWindow(QWidget *parent)
     fileMenu->addSeparator();
 
     QAction * const quitAction = fileMenu->addAction(tr("Quit"));
+    quitAction->setShortcut(QKeySequence::Quit);
     connect(quitAction, &QAction::triggered, this, &MainWindow::close);
 
     setCentralWidget(new DeviceWidget(m_device));
