@@ -68,6 +68,7 @@ ControlWidget::ControlWidget(const QString &title, QWidget *parent)
     connect(m_timerClockButton, &PopupButton::currentDataChanged, this, &ControlWidget::optionsChanged);
 
     m_durationDial->setRange(0, key);
+    m_durationDial->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     connect(m_durationDial, &QDial::valueChanged, this, &ControlWidget::optionsChanged);
     connect(m_durationDial, &QDial::valueChanged, this, &ControlWidget::updateWidget);
 

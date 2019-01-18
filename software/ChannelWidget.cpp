@@ -13,6 +13,7 @@ ChannelWidget::ChannelWidget(const QString &title, QWidget *parent)
       m_thresholdDial(new QDial)
 {
     m_thresholdDial->setRange(ChannelOptions::min(), ChannelOptions::max());
+    m_thresholdDial->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     connect(m_thresholdDial, &QDial::valueChanged, this, &ChannelWidget::updateWidget);
     connect(m_thresholdDial, &QDial::valueChanged, this, &ChannelWidget::optionsChanged);
 
