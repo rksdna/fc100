@@ -1,13 +1,13 @@
 #include <QMenu>
 #include <QStylePainter>
-#include <QFontDatabase>
 #include <QStyleOptionToolButton>
 #include "PopupButton.h"
 
 PopupButton::PopupButton(QWidget *parent)
     : QToolButton(parent)
 {
-    //setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+
     setMenu(new QMenu(this));
     setPopupMode(InstantPopup);
 }

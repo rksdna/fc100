@@ -7,7 +7,8 @@
 #include "ControlOptions.h"
 
 class QDial;
-class QToolButton;
+class QSettings;
+class ToolButton;
 class PopupButton;
 
 class ControlWidget : public QGroupBox
@@ -18,16 +19,12 @@ public:
     explicit ControlWidget(const QString &title, QWidget *parent = 0);
 
     Sample::Type type() const;
-    void setType(Sample::Type type);
-
     Computer::Function function() const;
-    void setFunction(Computer::Function function);
-
     ControlOptions options() const;
-    void setOptions(const ControlOptions &options);
-
     bool isBurstEnabled() const;
-    void setBurstEnabled(bool enabled);
+
+    void saveToSettings(QSettings &settings);
+    void restoreFromSettings(const QSettings &settings);
 
 signals:
     void typeChanged();
@@ -48,9 +45,9 @@ private:
     PopupButton * const m_counterEdgeButton;
     PopupButton * const m_timerClockButton;
     QDial * const m_durationDial;
-    QToolButton * const m_startButton;
-    QToolButton * const m_burstButton;
-    QToolButton * const m_clearButton;
+    ToolButton * const m_startButton;
+    ToolButton * const m_burstButton;
+    ToolButton * const m_clearButton;
     QHash<int, QPair<int, QString> > m_durations;
 };
 

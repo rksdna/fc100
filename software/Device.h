@@ -23,6 +23,7 @@ public:
     virtual bool isDeviceConnected() const = 0;
     virtual void connectToDevice(const QString &name) = 0;
     virtual void startMeasure() = 0;
+    virtual bool isMeasureStarted() const = 0;
     virtual void disconnectFromDevice() = 0;
 
     void setCh1Options(const ChannelOptions &options);
@@ -49,6 +50,7 @@ public:
     bool isDeviceConnected() const;
     void connectToDevice(const QString &name);
     void startMeasure();
+    bool isMeasureStarted() const;
     void disconnectFromDevice();
 
 private:
@@ -127,10 +129,11 @@ class TestDevice : public Device
 public:
     explicit TestDevice(QObject *parent = 0);
 
-    virtual bool isDeviceConnected() const;
-    virtual void connectToDevice(const QString &name);
-    virtual void startMeasure();
-    virtual void disconnectFromDevice();
+    bool isDeviceConnected() const;
+    void connectToDevice(const QString &name);
+    void startMeasure();
+    bool isMeasureStarted() const;
+    void disconnectFromDevice();
 
 private:
     void onTimeout();

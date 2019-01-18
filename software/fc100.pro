@@ -18,7 +18,8 @@ SOURCES += main.cpp \
     ChannelOptions.cpp \
     ChannelWidget.cpp \
     ControlOptions.cpp \
-    ControlWidget.cpp
+    ControlWidget.cpp \
+    ToolButton.cpp
 
 HEADERS += \
     MainWindow.h \
@@ -32,7 +33,8 @@ HEADERS += \
     ChannelOptions.h \
     ChannelWidget.h \
     ControlOptions.h \
-    ControlWidget.h
+    ControlWidget.h \
+    ToolButton.h
 
 RESOURCES += \
     fc100.qrc

@@ -1,4 +1,5 @@
 #include <QDial>
+#include <QSettings>
 #include <QGridLayout>
 #include "PopupButton.h"
 #include "ChannelOptions.h"
@@ -7,52 +8,54 @@
 ChannelWidget::ChannelWidget(const QString &title, QWidget *parent)
     : QGroupBox(parent),
       m_title(title),
-      m_couplingButtons(new PopupButton),
-      m_probeButtons(new PopupButton),
+      m_couplingButton(new PopupButton),
+      m_probeButton(new PopupButton),
       m_thresholdDial(new QDial)
 {
     m_thresholdDial->setRange(ChannelOptions::min(), ChannelOptions::max());
     connect(m_thresholdDial, &QDial::valueChanged, this, &ChannelWidget::updateWidget);
     connect(m_thresholdDial, &QDial::valueChanged, this, &ChannelWidget::optionsChanged);
 
-    m_couplingButtons->appendData(tr("DC"), ChannelOptions::DcCoupling);
-    m_couplingButtons->appendData(tr("AC"), ChannelOptions::AcCoupling);
-    connect(m_couplingButtons, &PopupButton::currentDataChanged, this, &ChannelWidget::updateWidget);
-    connect(m_couplingButtons, &PopupButton::currentDataChanged, this, &ChannelWidget::optionsChanged);
+    m_couplingButton->appendData(tr("DC"), ChannelOptions::DcCoupling);
+    m_couplingButton->appendData(tr("AC"), ChannelOptions::AcCoupling);
+    connect(m_couplingButton, &PopupButton::currentDataChanged, this, &ChannelWidget::updateWidget);
+    connect(m_couplingButton, &PopupButton::currentDataChanged, this, &ChannelWidget::optionsChanged);
 
-    m_probeButtons->appendData("1:1", x1Probe);
-    m_probeButtons->appendData("1:10", x10Probe);
-    m_probeButtons->appendData("1:100", x100Probe);
-    connect(m_probeButtons, &PopupButton::currentDataChanged, this, &ChannelWidget::updateWidget);
+    m_probeButton->appendData("1:1", x1Probe);
+    m_probeButton->appendData("1:10", x10Probe);
+    m_probeButton->appendData("1:100", x100Probe);
+    connect(m_probeButton, &PopupButton::currentDataChanged, this, &ChannelWidget::updateWidget);
 
     QGridLayout * const layout = new QGridLayout(this);
-    layout->addWidget(m_thresholdDial, 0, 0, 2, 2);
-    layout->addWidget(m_couplingButtons, 2, 0);
-    layout->addWidget(m_probeButtons, 2, 1);
+    layout->addWidget(m_thresholdDial, 0, 1, 3, 3);
+    layout->addWidget(m_couplingButton, 0, 0);
+    layout->addWidget(m_probeButton, 2, 0);
 
     updateWidget();
 }
 
 ChannelWidget::Probe ChannelWidget::probe() const
 {
-    return ChannelWidget::Probe(m_probeButtons->currentData().toInt());
-}
-
-void ChannelWidget::setProbe(ChannelWidget::Probe probe)
-{
-    m_probeButtons->setCurrentData(probe);
+    return ChannelWidget::Probe(m_probeButton->currentData().toInt());
 }
 
 ChannelOptions ChannelWidget::options() const
 {
-    return ChannelOptions(ChannelOptions::Coupling(m_couplingButtons->currentData().toInt()), m_thresholdDial->value());
+    return ChannelOptions(ChannelOptions::Coupling(m_couplingButton->currentData().toInt()), m_thresholdDial->value());
 }
 
-void ChannelWidget::setOptions(const ChannelOptions &options)
+void ChannelWidget::saveToSettings(QSettings &settings)
 {
-    m_couplingButtons->setCurrentData(options.coupling);
-    m_thresholdDial->setValue(options.threshold);
-    updateWidget();
+    settings.setValue("Threshold", m_thresholdDial->value());
+    settings.setValue("Coupling", m_couplingButton->currentData());
+    settings.setValue("Probe", m_probeButton->currentData());
+}
+
+void ChannelWidget::restoreFromSettings(const QSettings &settings)
+{
+    m_thresholdDial->setValue(settings.value("Threshold", (ChannelOptions::min() + ChannelOptions::max()) / 2).toInt());
+    m_couplingButton->setCurrentData(settings.value("Coupling", ChannelOptions::DcCoupling));
+    m_probeButton->setCurrentData(settings.value("Probe", x1Probe));
 }
 
 void ChannelWidget::updateWidget()

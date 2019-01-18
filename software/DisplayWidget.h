@@ -14,7 +14,7 @@ class DisplayWidget : public QGroupBox
 public:
     explicit DisplayWidget(const QString &title, QWidget *parent = 0);
 
-    void display(Sample::Type type, qreal first, qreal second);
+    void display(Sample::Type type, qreal first, qreal second = 0.0);
 
 private:
     void setFirstLabel(qreal value, int precision, const QString &unit);

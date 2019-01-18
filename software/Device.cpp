@@ -139,6 +139,11 @@ void HardwareDevice::startMeasure()
     m_state = TriggerState;
 }
 
+bool HardwareDevice::isMeasureStarted() const
+{
+    return m_state != IdleState;
+}
+
 void HardwareDevice::disconnectFromDevice()
 {
     m_timer->stop();
@@ -318,6 +323,11 @@ void TestDevice::connectToDevice(const QString &name)
 void TestDevice::startMeasure()
 {
     m_timer->start(m_options.duration);
+}
+
+bool TestDevice::isMeasureStarted() const
+{
+    return m_timer->isActive();
 }
 
 void TestDevice::disconnectFromDevice()

@@ -1,5 +1,7 @@
 #include <QDial>
+#include <QSettings>
 #include <QGridLayout>
+#include "ToolButton.h"
 #include "PopupButton.h"
 #include "ControlWidget.h"
 
@@ -13,9 +15,9 @@ ControlWidget::ControlWidget(const QString &title, QWidget *parent)
       m_counterEdgeButton(new PopupButton),
       m_timerClockButton(new PopupButton),
       m_durationDial(new QDial),
-      m_startButton(new QToolButton),
-      m_burstButton(new QToolButton),
-      m_clearButton(new QToolButton)
+      m_startButton(new ToolButton),
+      m_burstButton(new ToolButton),
+      m_clearButton(new ToolButton)
 {
     int key = -1;
     m_durations.insert(++key, qMakePair(1, tr("1 mS")));
@@ -96,20 +98,9 @@ Sample::Type ControlWidget::type() const
     return Sample::Type(m_typeButton->currentData().toInt());
 }
 
-void ControlWidget::setType(Sample::Type type)
-{
-    m_typeButton->setCurrentData(type);
-    updateWidget();
-}
-
 Computer::Function ControlWidget::function() const
 {
     return Computer::Function(m_functionButton->currentData().toInt());
-}
-
-void ControlWidget::setFunction(Computer::Function function)
-{
-    m_functionButton->setCurrentData(function);
 }
 
 ControlOptions ControlWidget::options() const
@@ -122,33 +113,33 @@ ControlOptions ControlWidget::options() const
                           m_durations.value(m_durationDial->value()).first);
 }
 
-void ControlWidget::setOptions(const ControlOptions &options)
-{
-    m_startEdgeButton->setCurrentData(options.startEdge);
-    m_stopEdgeButton->setCurrentData(options.stopEdge);
-    m_counterEdgeButton->setCurrentData(options.counterEgde);
-    m_timerClockButton->setCurrentData(options.timerClock);
-
-    foreach (int key, m_durations.keys())
-    {
-        if (m_durations.value(key).first == options.duration)
-        {
-            m_durationDial->setValue(key);
-            break;
-        }
-    }
-
-    updateWidget();
-}
-
 bool ControlWidget::isBurstEnabled() const
 {
     return m_burstButton->isChecked();
 }
 
-void ControlWidget::setBurstEnabled(bool enabled)
+void ControlWidget::saveToSettings(QSettings &settings)
 {
-    m_burstButton->setChecked(enabled);
+    settings.setValue("Type", m_typeButton->currentData());
+    settings.setValue("Function", m_functionButton->currentData());
+    settings.setValue("Start", m_startEdgeButton->currentData());
+    settings.setValue("Stop", m_stopEdgeButton->currentData());
+    settings.setValue("Counter", m_counterEdgeButton->currentData());
+    settings.setValue("Timer", m_timerClockButton->currentData());
+    settings.setValue("Duration", m_durationDial->value());
+    settings.setValue("Burst", m_burstButton->isChecked());
+}
+
+void ControlWidget::restoreFromSettings(const QSettings &settings)
+{
+    m_typeButton->setCurrentData(settings.value("Type", Sample::FrequencyType));
+    m_functionButton->setCurrentData(settings.value("Function", ControlOptions::Ch1RisingEvent));
+    m_startEdgeButton->setCurrentData(settings.value("Start", ControlOptions::Ch1RisingEvent));
+    m_stopEdgeButton->setCurrentData(settings.value("Stop", ControlOptions::Ch1RisingEvent));
+    m_counterEdgeButton->setCurrentData(settings.value("Counter", ControlOptions::Ch1RisingEvent));
+    m_timerClockButton->setCurrentData(settings.value("Timer", ControlOptions::InternalClock));
+    m_durationDial->setValue(settings.value("Timer", 0).toInt());
+    m_burstButton->setChecked(settings.value("Burst", true).toBool());
 }
 
 void ControlWidget::updateWidget()

@@ -18,12 +18,16 @@ class DeviceWidget : public QFrame
 public:
     explicit DeviceWidget(Device *device, QWidget *parent = 0);
 
+protected:
+    void hideEvent(QHideEvent *event);
+
 private:
     void updateWidget();
     void updateDevice();
     void startMeasure();
-    void processMeasure(const Sample &sample);
-    void onTimeout();
+    void clearMeasure();
+    void finishMeasure(const Sample &sample);
+    void startMeasureLater();
 
 private:
     Device * const m_device;

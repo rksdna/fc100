@@ -5,6 +5,7 @@
 #include "ChannelOptions.h"
 
 class QDial;
+class QSettings;
 class PopupButton;
 
 class ChannelWidget : public QGroupBox
@@ -23,10 +24,10 @@ public:
     explicit ChannelWidget(const QString &title, QWidget *parent = 0);
 
     Probe probe() const;
-    void setProbe(Probe probe);
-
     ChannelOptions options() const;
-    void setOptions(const ChannelOptions &options);
+
+    void saveToSettings(QSettings &settings);
+    void restoreFromSettings(const QSettings &settings);
 
 signals:
     void optionsChanged();
@@ -36,8 +37,8 @@ private:
 
 private:
     const QString m_title;
-    PopupButton * const m_couplingButtons;
-    PopupButton * const m_probeButtons;
+    PopupButton * const m_couplingButton;
+    PopupButton * const m_probeButton;
     QDial * const m_thresholdDial;
 };
 
