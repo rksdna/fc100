@@ -1,3 +1,4 @@
+#include <QTimer>
 #include <QGridLayout>
 #include "Device.h"
 #include "Sample.h"
@@ -13,7 +14,8 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
       m_displayWidget(new DisplayWidget(tr("Display"))),
       m_channel1Widget(new ChannelWidget(tr("Channel 1"))),
       m_channel2Widget(new ChannelWidget(tr("Channel 2"))),
-      m_controlWidget(new ControlWidget(tr("Control")))
+      m_controlWidget(new ControlWidget(tr("Control"))),
+      m_timer(new QTimer(this))
 {
     setEnabled(false);
     connect(m_device, &Device::connectionStateChanged, this, &DeviceWidget::setEnabled);
@@ -30,9 +32,12 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     connect(m_controlWidget, &ControlWidget::optionsChanged, m_computer, &Computer::clear);
     connect(m_controlWidget, &ControlWidget::optionsChanged, this, &DeviceWidget::updateDevice);
     connect(m_controlWidget, &ControlWidget::optionsChanged, this, &DeviceWidget::updateWidget);
-    connect(m_controlWidget, &ControlWidget::startRequested, m_device, &Device::startMeasure);
+    connect(m_controlWidget, &ControlWidget::startRequested, this, &DeviceWidget::startMeasure);
     connect(m_controlWidget, &ControlWidget::clearRequested, m_computer, &Computer::clear);
     connect(m_controlWidget, &ControlWidget::clearRequested, this, &DeviceWidget::updateWidget);
+
+    m_timer->setSingleShot(true);
+    connect(m_timer, &QTimer::timeout, this, &DeviceWidget::onTimeout);
 
     QGridLayout * const layout = new QGridLayout(this);
     layout->addWidget(m_displayWidget, 0, 0, 1, 3);
@@ -69,9 +74,19 @@ void DeviceWidget::updateDevice()
     m_device->setOptions(m_controlWidget->options());
 }
 
+void DeviceWidget::startMeasure()
+{
+    m_timer->start(2 * m_controlWidget->options().duration);
+    m_device->startMeasure();
+}
+
 void DeviceWidget::processMeasure(const Sample &sample)
 {
     m_computer->process(sample.toValue(m_controlWidget->type()));
+}
+
+void DeviceWidget::onTimeout()
+{
     if (m_controlWidget->isBurstEnabled())
-        m_device->startMeasure();
+        startMeasure();
 }

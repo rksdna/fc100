@@ -40,6 +40,7 @@ private:
     void updateWidget();
 
 private:
+    const QString m_title;
     PopupButton * const m_typeButton;
     PopupButton * const m_functionButton;
     PopupButton * const m_startEdgeButton;
@@ -50,6 +51,7 @@ private:
     QToolButton * const m_startButton;
     QToolButton * const m_burstButton;
     QToolButton * const m_clearButton;
+    QHash<int, QPair<int, QString> > m_durations;
 };
 
 #endif // CONTROLWIDGET_H

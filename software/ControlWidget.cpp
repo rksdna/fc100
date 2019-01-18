@@ -4,7 +4,8 @@
 #include "ControlWidget.h"
 
 ControlWidget::ControlWidget(const QString &title, QWidget *parent)
-    : QGroupBox(title, parent),
+    : QGroupBox( parent),
+      m_title(title),
       m_typeButton(new PopupButton),
       m_functionButton(new PopupButton),
       m_startEdgeButton(new PopupButton),
@@ -16,6 +17,17 @@ ControlWidget::ControlWidget(const QString &title, QWidget *parent)
       m_burstButton(new QToolButton),
       m_clearButton(new QToolButton)
 {
+    int key = -1;
+    m_durations.insert(++key, qMakePair(1, tr("1 mS")));
+    m_durations.insert(++key, qMakePair(5, tr("5 mS")));
+    m_durations.insert(++key, qMakePair(10, tr("10 mS")));
+    m_durations.insert(++key, qMakePair(50, tr("50 mS")));
+    m_durations.insert(++key, qMakePair(100, tr("100 mS")));
+    m_durations.insert(++key, qMakePair(500, tr("500 mS")));
+    m_durations.insert(++key, qMakePair(1000, tr("1 S")));
+    m_durations.insert(++key, qMakePair(5000, tr("5 S")));
+    m_durations.insert(++key, qMakePair(10000, tr("10 S")));
+
     m_typeButton->appendData(tr("Frequency"), Sample::FrequencyType);
     m_typeButton->appendData(tr("Period"), Sample::PeriodType);
     m_typeButton->appendData(tr("RPM"), Sample::RpmType);
@@ -53,7 +65,7 @@ ControlWidget::ControlWidget(const QString &title, QWidget *parent)
     m_timerClockButton->appendData(tr("EXT"), ControlOptions::ExternalClock);
     connect(m_timerClockButton, &PopupButton::currentDataChanged, this, &ControlWidget::optionsChanged);
 
-    m_durationDial->setRange(0, 1000);
+    m_durationDial->setRange(0, key);
     connect(m_durationDial, &QDial::valueChanged, this, &ControlWidget::optionsChanged);
     connect(m_durationDial, &QDial::valueChanged, this, &ControlWidget::updateWidget);
 
@@ -107,7 +119,7 @@ ControlOptions ControlWidget::options() const
                           ControlOptions::Edge(m_stopEdgeButton->currentData().toInt()),
                           ControlOptions::Edge(m_counterEdgeButton->currentData().toInt()),
                           ControlOptions::Clock(m_timerClockButton->currentData().toInt()),
-                          m_durationDial->value());
+                          m_durations.value(m_durationDial->value()).first);
 }
 
 void ControlWidget::setOptions(const ControlOptions &options)
@@ -116,7 +128,16 @@ void ControlWidget::setOptions(const ControlOptions &options)
     m_stopEdgeButton->setCurrentData(options.stopEdge);
     m_counterEdgeButton->setCurrentData(options.counterEgde);
     m_timerClockButton->setCurrentData(options.timerClock);
-    m_durationDial->setValue(options.duration);
+
+    foreach (int key, m_durations.keys())
+    {
+        if (m_durations.value(key).first == options.duration)
+        {
+            m_durationDial->setValue(key);
+            break;
+        }
+    }
+
     updateWidget();
 }
 
@@ -132,4 +153,6 @@ void ControlWidget::setBurstEnabled(bool enabled)
 
 void ControlWidget::updateWidget()
 {
+    const int key = m_durationDial->value();
+    setTitle(tr("%1: %2").arg(m_title).arg(m_durations.value(key).second));
 }

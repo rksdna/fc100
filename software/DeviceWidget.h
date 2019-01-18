@@ -21,7 +21,9 @@ public:
 private:
     void updateWidget();
     void updateDevice();
+    void startMeasure();
     void processMeasure(const Sample &sample);
+    void onTimeout();
 
 private:
     Device * const m_device;
@@ -30,6 +32,7 @@ private:
     ChannelWidget * const m_channel1Widget;
     ChannelWidget * const m_channel2Widget;
     ControlWidget * const m_controlWidget;
+    QTimer * const m_timer;
 };
 
 #endif // DEVICEWIDGET_H
