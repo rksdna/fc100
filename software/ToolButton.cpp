@@ -3,5 +3,6 @@
 ToolButton::ToolButton(QWidget *parent)
     : QToolButton(parent)
 {
-    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    //setMinimumSize(80, 40);
+    setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
 }

@@ -6,7 +6,7 @@
 PopupButton::PopupButton(QWidget *parent)
     : QToolButton(parent)
 {
-    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
 
     setMenu(new QMenu(this));
     setPopupMode(InstantPopup);

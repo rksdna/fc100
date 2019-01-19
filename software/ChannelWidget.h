@@ -4,7 +4,7 @@
 #include <QGroupBox>
 #include "ChannelOptions.h"
 
-class QDial;
+class Dial;
 class QSettings;
 class PopupButton;
 
@@ -39,7 +39,7 @@ private:
     const QString m_title;
     PopupButton * const m_couplingButton;
     PopupButton * const m_probeButton;
-    QDial * const m_thresholdDial;
+    Dial * const m_thresholdDial;
 };
 
 #endif // DEVICECHANNELWIDGET_H

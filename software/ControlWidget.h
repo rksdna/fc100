@@ -6,8 +6,8 @@
 #include "Computer.h"
 #include "ControlOptions.h"
 
-class QDial;
 class QSettings;
+class Dial;
 class ToolButton;
 class PopupButton;
 
@@ -44,9 +44,10 @@ private:
     PopupButton * const m_stopEdgeButton;
     PopupButton * const m_counterEdgeButton;
     PopupButton * const m_timerClockButton;
-    QDial * const m_durationDial;
+    Dial * const m_durationDial;
     ToolButton * const m_startButton;
-    ToolButton * const m_burstButton;
+    PopupButton * const m_burstButton;
+    PopupButton * const m_gatedButton;
     ToolButton * const m_clearButton;
     QHash<int, QPair<int, QString> > m_durations;
 };

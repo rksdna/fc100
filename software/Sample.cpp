@@ -34,7 +34,7 @@ qreal Sample::toValue(Sample::Type type) const
 
         break;
 
-    case EventsType:
+    case CountType:
         return counter;
 
     case TimeType:

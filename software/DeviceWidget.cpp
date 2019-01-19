@@ -18,6 +18,7 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
       m_timer(new QTimer(this))
 {
     setEnabled(false);
+
     connect(m_device, &Device::connectionStateChanged, this, &DeviceWidget::setEnabled);
     connect(m_device, &Device::measureFinished, this, &DeviceWidget::finishMeasure);
     connect(m_device, &Device::measureFinished, this, &DeviceWidget::updateWidget);
@@ -90,7 +91,9 @@ void DeviceWidget::hideEvent(QHideEvent *event)
 
 void DeviceWidget::updateWidget()
 {
-    m_displayWidget->display(m_controlWidget->type(), m_computer->toValue(m_controlWidget->function()));
+    m_displayWidget->display(m_controlWidget->type(),
+                             m_computer->valueOf(m_controlWidget->function()),
+                             m_computer->lastTime());
 }
 
 void DeviceWidget::updateDevice()
@@ -118,7 +121,7 @@ void DeviceWidget::clearMeasure()
 
 void DeviceWidget::finishMeasure(const Sample &sample)
 {
-    m_computer->process(sample.toValue(m_controlWidget->type()));
+    m_computer->process(sample.toValue(m_controlWidget->type()), sample.toValue(Sample::TimeType));
     if (!m_timer->isActive())
         startMeasureLater();
 }

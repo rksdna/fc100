@@ -1,6 +1,6 @@
-#include <QDial>
 #include <QSettings>
 #include <QGridLayout>
+#include "Dial.h"
 #include "PopupButton.h"
 #include "ChannelOptions.h"
 #include "ChannelWidget.h"
@@ -10,10 +10,9 @@ ChannelWidget::ChannelWidget(const QString &title, QWidget *parent)
       m_title(title),
       m_couplingButton(new PopupButton),
       m_probeButton(new PopupButton),
-      m_thresholdDial(new QDial)
+      m_thresholdDial(new Dial)
 {
     m_thresholdDial->setRange(ChannelOptions::min(), ChannelOptions::max());
-    m_thresholdDial->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     connect(m_thresholdDial, &QDial::valueChanged, this, &ChannelWidget::updateWidget);
     connect(m_thresholdDial, &QDial::valueChanged, this, &ChannelWidget::optionsChanged);
 
@@ -28,9 +27,9 @@ ChannelWidget::ChannelWidget(const QString &title, QWidget *parent)
     connect(m_probeButton, &PopupButton::currentDataChanged, this, &ChannelWidget::updateWidget);
 
     QGridLayout * const layout = new QGridLayout(this);
-    layout->addWidget(m_thresholdDial, 0, 1, 3, 3);
     layout->addWidget(m_couplingButton, 0, 0);
-    layout->addWidget(m_probeButton, 2, 0);
+    layout->addWidget(m_probeButton, 1, 0);
+    layout->addWidget(m_thresholdDial, 0, 1, 2, 2);
 
     updateWidget();
 }

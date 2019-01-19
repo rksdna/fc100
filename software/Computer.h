@@ -11,26 +11,28 @@ public:
     enum Function
     {
         ActualFunction,
+        SmoothFunction,
+        DeviationFunction,
         MinFunction,
         MaxFunction,
-        BandFunction,
-        DeviationFunction,
-        AverageFunction
+        BandFunction
     };
 
 public:
     explicit Computer(QObject *parent = 0);
 
     void clear();
-    void process(qreal value);
-    qreal toValue(Function function) const;
+    void process(qreal value, qreal time);
+    qreal valueOf(Function function) const;
+    qreal lastTime() const;
 
 private:
     qreal m_first;
     qreal m_min;
     qreal m_max;
-    qreal m_average;
+    qreal m_smooth;
     qreal m_last;
+    qreal m_lastTime;
 };
 
 #endif // COMPUTER_H

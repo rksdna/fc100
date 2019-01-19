@@ -18,6 +18,7 @@ protected:
 private:
     void restartDevice();
     void openPortDialog();
+    void about();
 
 private:
     Device * const m_device;

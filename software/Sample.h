@@ -10,7 +10,7 @@ struct Sample
         FrequencyType,
         RpmType,
         PeriodType,
-        EventsType,
+        CountType,
         TimeType
     };
 

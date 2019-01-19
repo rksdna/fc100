@@ -18,15 +18,18 @@ public:
 
 private:
     void setFirstLabel(qreal value, int precision, const QString &unit);
-    void clearFirstLabel();
-
     void setSecondLabel(qreal value, int precision, const QString &unit);
-    void clearSecondLabel();
+    void clearSecondLabel(const QString &unit);
+
+private:
+    QString format(qreal value, int precision) const;
 
 private:
     QLocale m_locale;
     QLabel * const m_firstLabel;
     QLabel * const m_secondLabel;
+    QLabel * const m_firstUnitLabel;
+    QLabel * const m_secondUnitLabel;
 };
 
 #endif // DISPLAYWIDGET_H

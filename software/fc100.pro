@@ -19,7 +19,8 @@ SOURCES += main.cpp \
     ChannelWidget.cpp \
     ControlOptions.cpp \
     ControlWidget.cpp \
-    ToolButton.cpp
+    ToolButton.cpp \
+    Dial.cpp
 
 HEADERS += \
     MainWindow.h \
@@ -34,7 +35,8 @@ HEADERS += \
     ChannelWidget.h \
     ControlOptions.h \
     ControlWidget.h \
-    ToolButton.h
+    ToolButton.h \
+    Dial.h
 
 RESOURCES += \
     fc100.qrc
