@@ -55,7 +55,7 @@ void DisplayWidget::display(Sample::Type type, qreal first, qreal second)
         break;
 
     case Sample::PeriodType:
-        setFirstLabel(1E+9 * first, 3, tr("ns"));
+        setFirstLabel(1E+9 * first, 0, tr("ns"));
         setSecondLabel(second, 3, tr("S"));
         break;
 
@@ -65,7 +65,7 @@ void DisplayWidget::display(Sample::Type type, qreal first, qreal second)
         break;
 
     case Sample::TimeType:
-        setFirstLabel(1E+9 * first, 6, tr("ns"));
+        setFirstLabel(1E+9 * first, 0, tr("ns"));
         clearSecondLabel(tr("S"));
         break;
     }

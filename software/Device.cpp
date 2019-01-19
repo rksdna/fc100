@@ -237,8 +237,8 @@ void HardwareDevice::read(const QByteArray &data)
         {
             const qreal clock = 10E+6 - 1;
             const qreal counter = response.counter;
-            const qreal start = qreal(response.startDivident) / response.startDivider;
-            const qreal stop = qreal(response.stopDivident) / response.stopDivider;
+            const qreal start = qreal(response.startDivident - 0.5) / response.startDivider;
+            const qreal stop = qreal(response.stopDivident + 0.5) / response.stopDivider;
             const qreal timer = qreal(response.timer) + start - stop;
 
             finish(Sample(counter, timer / clock));

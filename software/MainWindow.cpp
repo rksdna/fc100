@@ -62,11 +62,8 @@ void MainWindow::openPortDialog()
 
 void MainWindow::about()
 {
-    const QString text = tr("%1\n© %2 %3\n%4")
-            .arg(QApplication::applicationDisplayName())
-            .arg(QDateTime::currentDateTime().toString("yyyy"))
-            .arg(QApplication::organizationName())
-            .arg(QApplication::organizationDomain());
+    const QString text = tr("%1")
+            .arg(QApplication::applicationDisplayName());
 
     QMessageBox * const dialog = new QMessageBox(QMessageBox::NoIcon,
                                                  QApplication::applicationDisplayName(),
