@@ -9,9 +9,9 @@
 #include "MainWindow.h"
 #include "PortDialog.h"
 
-MainWindow::MainWindow(QWidget *parent)
+MainWindow::MainWindow(const QString &device, QWidget *parent)
     : QMainWindow(parent),
-      m_device(new HardwareDevice(this))
+      m_device(Device::create(device, this))
 {
     QMenu * const fileMenu = menuBar()->addMenu(tr("File"));
 

@@ -18,6 +18,9 @@ public:
     static quint16 productIdentifier();
 
 public:
+    static Device *create(const QString &device, QObject *parent = 0);
+
+public:
     explicit Device(QObject *parent = 0);
 
     virtual bool isDeviceConnected() const = 0;

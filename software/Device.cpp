@@ -15,6 +15,14 @@ quint16 Device::productIdentifier()
     return 0x5740;
 }
 
+Device *Device::create(const QString &device, QObject *parent)
+{
+    if (device == "fc100")
+        return new HardwareDevice(parent);
+
+    return new TestDevice(parent);
+}
+
 Device::Device(QObject *parent)
     : QObject(parent)
 {
