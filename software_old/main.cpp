@@ -1,11 +1,10 @@
-#include <QIcon>
-#include <QDebug>
 #include <QTranslator>
 #include <QApplication>
 #include <QLibraryInfo>
 #include <QStandardPaths>
 #include <QCommandLineParser>
 #include "Device.h"
+#include "MainWindow.h"
 
 int main(int argc, char *argv[])
 {
@@ -50,17 +49,8 @@ int main(int argc, char *argv[])
 
     parser.process(application);
 
-    Device device;
-    QJsonObject obj = device.toJsonObject();
-
-    device.setJsonObject(obj);
-
-    qDebug() << obj << device.toJsonObject();
-
-/*    MainWindow window(parser.value("device"));
+    MainWindow window(parser.value("device"));
     window.show();
 
-    return application.exec();*/
-
-    return 0;
+    return application.exec();
 }

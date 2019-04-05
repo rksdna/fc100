@@ -1,0 +1,12 @@
+Source: DEB_PRODUCT
+Package: DEB_PRODUCT
+Version: DEB_VERSION
+Section: misc
+Maintainer: DEB_MAINTAINER
+Installed-Size: DEB_SIZE
+Homepage: DEB_WEBSITE
+Priority: extra
+Architecture: DEB_ARCHITECTURE
+Depends: libc6, libqt5core5a, libqt5gui5, libqt5widgets5, libqt5serialport5
+Description: Special package.
+ [description here]
