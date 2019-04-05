@@ -5,7 +5,13 @@
 Device::Device(QObject *parent)
     : QObject(parent),
       m_ch1Coupling(new EnumControl<Coupling>("ch1Coupling", this)),
-      m_ch2Coupling(new EnumControl<Coupling>("ch2Coupling", this))
+      m_ch2Coupling(new EnumControl<Coupling>("ch2Coupling", this)),
+      m_startEdge(new EnumControl<Edge>("startEdge", this)),
+      m_stopEdge(new EnumControl<Edge>("stopEdge", this)),
+      m_countEdge(new EnumControl<Edge>("countEdge", this)),
+      m_clock(new EnumControl<Clock>("clock", this)),
+      m_mode(new EnumControl<Mode>("mode", this)),
+      m_run(new EnumControl<Run>("run", this))
 {
 }
 

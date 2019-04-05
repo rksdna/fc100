@@ -4,6 +4,7 @@ TARGET = fc100
 TEMPLATE = app
 
 include(deploy/deploy.pri)
+include(widgets/widgets.pri)
 include(controls/controls.pri)
 include(translations/translations.pri)
 
