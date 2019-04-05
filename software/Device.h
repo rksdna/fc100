@@ -40,6 +40,11 @@ public:
     {
         FrequencyMode,
         PeriodMode,
+
+        GateFrequencyMode,
+        GatePeriodMode,
+        Gate
+
     };
 
     Q_ENUM(Mode)

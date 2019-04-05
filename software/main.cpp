@@ -1,17 +1,19 @@
 #include <QIcon>
 #include <QDebug>
+#include <QQmlContext>
 #include <QTranslator>
 #include <QApplication>
 #include <QLibraryInfo>
 #include <QStandardPaths>
 #include <QCommandLineParser>
+#include <QQmlApplicationEngine>
 #include "Device.h"
 
 int main(int argc, char *argv[])
 {
     qsrand(QDateTime::currentMSecsSinceEpoch());
 
-    QApplication application(argc, argv);
+    QGuiApplication application(argc, argv);
     application.setApplicationName(DEPLOY_PRODUCT);
     application.setApplicationVersion(DEPLOY_VERSION);
     application.setApplicationDisplayName(QString("%1 %2").arg(DEPLOY_PRODUCT, DEPLOY_VERSION));
@@ -53,14 +55,13 @@ int main(int argc, char *argv[])
     Device device;
     QJsonObject obj = device.toJsonObject();
 
+    device.setObjectName("kvk");
     device.setJsonObject(obj);
 
-    qDebug() << obj << device.toJsonObject();
+    QQmlApplicationEngine engine;
+    engine.rootContext()->setContextProperty("device", &device);
 
-/*    MainWindow window(parser.value("device"));
-    window.show();
+    engine.load(QUrl("qrc:/main.qml"));
 
-    return application.exec();*/
-
-    return 0;
+    return application.exec();
 }
