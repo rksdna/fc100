@@ -8,10 +8,12 @@ include(controls/controls.pri)
 include(translations/translations.pri)
 
 SOURCES += main.cpp \
-    Device.cpp
+    Device.cpp \
+    HardwareDevice.cpp
 
 HEADERS += \
-    Device.h
+    Device.h \
+    HardwareDevice.h
 
 RESOURCES += \
     fc100.qrc

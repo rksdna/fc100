@@ -3,7 +3,9 @@
 #include "Control.h"
 
 Device::Device(QObject *parent)
-    : QObject(parent)
+    : QObject(parent),
+      m_ch1Coupling(new EnumControl<Coupling>("ch1Coupling", this)),
+      m_ch2Coupling(new EnumControl<Coupling>("ch2Coupling", this))
 {
 }
 
