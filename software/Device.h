@@ -60,6 +60,10 @@ public:
 public:
     explicit Device(QObject *parent = 0);
 
+    Q_INVOKABLE void call1();
+
+    QList<Control *> constrols() const;
+
     QJsonObject toJsonObject() const;
     void setJsonObject(const QJsonObject &object);
 

@@ -2,6 +2,7 @@
 #include <QDebug>
 #include <QQmlContext>
 #include <QTranslator>
+#include <QQmlContext>
 #include <QApplication>
 #include <QLibraryInfo>
 #include <QStandardPaths>
@@ -61,7 +62,11 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty("device", &device);
 
+
+
     engine.load(QUrl("qrc:/main.qml"));
+
+
 
     return application.exec();
 }

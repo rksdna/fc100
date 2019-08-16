@@ -15,6 +15,16 @@ Device::Device(QObject *parent)
 {
 }
 
+void Device::call1()
+{
+    qDebug() << "qwq";
+}
+
+QList<Control *> Device::constrols() const
+{
+    return findChildren<Control *>();
+}
+
 QJsonObject Device::toJsonObject() const
 {
     QJsonObject object;

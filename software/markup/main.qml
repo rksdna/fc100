@@ -13,6 +13,14 @@ Window {
                anchors.centerIn: parent
                text: device.objectName
            }
+
+           MouseArea {
+               anchors.fill: parent
+               onClicked: device.call1()
+           }
+
        }
+
+
 }
 
