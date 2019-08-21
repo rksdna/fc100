@@ -10,6 +10,7 @@ class CustomButton : public QToolButton
 
 public:
     CustomButton(const QString &text, QObject *object, const char *property, QWidget *parent = 0);
+
     void addItem(const QString &text, const QVariant &data);
 
     QVariant data() const;
