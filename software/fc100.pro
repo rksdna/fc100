@@ -4,18 +4,15 @@ TARGET = fc100
 TEMPLATE = app
 
 include(deploy/deploy.pri)
+include(device/device.pri)
 include(widgets/widgets.pri)
-include(markup/markup.pri)
-include(controls/controls.pri)
 include(translations/translations.pri)
 
 SOURCES += main.cpp \
-    Device.cpp \
-    HardwareDevice.cpp
+    MainWindow.cpp
 
 HEADERS += \
-    Device.h \
-    HardwareDevice.h
+    MainWindow.h
 
 RESOURCES += \
     fc100.qrc
