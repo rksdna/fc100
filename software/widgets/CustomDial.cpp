@@ -10,9 +10,11 @@ CustomDial::CustomDial(const QString &text, QWidget *parent)
     : QAbstractSlider(parent),
       m_text(text),
       m_description(tr("---")),
-      m_margins(10, 5, 10, 5),
-      m_clearance(6),
-      m_thickness(3)
+      m_margins(10, 10, 10, 0),
+      m_clearance(10),
+      m_thickness(4),
+      m_min(-M_PI * 0.8),
+      m_max(M_PI * 0.8)
 {
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
@@ -44,7 +46,7 @@ QSize CustomDial::minimumSizeHint() const
     const QFontMetrics metrics(font());
     const int height = metrics.height();
     const int width = qMax(metrics.width(m_text), metrics.width(m_description));
-    const int size = M_SQRT2 * qMax(height, width) + 4 * m_clearance;
+    const int size = M_SQRT2 * qMax(height, width) + 2 * m_clearance;
 
     const QRect content = QRect(0, 0, size, size).marginsAdded(m_margins);
 
@@ -101,12 +103,12 @@ void CustomDial::paintEvent(QPaintEvent *event)
     const QRect rect = style()->subElementRect(QStyle::SE_PushButtonContents, &option, this).marginsRemoved(m_margins);
     const int size = qMin(rect.width(), rect.height());
 
-    QRect square(0, 0, size, size);
-    square.moveCenter(rect.center());
+    QRect groove(0, 0, size, size);
+    groove.moveCenter(rect.center());
 
-    const QRect groove = square.adjusted(m_clearance, m_clearance, -m_clearance, -m_clearance);
-    const int start = 16 * 180 * valueToAngle(minimum()) / M_PI;
-    const int stop = 16 * 180 * valueToAngle(value()) / M_PI;
+    const int begin = 16 * (90 - 180 * valueToAngle(minimum()) / M_PI);
+    const int position = 16 * (90 - 180 * valueToAngle(value()) / M_PI);
+    const int end = 16 * (90 - 180 * valueToAngle(maximum()) / M_PI);
 
     const QRect content = groove.adjusted(m_clearance, m_clearance, -m_clearance, -m_clearance);
     const int x = content.x();
@@ -115,19 +117,15 @@ void CustomDial::paintEvent(QPaintEvent *event)
     const int width = content.width();
 
     QStylePainter painter(this);
+
     painter.translate(-0.5, -0.5);
     painter.setRenderHint(QPainter::Antialiasing);
-
-    painter.drawRect(rect);
-    painter.drawRect(content);
-    painter.drawRect(rect);
 
     painter.drawControl(QStyle::CE_PushButton, option);
 
     painter.setFont(font());
-
-    painter.setPen(frameColor);
-    painter.drawEllipse(square);
+    painter.setPen(QPen(frameColor, m_thickness, Qt::SolidLine, Qt::RoundCap));
+    painter.drawArc(groove, begin, end - begin);
 
     painter.setPen(textColor);
     painter.drawText(QRect(x, y, width, height), Qt::AlignHCenter | Qt::AlignBottom, m_text);
@@ -135,11 +133,10 @@ void CustomDial::paintEvent(QPaintEvent *event)
 
     painter.setPen(QPen(valueColor, m_thickness, Qt::SolidLine, Qt::RoundCap));
     painter.drawText(QRect(x, y + height, width, height), Qt::AlignHCenter | Qt::AlignTop, m_description);
-    painter.drawArc(groove, start, start - stop);
+    painter.drawArc(groove, begin, position - begin);
 
     event->accept();
 }
-
 
 void CustomDial::initStyleOption(QStyleOptionButton *option) const
 {
@@ -154,16 +151,12 @@ qreal CustomDial::pointToAngle(const QPoint &point) const
 
 int CustomDial::pointToValue(const QPoint &pos) const
 {
-    const qreal min = -M_PI * 0.75;
-    const qreal max = M_PI * 0.75;
-    return minimum() + (maximum() - minimum()) * (pointToAngle(pos) - min) / (max - min);
+    return minimum() + (maximum() - minimum()) * (pointToAngle(pos) - m_min) / (m_max - m_min);
 }
 
 qreal CustomDial::valueToAngle(int value) const
 {
-    const qreal min = -M_PI * 0.75;
-    const qreal max = M_PI * 0.75;
-    return min + (max - min) * (value - minimum()) / (maximum() - minimum());
+    return m_min + (m_max - m_min) * (value - minimum()) / (maximum() - minimum());
 }
 
 QPoint CustomDial::valueToPoint(int value, int radius) const

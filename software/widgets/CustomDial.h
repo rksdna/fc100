@@ -39,6 +39,8 @@ private:
     QMargins m_margins;
     int m_clearance;
     int m_thickness;
+    qreal m_min;
+    qreal m_max;
 };
 
 #endif // CUSTOMDIAL_H
