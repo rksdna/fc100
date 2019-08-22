@@ -69,17 +69,17 @@ public:
     Coupling ch1Coupling() const;
     void setCh1Coupling(Coupling coupling);
 
-    Coupling ch2Coupling() const;
-    void setCh2Coupling(Coupling coupling);
-
     Probe ch1Probe() const;
     void setCh1Probe(Probe probe);
 
-    Probe ch2Probe() const;
-    void setCh2Probe(Probe probe);
-
     int ch1Threshold() const;
     void setCh1Threshold(int threshold);
+
+    Coupling ch2Coupling() const;
+    void setCh2Coupling(Coupling coupling);
+
+    Probe ch2Probe() const;
+    void setCh2Probe(Probe probe);
 
     int ch2Threshold() const;
     void setCh2Threshold(int threshold);
@@ -89,15 +89,19 @@ public:
 
 signals:
     void ch1CouplingChanged(Coupling coupling);
-    void ch2CouplingChanged(Coupling coupling);
-
     void ch1ProbeChanged(Probe probe);
-    void ch2ProbeChanged(Probe probe);
-
     void ch1ThresholdChanged(int threshold);
+    void ch1DescriptionChanged(const QString &description);
+
+    void ch2CouplingChanged(Coupling coupling);
+    void ch2ProbeChanged(Probe probe);
     void ch2ThresholdChanged(int threshold);
+    void ch2DescriptionChanged(const QString &description);
 
     void clockChanged(Clock clock);
+
+private:
+    QString description(int threshold, Probe probe) const;
 
 private:
     Coupling m_ch1Coupling;
@@ -106,7 +110,6 @@ private:
     Probe m_ch2Probe;
     int m_ch1Threshold;
     int m_ch2Threshold;
-
 
     Clock m_clock;
     double m_clockFrequency;

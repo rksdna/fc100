@@ -12,9 +12,10 @@ class MainWindow : public QWidget
 public:
     explicit MainWindow(QWidget *parent = 0);
 
+    void upda();
+
 private:
     Device * const m_device;
-
 };
 
 #endif // MAINWINDOW_H

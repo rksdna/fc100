@@ -12,6 +12,8 @@ CustomButton::CustomButton(const QString &text, QWidget *parent)
 {
     setText(text);
     setFocusPolicy(Qt::StrongFocus);
+    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+
     connect(this, &QAbstractButton::clicked, this, &CustomButton::changeValue);
 }
 
@@ -83,7 +85,7 @@ void CustomButton::paintEvent(QPaintEvent *event)
     painter.drawLine(x, y + height, x + width, y + height);
 
     painter.setPen(valueColor);
-    painter.drawText(QRect(x, y + height, width, height), Qt::AlignCenter, m_items.value(m_value, tr("???")));
+    painter.drawText(QRect(x, y + height, width, height), Qt::AlignCenter, m_items.value(m_value, tr("---")));
 
     event->accept();
 }
