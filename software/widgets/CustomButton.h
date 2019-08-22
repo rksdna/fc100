@@ -25,7 +25,7 @@ protected:
     void paintEvent(QPaintEvent *event);
 
 private:
-    void initStyleOption(class QStyleOptionButton *option) const;
+    void initStyleOption1(class QStyleOptionButton *option) const;
     void changeValue();
 
 private:

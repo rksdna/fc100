@@ -54,14 +54,14 @@ QSize CustomButton::minimumSizeHint() const
     const QRect content = QRect(0, 0, width, 2 * height).marginsAdded(m_margins);
 
     QStyleOptionButton option;
-    initStyleOption(&option);
+    initStyleOption1(&option);
     return style()->sizeFromContents(QStyle::CT_PushButton, &option, content.size(), this).expandedTo(QApplication::globalStrut());
 }
 
 void CustomButton::paintEvent(QPaintEvent *event)
 {
     QStyleOptionButton option;
-    initStyleOption(&option);
+    initStyleOption1(&option);
 
     const QColor textColor = palette().color(QPalette::Mid);
     const QColor valueColor = QColor("#A5D785");
@@ -90,11 +90,12 @@ void CustomButton::paintEvent(QPaintEvent *event)
     event->accept();
 }
 
-void CustomButton::initStyleOption(QStyleOptionButton *option) const
+void CustomButton::initStyleOption1(QStyleOptionButton *option) const
 {
     option->initFrom(this);
     option->features = QStyleOptionButton::None;
-    option->state |= isDown() ? QStyle::State_Sunken : QStyle::State_None;
+    if (isDown())
+        option->state |= QStyle::State_Sunken;
 }
 
 void CustomButton::changeValue()

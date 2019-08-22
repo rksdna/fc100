@@ -14,6 +14,7 @@ CustomDial::CustomDial(const QString &text, QWidget *parent)
       m_clearance(6),
       m_thickness(3)
 {
+    setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 }
@@ -76,6 +77,18 @@ void CustomDial::mouseReleaseEvent(QMouseEvent *event)
     setSliderDown(false);
 }
 
+void CustomDial::enterEvent(QEvent *event)
+{
+    QAbstractSlider::enterEvent(event);
+    update();
+}
+
+void CustomDial::leaveEvent(QEvent *event)
+{
+    QAbstractSlider::leaveEvent(event);
+    update();
+}
+
 void CustomDial::paintEvent(QPaintEvent *event)
 {
     QStyleOptionButton option;
@@ -127,10 +140,11 @@ void CustomDial::paintEvent(QPaintEvent *event)
     event->accept();
 }
 
+
 void CustomDial::initStyleOption(QStyleOptionButton *option) const
 {
     option->initFrom(this);
-    //option->state |= QStyle::State_Raised;
+    option->features = QStyleOptionButton::None;
 }
 
 qreal CustomDial::pointToAngle(const QPoint &point) const
