@@ -1,95 +1,103 @@
-#include <QMenu>
-#include <QDebug>
-#include <QPixmap>
-#include <QFontDatabase>
+#include <QPaintEvent>
+#include <QApplication>
+#include <QFontMetrics>
+#include <QStyleOption>
 #include <QStylePainter>
-#include <QMetaProperty>
-#include <QStyleOptionToolButton>
 #include "CustomButton.h"
 
-static QPixmap pixmap(const QSize &size, const QString &u, const QString &d)
-{
-    const QFont font = QFontDatabase::systemFont(QFontDatabase::FixedFont);
-
-    QPen pen1(Qt::gray);
-    QPen pen2("#A5D785");
-
-    QPixmap pixmap(size);
-    pixmap.fill(Qt::transparent);
-
-    QPainter painter(&pixmap);
-    painter.setPen(pen1);
-    painter.setFont(font);
-
-    painter.drawText(QRect(0, 0, size.width(), size.height() / 2), Qt::AlignCenter, u);
-    painter.drawLine(0, size.height() / 2, size.width(), size.height() / 2);
-
-    painter.setPen(pen2);
-    painter.drawText(QRect(0, size.height() / 2, size.width(), size.height() / 2), Qt::AlignCenter, d);
-
-    return pixmap;
-}
-
-CustomButton::CustomButton(const QString &text, QObject *object, const char *property, QWidget *parent)
-    : QToolButton(parent),
-      m_object(object),
-      m_property(property)
+CustomButton::CustomButton(const QString &text, QWidget *parent)
+    : QAbstractButton(parent),
+      m_margins(10, 5, 10, 5),
+      m_value(-1)
 {
     setText(text);
-    setMenu(new QMenu(this));
-    setPopupMode(InstantPopup);
-    setIconSize(QSize(48, 32));
-    setToolButtonStyle(Qt::ToolButtonIconOnly);
+    setFocusPolicy(Qt::StrongFocus);
+    connect(this, &QAbstractButton::clicked, this, &CustomButton::changeValue);
+}
 
-    const QMetaObject * const meta = m_object->metaObject();
-    const QMetaProperty objectProperty = meta->property(meta->indexOfProperty(m_property));
-    if (objectProperty.hasNotifySignal())
+int CustomButton::value() const
+{
+    return m_value;
+}
+
+void CustomButton::setValue(int value)
+{
+    if (m_value != value)
     {
-        const QMetaMethod notifySlot = staticMetaObject.method(staticMetaObject.indexOfMethod("refresh()"));
-        connect(m_object, objectProperty.notifySignal(), this, notifySlot);
+        m_value = value;
+        update();
+
+        emit valueChanged(m_value);
     }
 }
 
-void CustomButton::addItem(const QString &text, const QVariant &data)
+void CustomButton::addValue(const QString &text, int value)
 {
-    QAction * const action = menu()->addAction(text);
-    action->setData(data);
-    connect(action, &QAction::triggered, this, &CustomButton::changeData);
+    m_items.insert(value, text);
 }
 
-QVariant CustomButton::data() const
+QSize CustomButton::sizeHint() const
 {
-    return m_object->property(m_property);
+    return minimumSizeHint();
 }
 
-void CustomButton::setData(const QVariant &data)
+QSize CustomButton::minimumSizeHint() const
 {
-    m_object->setProperty(m_property, data);
-}
+    const QFontMetrics metrics(font());
+    const int height = metrics.height();
+    int width = metrics.width(text());
+    foreach (const QString &text, m_items)
+        width = qMax(width, metrics.width(text));
 
-void CustomButton::refresh()
-{
-    foreach (QAction *action, menu()->actions())
-    {
-        if (action->data() == data())
-            menu()->setActiveAction(action);
-    }
+    const QRect content = QRect(0, 0, width, 2 * height).marginsAdded(m_margins);
 
-    setIcon(pixmap(iconSize(), text(), menu()->activeAction() ? menu()->activeAction()->text() : tr("???")));
-}
-
-void CustomButton::changeData()
-{
-    setData(static_cast<QAction *>(sender())->data());
+    QStyleOptionButton option;
+    initStyleOption(&option);
+    return style()->sizeFromContents(QStyle::CT_PushButton, &option, content.size(), this).expandedTo(QApplication::globalStrut());
 }
 
 void CustomButton::paintEvent(QPaintEvent *event)
 {
-    Q_UNUSED(event)
+    QStyleOptionButton option;
+    initStyleOption(&option);
+
+    const QColor textColor = palette().color(QPalette::Mid);
+    const QColor valueColor = QColor("#A5D785");
+
+    const QRect content = style()->subElementRect(QStyle::SE_PushButtonContents, &option, this).marginsRemoved(m_margins);
+    const int x = content.x();
+    const int y = content.y();
+    const int height = content.height() / 2;
+    const int width = content.width();
 
     QStylePainter painter(this);
-    QStyleOptionToolButton option;
-    initStyleOption(&option);
-    option.features &= ~QStyleOptionToolButton::HasMenu;
-    painter.drawComplexControl(QStyle::CC_ToolButton, option);
+    painter.translate(-0.5, -0.5);
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    painter.drawControl(QStyle::CE_PushButton, option);
+
+    painter.setFont(font());
+
+    painter.setPen(textColor);
+    painter.drawText(QRect(x, y, width, height), Qt::AlignCenter, text());
+    painter.drawLine(x, y + height, x + width, y + height);
+
+    painter.setPen(valueColor);
+    painter.drawText(QRect(x, y + height, width, height), Qt::AlignCenter, m_items.value(m_value, tr("???")));
+
+    event->accept();
 }
+
+void CustomButton::initStyleOption(QStyleOptionButton *option) const
+{
+    option->initFrom(this);
+    option->features = QStyleOptionButton::None;
+    option->state |= isDown() ? QStyle::State_Sunken : QStyle::State_None;
+}
+
+void CustomButton::changeValue()
+{
+    const QList<int> values = m_items.keys();
+    setValue(values.at((values.indexOf(m_value) + 1) % values.count()));
+}
+

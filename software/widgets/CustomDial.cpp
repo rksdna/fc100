@@ -1,212 +1,151 @@
-#include <QMetaProperty>
-#include "CustomDial.h"
-#include <QStyleOptionSlider>
-
-CustomDial::CustomDial(const QString &text, QObject *object, const char *property, QWidget *parent)
-    : QDial(parent),
-      m_text(text),
-      m_object(object),
-      m_property(property)
-{
-    setNotchesVisible(true);
-    setNotchTarget(5);
-
-    const QMetaObject * const meta = m_object->metaObject();
-    const QMetaProperty objectProperty = meta->property(meta->indexOfProperty(m_property));
-    if (objectProperty.hasNotifySignal())
-    {
-        const QMetaMethod notifySlot = staticMetaObject.method(staticMetaObject.indexOfMethod("refresh()"));
-        connect(m_object, objectProperty.notifySignal(), this, notifySlot);
-    }
-
-    connect(this, &QDial::valueChanged, this, &CustomDial::changeData);
-}
-
-QVariant CustomDial::data() const
-{
-    return m_object->property(m_property);
-}
-
-void CustomDial::setData(const QVariant &data)
-{
-    m_object->setProperty(m_property, data);
-}
-
-void CustomDial::refresh()
-{
-    setValue(data().toInt());
-}
-
-void CustomDial::changeData()
-{
-    setData(value());
-}
-
-void CustomDial::initStyleOption(QStyleOptionSlider *option) const
-{
-    QDial::initStyleOption(option);
-}
-
-#include <QStylePainter>
-#include <QDebug>
 #include <QtMath>
+#include <QPaintEvent>
+#include <QApplication>
+#include <QFontMetrics>
+#include <QStyleOption>
+#include <QStylePainter>
+#include "CustomDial.h"
 
-static QPointF calcRadialPos(const QStyleOptionSlider *dial, qreal offset)
+CustomDial::CustomDial(const QString &text, QWidget *parent)
+    : QAbstractSlider(parent),
+      m_text(text),
+      m_margins(10, 5, 10, 5),
+      m_clearance(5),
+      m_thickness(2)
 {
-#define Q_PI 3.1415926
-
-    const int width = dial->rect.width();
-    const int height = dial->rect.height();
-    const int r = qMin(width, height) / 2;
-    const int currentSliderPosition = dial->upsideDown ? dial->sliderPosition : (dial->maximum - dial->sliderPosition);
-    qreal a = 0;
-    if (dial->maximum == dial->minimum)
-        a = Q_PI / 2;
-    else if (dial->dialWrapping)
-        a = Q_PI * 3 / 2 - (currentSliderPosition - dial->minimum) * 2 * Q_PI
-            / (dial->maximum - dial->minimum);
-    else
-        a = (Q_PI * 8 - (currentSliderPosition - dial->minimum) * 10 * Q_PI
-            / (dial->maximum - dial->minimum)) / 6;
-    qreal xc = width / 2.0;
-    qreal yc = height / 2.0;
-    qreal len = r - 4 - 3;
-    qreal back = offset * len;
-    QPointF pos(QPointF(xc + back * qCos(a), yc - back * qSin(a)));
-    return pos;
+    setFocusPolicy(Qt::StrongFocus);
 }
 
+QString CustomDial::description() const
+{
+    return m_description;
+}
+
+void CustomDial::setDescription(const QString &desc)
+{
+    if (desc != m_description)
+    {
+        m_description = desc;
+        updateGeometry();
+        update();
+    }
+}
+
+QSize CustomDial::sizeHint() const
+{
+    return minimumSizeHint();
+}
+
+QSize CustomDial::minimumSizeHint() const
+{
+    const QFontMetrics metrics(font());
+    const int height = metrics.height();
+    const int width = qMax(metrics.width(m_text), metrics.width(m_description));
+    const int size = M_SQRT2 * qMax(height, width) + 4 * m_clearance;
+
+    const QRect content = QRect(0, 0, size, size).marginsAdded(m_margins);
+
+    QStyleOptionButton option;
+    initStyleOption(&option);
+    return style()->sizeFromContents(QStyle::CT_PushButton, &option, content.size(), this).expandedTo(QApplication::globalStrut());
+}
+
+void CustomDial::mousePressEvent(QMouseEvent *event)
+{
+    setSliderDown(true);
+    setSliderPosition(pointToValue(event->pos() - rect().center()));
+}
+
+void CustomDial::mouseMoveEvent(QMouseEvent *event)
+{
+    if (isSliderDown())
+        setSliderPosition(pointToValue(event->pos() - rect().center()));
+}
+
+void CustomDial::mouseReleaseEvent(QMouseEvent *event)
+{
+    setSliderPosition(pointToValue(event->pos() - rect().center()));
+    setSliderDown(false);
+}
 
 void CustomDial::paintEvent(QPaintEvent *event)
 {
-  /*  Q_UNUSED(event)
-
-    QStylePainter painter(this);
-    QStyleOptionSlider option;
+    QStyleOptionButton option;
     initStyleOption(&option);
 
-    option.state &= ~QStyle::State_HasFocus ;
-    option.state &= ~QStyle::State_Enabled;
+    const QColor textColor = palette().color(QPalette::Mid);
+    const QColor valueColor = QColor("#A5D785");
+    const QColor frameColor = palette().color(QPalette::Dark);
 
-    QPalette p;
-    option.palette.setColor(QPalette::Button, qRgb(64, 0, 0));
-    option.palette.setColor(QPalette::Dark, Qt::yellow);
+    const QRect ur = style()->subElementRect(QStyle::SE_PushButtonContents, &option, this).marginsRemoved(m_margins);
+    const int size = qMin(ur.width(), ur.height());
 
-    painter.drawComplexControl(QStyle::CC_Dial, option);*/
+    QRect rect(0,0, size, size);
+    rect.moveCenter(ur.center());
 
-    QPainter painter(this);
+    const QRect groove = rect.adjusted(m_clearance, m_clearance, -m_clearance, -m_clearance);
+    const int start = 16 * 180 * valueToAngle(minimum()) / M_PI;
+    const int stop = 16 * 180 * valueToAngle(value()) / M_PI;
 
-    QPainter *p = &painter;
-    QStyleOptionSlider opt;
-    QStyleOptionSlider *option = &opt;
-    initStyleOption(option);
+    const QRect content = groove.adjusted(m_clearance, m_clearance, -m_clearance, -m_clearance);
+    const int x = content.x();
+    const int y = content.y();
+    const int height = content.height() / 2;
+    const int width = content.width();
 
+    QStylePainter painter(this);
+    painter.translate(-0.5, -0.5);
+    painter.setRenderHint(QPainter::Antialiasing);
 
-    QPalette pal = option->palette;
-        QColor buttonColor = pal.button().color();
-        const int width = option->rect.width();
-        const int height = option->rect.height();
-        const bool enabled = option->state & QStyle::State_Enabled;
-        qreal r = qMin(width, height) / 2;
-        r -= r/50;
-        const qreal penSize = r/20.0;
+    painter.drawRect(ur);
+    painter.drawRect(content);
+    painter.drawRect(ur);
 
-        p->save();
-        p->setRenderHint(QPainter::Antialiasing);
+    painter.drawControl(QStyle::CE_PushButton, option);
 
-        // Draw notches
-        if (option->subControls & QStyle::SC_DialTickmarks) {
-            p->setPen(option->palette.dark().color().darker(120));
-            //p->drawLines(QStyleHelper::calcLines(option));
-        }
+    painter.setFont(font());
 
-        // Cache dial background
-      //  BEGIN_STYLE_PIXMAPCACHE(QString::fromLatin1("qdial"));
-        p->setRenderHint(QPainter::Antialiasing);
+    painter.setPen(frameColor);
+    painter.drawEllipse(rect);
 
-        const qreal d_ = r / 6;
-        const qreal dx = option->rect.x() + d_ + (width - 2 * r) / 2 + 1;
-        const qreal dy = option->rect.y() + d_ + (height - 2 * r) / 2 + 1;
+    painter.setPen(textColor);
+    painter.drawText(QRect(x, y, width, height), Qt::AlignHCenter | Qt::AlignBottom, m_text);
+    painter.drawLine(x, y + height, x + width, y + height);
 
-        QRectF br = QRectF(dx + 0.5, dy + 0.5,
-                           int(r * 2 - 2 * d_ - 2),
-                           int(r * 2 - 2 * d_ - 2));
-        buttonColor.setHsv(buttonColor .hue(),
-                           qMin(140, buttonColor .saturation()),
-                           qMax(180, buttonColor.value()));
-        QColor shadowColor(0, 0, 0, 20);
+    painter.setPen(QPen(valueColor, m_thickness, Qt::SolidLine, Qt::RoundCap));
+    painter.drawText(QRect(x, y + height, width, height), Qt::AlignHCenter | Qt::AlignTop, m_description);
+    painter.drawArc(groove, start, start - stop);
 
-        if (enabled) {
-            // Drop shadow
-            qreal shadowSize = qMax(1.0, penSize/2.0);
-            QRectF shadowRect= br.adjusted(-2*shadowSize, -2*shadowSize,
-                                           2*shadowSize, 2*shadowSize);
-            QRadialGradient shadowGradient(shadowRect.center().x(),
-                                           shadowRect.center().y(), shadowRect.width()/2.0,
-                                           shadowRect.center().x(), shadowRect.center().y());
-            shadowGradient.setColorAt(qreal(0.91), QColor(0, 0, 0, 40));
-            shadowGradient.setColorAt(qreal(1.0), Qt::transparent);
-            p->setBrush(shadowGradient);
-            p->setPen(Qt::NoPen);
-            p->translate(shadowSize, shadowSize);
-            p->drawEllipse(shadowRect);
-            p->translate(-shadowSize, -shadowSize);
+    event->accept();
+}
 
-            // Main gradient
-            QRadialGradient gradient(br.center().x() - br.width()/3, dy,
-                                     br.width()*1.3, br.center().x(),
-                                     br.center().y() - br.height()/2);
-            gradient.setColorAt(0, buttonColor.lighter(110));
-            gradient.setColorAt(qreal(0.5), buttonColor);
-            gradient.setColorAt(qreal(0.501), buttonColor.darker(102));
-            gradient.setColorAt(1, buttonColor.darker(115));
-            p->setBrush(gradient);
-        } else {
-            p->setBrush(Qt::NoBrush);
-        }
+void CustomDial::initStyleOption(QStyleOptionButton *option) const
+{
+    option->initFrom(this);
+    option->state |= QStyle::State_Raised;
+}
 
-        p->setPen(QPen(buttonColor.darker(280)));
-        p->drawEllipse(br);
-        p->setBrush(Qt::NoBrush);
-        p->setPen(buttonColor.lighter(110));
-        p->drawEllipse(br.adjusted(1, 1, -1, -1));
+qreal CustomDial::pointToAngle(const QPoint &point) const
+{
+    return qAtan2(QPoint::dotProduct(point, QPoint(1, 0)), QPoint::dotProduct(point, QPoint(0, -1)));
+}
 
-        if (option->state & QStyle::State_HasFocus) {
-            QColor highlight = pal.highlight().color();
-            highlight.setHsv(highlight.hue(),
-                             qMin(160, highlight.saturation()),
-                             qMax(230, highlight.value()));
-            highlight.setAlpha(127);
-            p->setPen(QPen(highlight, 2.0));
-            p->setBrush(Qt::NoBrush);
-            p->drawEllipse(br.adjusted(-1, -1, 1, 1));
-        }
+int CustomDial::pointToValue(const QPoint &pos) const
+{
+    const qreal min = -M_PI * 0.75;
+    const qreal max = M_PI * 0.75;
+    return minimum() + (maximum() - minimum()) * (pointToAngle(pos) - min) / (max - min);
+}
 
-        //END_STYLE_PIXMAPCACHE
+qreal CustomDial::valueToAngle(int value) const
+{
+    const qreal min = -M_PI * 0.75;
+    const qreal max = M_PI * 0.75;
+    return min + (max - min) * (value - minimum()) / (maximum() - minimum());
+}
 
-        QPointF dp = calcRadialPos(option, qreal(0.70));
-        buttonColor = buttonColor.lighter(104);
-        buttonColor.setAlphaF(qreal(0.8));
-        const qreal ds = r/qreal(7.0);
-        QRectF dialRect(dp.x() - ds, dp.y() - ds, 2*ds, 2*ds);
-        QRadialGradient dialGradient(dialRect.center().x() + dialRect.width()/2,
-                                     dialRect.center().y() + dialRect.width(),
-                                     dialRect.width()*2,
-                                     dialRect.center().x(), dialRect.center().y());
-        dialGradient.setColorAt(1, buttonColor.darker(140));
-        dialGradient.setColorAt(qreal(0.4), buttonColor.darker(120));
-        dialGradient.setColorAt(0, buttonColor.darker(110));
-        if (penSize > 3.0) {
-            p->setPen(QPen(QColor(0, 0, 0, 25), penSize));
-            p->drawLine(calcRadialPos(option, qreal(0.90)), calcRadialPos(option, qreal(0.96)));
-        }
-
-        p->setBrush(dialGradient);
-        p->setPen(QColor(255, 255, 255, 150));
-        p->drawEllipse(dialRect.adjusted(-1, -1, 1, 1));
-        p->setPen(QColor(0, 0, 0, 80));
-        p->drawEllipse(dialRect);
-        p->restore();
-
-
+QPoint CustomDial::valueToPoint(int value, int radius) const
+{
+    const qreal angle = valueToAngle(value);
+    return QPoint(radius * qSin(angle), -radius * qCos(angle));
 }

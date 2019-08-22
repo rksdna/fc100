@@ -22,7 +22,7 @@ void Device::setCh1Coupling(Coupling coupling)
     if (m_ch1Coupling != coupling)
     {
         m_ch1Coupling = coupling;
-        emit ch1CouplingChanged(m_ch2Coupling);
+        emit ch1CouplingChanged(m_ch1Coupling);
     }
 }
 

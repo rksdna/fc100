@@ -1,31 +1,37 @@
 #ifndef CUSTOMBUTTON_H
 #define CUSTOMBUTTON_H
 
-#include <QVariant>
-#include <QToolButton>
+#include <QMap>
+#include <QAbstractButton>
 
-class CustomButton : public QToolButton
+class CustomButton : public QAbstractButton
 {
     Q_OBJECT
 
 public:
-    CustomButton(const QString &text, QObject *object, const char *property, QWidget *parent = 0);
+    explicit CustomButton(const QString &text, QWidget *parent = 0);
 
-    void addItem(const QString &text, const QVariant &data);
+    int value() const;
+    void setValue(int value);
+    void addValue(const QString &text, int value);
 
-    QVariant data() const;
-    void setData(const QVariant &data);
+    QSize sizeHint() const;
+    QSize minimumSizeHint() const;
 
-public slots:
-    void refresh();
+signals:
+    void valueChanged(int value);
 
-private:
-    void changeData();
+protected:
     void paintEvent(QPaintEvent *event);
 
 private:
-    QObject * const m_object;
-    const char * const m_property;
+    void initStyleOption(class QStyleOptionButton *option) const;
+    void changeValue();
+
+private:
+    QMap<int, QString> m_items;
+    QMargins m_margins;
+    int m_value;
 };
 
 #endif // CUSTOMBUTTON_H

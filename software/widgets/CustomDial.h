@@ -4,31 +4,39 @@
 #include <QDial>
 #include <QVariant>
 
-class CustomDial : public QDial
+class CustomDial : public QAbstractSlider
 {
     Q_OBJECT
 
 public:
-    explicit CustomDial(const QString &text, QObject *object, const char *property, QWidget *parent = 0);
+    explicit CustomDial(const QString &text, QWidget *parent = 0);
 
-    QVariant data() const;
-    void setData(const QVariant &data);
+    QString description() const;
+    void setDescription(const QString &description);
 
-public slots:
-    void refresh();
+    QSize sizeHint() const;
+    QSize minimumSizeHint() const;
 
-private:
-    void changeData();
-
-    void initStyleOption(QStyleOptionSlider *option) const;
-
+protected:
+    void mousePressEvent(QMouseEvent *event);
+    void mouseMoveEvent(QMouseEvent *event);
+    void mouseReleaseEvent(QMouseEvent *event);
     void paintEvent(QPaintEvent *event);
 
+private:
+    void initStyleOption(class QStyleOptionButton *option) const;
+
+    qreal pointToAngle(const QPoint &point) const;
+    int pointToValue(const QPoint &point) const;
+    qreal valueToAngle(int value) const;
+    QPoint valueToPoint(int value, int radius) const;
 
 private:
-    const QString m_text;
-    QObject * const m_object;
-    const char * const m_property;
+    QString m_text;
+    QString m_description;
+    QMargins m_margins;
+    int m_clearance;
+    int m_thickness;
 };
 
 #endif // CUSTOMDIAL_H

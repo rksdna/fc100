@@ -118,4 +118,6 @@ private:
     int m_duration;
 };
 
+Q_DECLARE_METATYPE(Device::Coupling)
+
 #endif // DEVICE_H
