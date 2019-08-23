@@ -9,10 +9,12 @@ include(widgets/widgets.pri)
 include(translations/translations.pri)
 
 SOURCES += main.cpp \
-    DeviceWindow.cpp
+    MainWindow.cpp \
+    DeviceWidget.cpp
 
 HEADERS += \
-    DeviceWindow.h
+    MainWindow.h \
+    DeviceWidget.h
 
 RESOURCES += \
     fc100.qrc

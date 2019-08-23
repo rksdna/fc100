@@ -1,6 +1,7 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 
+#include <QTimer>
 #include <QObject>
 
 class Device : public QObject
@@ -14,6 +15,9 @@ class Device : public QObject
     Q_PROPERTY(int ch2Threshold READ ch2Threshold WRITE setCh2Threshold NOTIFY ch2ThresholdChanged)
 
     Q_PROPERTY(Clock clock READ clock WRITE setClock NOTIFY clockChanged)
+
+public:
+    static Device *createDevice(const QString &type, QObject *parent = 0);
 
 public:
     enum Coupling
@@ -73,10 +77,14 @@ public:
 
     Q_ENUM(Event)
 
+
 public:
     explicit Device(QObject *parent = 0);
 
     void reset();
+
+    void restart();
+    void clear();
 
     Coupling ch1Coupling() const;
     void setCh1Coupling(Coupling coupling);
@@ -143,12 +151,21 @@ signals:
     void stopEventChanged(Event event);
     void durationChanged(int duration);
 
+protected:
+    virtual void measure() {}
+    void complete(bool valid, qreal value);
+
 private:
-    QString description(int threshold, Probe probe) const;
+    void clearThenRestart();
+    void timeout();
+
     void setCountEventEnabled(bool enabled);
     void setStartStopEventEnabled(bool enabled);
 
+    QString description(int threshold, Probe probe) const;
+
 private:
+    QTimer * const m_timer;
     Coupling m_ch1Coupling;
     Probe m_ch1Probe;
     int m_ch1Threshold;
@@ -165,6 +182,8 @@ private:
     Event m_startEvent;
     Event m_stopEvent;
     int m_duration;
+    bool m_measure;
+    bool m_delay;
 };
 
 #endif // DEVICE_H

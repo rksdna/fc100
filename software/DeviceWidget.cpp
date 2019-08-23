@@ -3,12 +3,12 @@
 #include <QPushButton>
 #include "Device.h"
 #include "CustomDial.h"
-#include "DeviceWindow.h"
+#include "DeviceWidget.h"
 #include "CustomButton.h"
+#include "CommandButton.h"
 
-DeviceWindow::DeviceWindow(QWidget *parent)
-    : QWidget(parent),
-      m_device(new Device(this))
+DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
+    : QWidget(parent)
 {
     const QFont font = QFontDatabase::systemFont(QFontDatabase::FixedFont);
 
@@ -16,74 +16,74 @@ DeviceWindow::DeviceWindow(QWidget *parent)
     ch1CouplingButton->setFont(font);
     ch1CouplingButton->addValue(tr("DC"), Device::DcCoupling);
     ch1CouplingButton->addValue(tr("AC"), Device::AcCoupling);
-    connect(ch1CouplingButton, reinterpret_cast<void (CustomButton::*)(Device::Coupling)>(&CustomButton::valueChanged), m_device, &Device::setCh1Coupling);
-    connect(m_device, &Device::ch1CouplingChanged, ch1CouplingButton, &CustomButton::setValue);
+    connect(ch1CouplingButton, reinterpret_cast<void (CustomButton::*)(Device::Coupling)>(&CustomButton::valueChanged), device, &Device::setCh1Coupling);
+    connect(device, &Device::ch1CouplingChanged, ch1CouplingButton, &CustomButton::setValue);
 
     CustomButton * const ch1ProbeButton = new CustomButton(tr("PROBE.1"));
     ch1ProbeButton->setFont(font);
     ch1ProbeButton->addValue(tr("1:1"), Device::x1Probe);
     ch1ProbeButton->addValue(tr("1:10"), Device::x10Probe);
     ch1ProbeButton->addValue(tr("1:100"), Device::x100Probe);
-    connect(ch1ProbeButton, reinterpret_cast<void (CustomButton::*)(Device::Probe)>(&CustomButton::valueChanged), m_device, &Device::setCh1Probe);
-    connect(m_device, &Device::ch1ProbeChanged, ch1ProbeButton, &CustomButton::setValue);
+    connect(ch1ProbeButton, reinterpret_cast<void (CustomButton::*)(Device::Probe)>(&CustomButton::valueChanged), device, &Device::setCh1Probe);
+    connect(device, &Device::ch1ProbeChanged, ch1ProbeButton, &CustomButton::setValue);
 
     CustomDial * const ch1ThresholdDial = new CustomDial(tr("LEVEL.1"));
     ch1ThresholdDial->setFont(font);
     ch1ThresholdDial->setRange(0, 255);
     ch1ThresholdDial->setValue(128);
-    connect(ch1ThresholdDial, &CustomDial::valueChanged, m_device, &Device::setCh1Threshold);
-    connect(m_device, &Device::ch1ThresholdChanged, ch1ThresholdDial, &CustomDial::setValue);
-    connect(m_device, &Device::ch1DescriptionChanged, ch1ThresholdDial, &CustomDial::setDescription);
+    connect(ch1ThresholdDial, &CustomDial::valueChanged, device, &Device::setCh1Threshold);
+    connect(device, &Device::ch1ThresholdChanged, ch1ThresholdDial, &CustomDial::setValue);
+    connect(device, &Device::ch1DescriptionChanged, ch1ThresholdDial, &CustomDial::setDescription);
 
     CustomButton * const ch2CouplingButton = new CustomButton(tr("INPUT.2"));
     ch2CouplingButton->setFont(font);
     ch2CouplingButton->addValue(tr("DC"), Device::DcCoupling);
     ch2CouplingButton->addValue(tr("AC"), Device::AcCoupling);
-    connect(ch2CouplingButton, reinterpret_cast<void (CustomButton::*)(Device::Coupling)>(&CustomButton::valueChanged), m_device, &Device::setCh2Coupling);
-    connect(m_device, &Device::ch2CouplingChanged, ch2CouplingButton, &CustomButton::setValue);
+    connect(ch2CouplingButton, reinterpret_cast<void (CustomButton::*)(Device::Coupling)>(&CustomButton::valueChanged), device, &Device::setCh2Coupling);
+    connect(device, &Device::ch2CouplingChanged, ch2CouplingButton, &CustomButton::setValue);
 
     CustomButton * const ch2ProbeButton = new CustomButton(tr("PROBE.2"));
     ch2ProbeButton->setFont(font);
     ch2ProbeButton->addValue(tr("1:1"), Device::x1Probe);
     ch2ProbeButton->addValue(tr("1:10"), Device::x10Probe);
     ch2ProbeButton->addValue(tr("1:100"), Device::x100Probe);
-    connect(ch2ProbeButton, reinterpret_cast<void (CustomButton::*)(Device::Probe)>(&CustomButton::valueChanged), m_device, &Device::setCh2Probe);
-    connect(m_device, &Device::ch2ProbeChanged, ch2ProbeButton, &CustomButton::setValue);
+    connect(ch2ProbeButton, reinterpret_cast<void (CustomButton::*)(Device::Probe)>(&CustomButton::valueChanged), device, &Device::setCh2Probe);
+    connect(device, &Device::ch2ProbeChanged, ch2ProbeButton, &CustomButton::setValue);
 
     CustomDial * const ch2ThresholdDial = new CustomDial(tr("LEVEL.2"));
     ch2ThresholdDial->setFont(font);
     ch2ThresholdDial->setRange(0, 255);
     ch2ThresholdDial->setValue(128);
-    connect(ch2ThresholdDial, &CustomDial::valueChanged, m_device, &Device::setCh2Threshold);
-    connect(m_device, &Device::ch2ThresholdChanged, ch2ThresholdDial, &CustomDial::setValue);
-    connect(m_device, &Device::ch2DescriptionChanged, ch2ThresholdDial, &CustomDial::setDescription);
+    connect(ch2ThresholdDial, &CustomDial::valueChanged, device, &Device::setCh2Threshold);
+    connect(device, &Device::ch2ThresholdChanged, ch2ThresholdDial, &CustomDial::setValue);
+    connect(device, &Device::ch2DescriptionChanged, ch2ThresholdDial, &CustomDial::setDescription);
 
     CustomButton * const clockButton = new CustomButton(tr("REF"));
     clockButton->setFont(font);
     clockButton->addValue(tr("INT"), Device::InternalClock);
     clockButton->addValue(tr("EXT"), Device::ExternalClock);
-    connect(clockButton, reinterpret_cast<void (CustomButton::*)(Device::Clock)>(&CustomButton::valueChanged), m_device, &Device::setClock);
-    connect(m_device, &Device::clockChanged, clockButton, &CustomButton::setValue);
+    connect(clockButton, reinterpret_cast<void (CustomButton::*)(Device::Clock)>(&CustomButton::valueChanged), device, &Device::setClock);
+    connect(device, &Device::clockChanged, clockButton, &CustomButton::setValue);
 
     CustomButton * const triggerButton = new CustomButton(tr("TRIGGER"));
     triggerButton->setFont(font);
     triggerButton->addValue(tr("AUTO"), Device::AutoTrigger);
     triggerButton->addValue(tr("MANUAL"), Device::ManualTrigger);
-    connect(triggerButton, reinterpret_cast<void (CustomButton::*)(Device::Trigger)>(&CustomButton::valueChanged), m_device, &Device::setTrigger);
-    connect(m_device, &Device::triggerChanged, triggerButton, &CustomButton::setValue);
+    connect(triggerButton, reinterpret_cast<void (CustomButton::*)(Device::Trigger)>(&CustomButton::valueChanged), device, &Device::setTrigger);
+    connect(device, &Device::triggerChanged, triggerButton, &CustomButton::setValue);
 
     CustomButton * const modeButton = new CustomButton(tr("MODE"));
     modeButton->setFont(font);
     modeButton->addValue(tr("TIME"), Device::TimeMode);
-    modeButton->addValue(tr("FREQUENCY"), Device::FrequencyMode);
+    modeButton->addValue(tr("FREQ"), Device::FrequencyMode);
     modeButton->addValue(tr("PERIOD"), Device::PeriodMode);
     modeButton->addValue(tr("COUNTER"), Device::CountMode);
-    modeButton->addValue(tr("DUTY CYCLE"), Device::DutyMode);
-    modeButton->addValue(tr("G FREQUENCY"), Device::GateFrequencyMode);
+    modeButton->addValue(tr("DUTY"), Device::DutyMode);
+    modeButton->addValue(tr("G FREQ"), Device::GateFrequencyMode);
     modeButton->addValue(tr("G PERIOD"), Device::GatePeriodMode);
     modeButton->addValue(tr("G COUNTER"), Device::GateCountMode);
-    connect(modeButton, reinterpret_cast<void (CustomButton::*)(Device::Mode)>(&CustomButton::valueChanged), m_device, &Device::setMode);
-    connect(m_device, &Device::modeChanged, modeButton, &CustomButton::setValue);
+    connect(modeButton, reinterpret_cast<void (CustomButton::*)(Device::Mode)>(&CustomButton::valueChanged), device, &Device::setMode);
+    connect(device, &Device::modeChanged, modeButton, &CustomButton::setValue);
 
     CustomButton * const countEventButton = new CustomButton(tr("INPUT"));
     countEventButton->setFont(font);
@@ -91,9 +91,9 @@ DeviceWindow::DeviceWindow(QWidget *parent)
     countEventButton->addValue(tr("CH1 F"), Device::Ch1FallingEdgeEvent);
     countEventButton->addValue(tr("CH2 R"), Device::Ch2RisingEdgeEvent);
     countEventButton->addValue(tr("CH2 F"), Device::Ch2FallingEdgeEvent);
-    connect(countEventButton, reinterpret_cast<void (CustomButton::*)(Device::Event)>(&CustomButton::valueChanged), m_device, &Device::setCountEvent);
-    connect(m_device, &Device::countEventChanged, countEventButton, &CustomButton::setValue);
-    connect(m_device, &Device::countEventEnabled, countEventButton, &CustomButton::setEnabled);
+    connect(countEventButton, reinterpret_cast<void (CustomButton::*)(Device::Event)>(&CustomButton::valueChanged), device, &Device::setCountEvent);
+    connect(device, &Device::countEventChanged, countEventButton, &CustomButton::setValue);
+    connect(device, &Device::countEventEnabled, countEventButton, &CustomButton::setEnabled);
 
     CustomButton * const startEventButton = new CustomButton(tr("START ON"));
     startEventButton->setFont(font);
@@ -101,9 +101,9 @@ DeviceWindow::DeviceWindow(QWidget *parent)
     startEventButton->addValue(tr("CH1 F"), Device::Ch1FallingEdgeEvent);
     startEventButton->addValue(tr("CH2 R"), Device::Ch2RisingEdgeEvent);
     startEventButton->addValue(tr("CH2 F"), Device::Ch2FallingEdgeEvent);
-    connect(startEventButton, reinterpret_cast<void (CustomButton::*)(Device::Event)>(&CustomButton::valueChanged), m_device, &Device::setStartEvent);
-    connect(m_device, &Device::startEventChanged, startEventButton, &CustomButton::setValue);
-    connect(m_device, &Device::startStopEventEnabled, startEventButton, &CustomButton::setEnabled);
+    connect(startEventButton, reinterpret_cast<void (CustomButton::*)(Device::Event)>(&CustomButton::valueChanged), device, &Device::setStartEvent);
+    connect(device, &Device::startEventChanged, startEventButton, &CustomButton::setValue);
+    connect(device, &Device::startStopEventEnabled, startEventButton, &CustomButton::setEnabled);
 
     CustomButton * const stopEventButton = new CustomButton(tr("STOP ON"));
     stopEventButton->setFont(font);
@@ -111,13 +111,13 @@ DeviceWindow::DeviceWindow(QWidget *parent)
     stopEventButton->addValue(tr("CH1 F"), Device::Ch1FallingEdgeEvent);
     stopEventButton->addValue(tr("CH2 R"), Device::Ch2RisingEdgeEvent);
     stopEventButton->addValue(tr("CH2 F"), Device::Ch2FallingEdgeEvent);
-    connect(stopEventButton, reinterpret_cast<void (CustomButton::*)(Device::Event)>(&CustomButton::valueChanged), m_device, &Device::setStopEvent);
-    connect(m_device, &Device::stopEventChanged, stopEventButton, &CustomButton::setValue);
-    connect(m_device, &Device::startStopEventEnabled, stopEventButton, &CustomButton::setEnabled);
+    connect(stopEventButton, reinterpret_cast<void (CustomButton::*)(Device::Event)>(&CustomButton::valueChanged), device, &Device::setStopEvent);
+    connect(device, &Device::stopEventChanged, stopEventButton, &CustomButton::setValue);
+    connect(device, &Device::startStopEventEnabled, stopEventButton, &CustomButton::setEnabled);
 
-    QPushButton * const runButton = new QPushButton(tr("RUN"));
-    runButton->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+    CommandButton * const runButton = new CommandButton(tr("RUN"));
     runButton->setFont(font);
+    connect(runButton, &CommandButton::clicked, device, &Device::restart);
 
     CustomButton * const durationButton = new CustomButton(tr("TIME"));
     durationButton->setFont(font);
@@ -129,8 +129,8 @@ DeviceWindow::DeviceWindow(QWidget *parent)
     durationButton->addValue(tr("1 S"), 1000);
     durationButton->addValue(tr("5 S"), 5000);
     durationButton->addValue(tr("10 S"), 10000);
-    connect(durationButton, &CustomButton::valueChanged, m_device, &Device::setDuration);
-    connect(m_device, &Device::durationChanged, durationButton, &CustomButton::setValue);
+    connect(durationButton, &CustomButton::valueChanged, device, &Device::setDuration);
+    connect(device, &Device::durationChanged, durationButton, &CustomButton::setValue);
 
     QGridLayout * const layout = new QGridLayout(this);
 
@@ -144,15 +144,13 @@ DeviceWindow::DeviceWindow(QWidget *parent)
 
     layout->addWidget(triggerButton, 0, 4);
     layout->addWidget(runButton, 0, 5);
-    layout->addWidget(clockButton, 0, 6);
-    layout->addWidget(durationButton, 0, 7);
+    layout->addWidget(durationButton, 0, 6);
+    layout->addWidget(clockButton, 0, 7);
 
     layout->addWidget(modeButton, 1, 4);
     layout->addWidget(countEventButton, 1, 5);
     layout->addWidget(startEventButton, 1, 6);
     layout->addWidget(stopEventButton, 1, 7);
-
-    m_device->reset();
 }
 
 

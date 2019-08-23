@@ -5,7 +5,7 @@
 #include <QLibraryInfo>
 #include <QStandardPaths>
 #include <QCommandLineParser>
-#include "DeviceWindow.h"
+#include "MainWindow.h"
 
 int main(int argc, char *argv[])
 {
@@ -46,11 +46,11 @@ int main(int argc, char *argv[])
     parser.setApplicationDescription(QApplication::tr("Frequency counter"));
     parser.addVersionOption();
     parser.addHelpOption();
-    parser.addOption(QCommandLineOption("device", QApplication::tr("Select device class"), "device", "fc100"));
+    parser.addOption(QCommandLineOption("device", QApplication::tr("Select device type"), "device", "fc100"));
 
     parser.process(application);
 
-    DeviceWindow window;
+    MainWindow window(parser.value("device"));
     window.show();
 
     return application.exec();

@@ -10,8 +10,6 @@ CustomButton::CustomButton(const QString &text, QWidget *parent)
       m_margins(10, 5, 10, 5),
       m_value(-1)
 {
-    setMinimumWidth(90);
-
     setText(text);
     setFocusPolicy(Qt::StrongFocus);
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
@@ -56,14 +54,14 @@ QSize CustomButton::minimumSizeHint() const
     const QRect content = QRect(0, 0, width, 2 * height).marginsAdded(m_margins);
 
     QStyleOptionButton option;
-    initStyleOption1(&option);
+    initStyleOption(&option);
     return style()->sizeFromContents(QStyle::CT_PushButton, &option, content.size(), this).expandedTo(QApplication::globalStrut());
 }
 
 void CustomButton::paintEvent(QPaintEvent *event)
 {
     QStyleOptionButton option;
-    initStyleOption1(&option);
+    initStyleOption(&option);
 
     const QColor textColor = palette().color(QPalette::Mid);
     const QColor valueColor = isEnabled() ? QColor("#A5D785") : textColor;
@@ -94,7 +92,7 @@ void CustomButton::paintEvent(QPaintEvent *event)
     event->accept();
 }
 
-void CustomButton::initStyleOption1(QStyleOptionButton *option) const
+void CustomButton::initStyleOption(QStyleOptionButton *option) const
 {
     option->initFrom(this);
     option->features = QStyleOptionButton::None;

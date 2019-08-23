@@ -1,7 +1,17 @@
+#include <QDebug>
 #include "Device.h"
+#include "MockDevice.h"
+
+Device *Device::createDevice(const QString &type, QObject *parent)
+{
+    Q_UNUSED(type)
+
+    return new MockDevice(parent);
+}
 
 Device::Device(QObject *parent)
     : QObject(parent),
+      m_timer(new QTimer()),
       m_ch1Coupling(DcCoupling),
       m_ch1Probe(x10Probe),
       m_ch1Threshold(128),
@@ -17,8 +27,13 @@ Device::Device(QObject *parent)
       m_startStopEventEnabled(false),
       m_startEvent(Ch1RisingEdgeEvent),
       m_stopEvent(Ch1RisingEdgeEvent),
-      m_duration(100)
+      m_duration(100),
+      m_measure(false),
+      m_delay(false)
 {
+    m_timer->setSingleShot(true);
+    m_timer->setTimerType(Qt::PreciseTimer);
+    connect(m_timer, &QTimer::timeout, this, &Device::timeout);
 }
 
 void Device::reset()
@@ -43,6 +58,21 @@ void Device::reset()
     emit startEventChanged(m_startEvent);
     emit stopEventChanged(m_stopEvent);
     emit durationChanged(m_duration);
+}
+
+void Device::restart()
+{
+    qDebug() << "restart";
+
+    m_measure = true;
+    m_delay = true;
+    m_timer->start(m_duration);
+    measure();
+}
+
+void Device::clear()
+{
+    qDebug() << "clear";
 }
 
 Device::Coupling Device::ch1Coupling() const
@@ -146,6 +176,8 @@ void Device::setClock(Clock clock)
     {
         m_clock = clock;
         emit clockChanged(m_clock);
+
+        clearThenRestart();
     }
 }
 
@@ -161,6 +193,8 @@ void Device::setClockFrequency(qreal frequency)
     {
         m_clockFrequency = frequency;
         emit clockFrequencyChanged(m_clockFrequency);
+
+        clearThenRestart();
     }
 }
 
@@ -214,6 +248,8 @@ void Device::setMode(Mode mode)
         }
 
         emit modeChanged(m_mode);
+
+        clearThenRestart();
     }
 }
 
@@ -228,6 +264,8 @@ void Device::setCountEvent(Event event)
     {
         m_countEvent = event;
         emit countEventChanged(m_countEvent);
+
+        clearThenRestart();
     }
 }
 
@@ -242,6 +280,8 @@ void Device::setStartEvent(Event event)
     {
         m_startEvent = event;
         emit startEventChanged(m_startEvent);
+
+        clearThenRestart();
     }
 }
 
@@ -256,6 +296,8 @@ void Device::setStopEvent(Event event)
     {
         m_stopEvent = event;
         emit stopEventChanged(m_stopEvent);
+
+        clearThenRestart();
     }
 }
 
@@ -271,6 +313,56 @@ void Device::setDuration(int duration)
     {
         m_duration = duration;
         emit durationChanged(m_duration);
+
+        clearThenRestart();
+    }
+}
+
+void Device::complete(bool valid, qreal value)
+{
+    qDebug() << "complete" << valid << value;
+
+    if (m_trigger != AutoTrigger)
+        m_measure = false;
+
+    timeout();
+}
+
+void Device::clearThenRestart()
+{
+    clear();
+
+    if (m_measure)
+        restart();
+}
+
+void Device::timeout()
+{
+    if (m_delay)
+    {
+        m_delay = false;
+        return;
+    }
+
+    if (m_measure)
+        restart();
+}
+
+void Device::setCountEventEnabled(bool enabled)
+{
+    if (m_countEventEnabled != enabled)
+    {
+        m_countEventEnabled = enabled;
+        emit countEventEnabled(m_countEventEnabled);
+    }
+}
+
+void Device::setStartStopEventEnabled(bool enabled)
+{
+    if (m_startStopEventEnabled != enabled)
+    {
+        m_startStopEventEnabled = enabled;
+        emit startStopEventEnabled(m_startStopEventEnabled);
     }
 }
 
@@ -293,23 +385,3 @@ QString Device::description(int threshold, Device::Probe probe) const
 
     return tr("---");
 }
-
-void Device::setCountEventEnabled(bool enabled)
-{
-    if (m_countEventEnabled != enabled)
-    {
-        m_countEventEnabled = enabled;
-        emit countEventEnabled(m_countEventEnabled);
-    }
-}
-
-void Device::setStartStopEventEnabled(bool enabled)
-{
-    if (m_startStopEventEnabled != enabled)
-    {
-        m_startStopEventEnabled = enabled;
-        emit startStopEventEnabled(m_startStopEventEnabled);
-    }
-}
-
-
