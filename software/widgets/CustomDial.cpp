@@ -129,7 +129,7 @@ void CustomDial::paintEvent(QPaintEvent *event)
 
     painter.setPen(textColor);
     painter.drawText(QRect(x, y, width, height), Qt::AlignHCenter | Qt::AlignBottom, m_text);
-    painter.drawLine(x, y + height, x + width, y + height);
+    //painter.drawLine(x, y + height, x + width, y + height);
 
     painter.setPen(QPen(valueColor, m_thickness, Qt::SolidLine, Qt::RoundCap));
     painter.drawText(QRect(x, y + height, width, height), Qt::AlignHCenter | Qt::AlignTop, m_description);

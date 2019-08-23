@@ -10,6 +10,8 @@ CustomButton::CustomButton(const QString &text, QWidget *parent)
       m_margins(10, 5, 10, 5),
       m_value(-1)
 {
+    setMinimumWidth(90);
+
     setText(text);
     setFocusPolicy(Qt::StrongFocus);
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
@@ -64,7 +66,9 @@ void CustomButton::paintEvent(QPaintEvent *event)
     initStyleOption1(&option);
 
     const QColor textColor = palette().color(QPalette::Mid);
-    const QColor valueColor = QColor("#A5D785");
+    const QColor valueColor = isEnabled() ? QColor("#A5D785") : textColor;
+
+    const QString value = isEnabled() ? m_items.value(m_value, tr("---")) : tr("---");
 
     const QRect content = style()->subElementRect(QStyle::SE_PushButtonContents, &option, this).marginsRemoved(m_margins);
     const int x = content.x();
@@ -85,7 +89,7 @@ void CustomButton::paintEvent(QPaintEvent *event)
     painter.drawLine(x, y + height, x + width, y + height);
 
     painter.setPen(valueColor);
-    painter.drawText(QRect(x, y + height, width, height), Qt::AlignCenter, m_items.value(m_value, tr("---")));
+    painter.drawText(QRect(x, y + height, width, height), Qt::AlignCenter, value);
 
     event->accept();
 }

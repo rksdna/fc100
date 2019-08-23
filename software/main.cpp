@@ -5,7 +5,7 @@
 #include <QLibraryInfo>
 #include <QStandardPaths>
 #include <QCommandLineParser>
-#include "MainWindow.h"
+#include "DeviceWindow.h"
 
 int main(int argc, char *argv[])
 {
@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 
     parser.process(application);
 
-    MainWindow window;
+    DeviceWindow window;
     window.show();
 
     return application.exec();
