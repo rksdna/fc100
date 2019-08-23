@@ -156,9 +156,9 @@ protected:
     void complete(bool valid, qreal value);
 
 private:
-    void clearThenRestart();
     void timeout();
 
+    void clearThenRestart();
     void setCountEventEnabled(bool enabled);
     void setStartStopEventEnabled(bool enabled);
 

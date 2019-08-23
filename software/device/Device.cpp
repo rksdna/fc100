@@ -322,27 +322,21 @@ void Device::complete(bool valid, qreal value)
 {
     qDebug() << "complete" << valid << value;
 
-    if (m_trigger != AutoTrigger)
-        m_measure = false;
-
-    timeout();
-}
-
-void Device::clearThenRestart()
-{
-    clear();
-
-    if (m_measure)
+    m_measure = false;
+    if (m_trigger == AutoTrigger && !m_delay)
         restart();
 }
 
 void Device::timeout()
 {
-    if (m_delay)
-    {
-        m_delay = false;
-        return;
-    }
+    m_delay = false;
+    if (m_trigger == AutoTrigger && !m_measure)
+        restart();
+}
+
+void Device::clearThenRestart()
+{
+    clear();
 
     if (m_measure)
         restart();
