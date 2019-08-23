@@ -28,6 +28,7 @@ Device::Device(QObject *parent)
       m_startEvent(Ch1RisingEdgeEvent),
       m_stopEvent(Ch1RisingEdgeEvent),
       m_duration(100),
+      m_maxSamplesCount(10),
       m_measure(false),
       m_delay(false)
 {
@@ -73,6 +74,9 @@ void Device::restart()
 void Device::clear()
 {
     qDebug() << "clear";
+
+    m_samples.clear();
+    emit samplesChanged(m_samples);
 }
 
 Device::Coupling Device::ch1Coupling() const
@@ -318,9 +322,35 @@ void Device::setDuration(int duration)
     }
 }
 
+int Device::maxSamplesCount() const
+{
+    return m_maxSamplesCount;
+}
+
+void Device::setMaxSamplesCount(int count)
+{
+    count = qBound(5, count, 50);
+    if (m_maxSamplesCount != count)
+    {
+        m_maxSamplesCount = count;
+        emit maxSamplesCountChanged(m_maxSamplesCount);
+
+        //....
+    }
+}
+
+QList<qreal> Device::samples() const
+{
+    return m_samples;
+}
+
 void Device::complete(bool valid, qreal value)
 {
-    qDebug() << "complete" << valid << value;
+    m_samples.enqueue(valid ? value : qQNaN());
+    while (m_samples.size() > m_maxSamplesCount)
+        m_samples.dequeue();
+
+    emit samplesChanged(m_samples);
 
     m_measure = false;
     if (m_trigger == AutoTrigger && !m_delay)
@@ -379,3 +409,5 @@ QString Device::description(int threshold, Device::Probe probe) const
 
     return tr("---");
 }
+
+

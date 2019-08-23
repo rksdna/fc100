@@ -1,6 +1,7 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 
+#include <QQueue>
 #include <QTimer>
 #include <QObject>
 
@@ -128,6 +129,11 @@ public:
     int duration() const;
     void setDuration(int duration);
 
+    int maxSamplesCount() const;
+    void setMaxSamplesCount(int count);
+
+    QList<qreal> samples() const;
+
 signals:
     void ch1CouplingChanged(Coupling coupling);
     void ch1ProbeChanged(Probe probe);
@@ -150,9 +156,12 @@ signals:
     void startEventChanged(Event event);
     void stopEventChanged(Event event);
     void durationChanged(int duration);
+    void maxSamplesCountChanged(int count);
+
+    void samplesChanged(const QList<qreal> &samples);
 
 protected:
-    virtual void measure() {}
+    virtual void measure() = 0;
     void complete(bool valid, qreal value);
 
 private:
@@ -182,8 +191,11 @@ private:
     Event m_startEvent;
     Event m_stopEvent;
     int m_duration;
+    int m_maxSamplesCount;
+
     bool m_measure;
     bool m_delay;
+    QQueue<qreal> m_samples;
 };
 
 #endif // DEVICE_H
