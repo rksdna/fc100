@@ -9,6 +9,7 @@ class CustomDisplay : public QFrame
     Q_OBJECT
 
 public:
+
     enum Mode
     {
         NormalMode,
@@ -24,6 +25,9 @@ public:
 
     void display(const QList<qreal> &data);
 
+    void display1(qreal val);
+    void clear();
+
     int decimals() const;
     void setDecimals(int decimals);
 
@@ -37,6 +41,8 @@ public:
     QSize minimumSizeHint() const;
 
 protected:
+    QString format(qreal value) const;
+
     void paintEvent(QPaintEvent *event);
 
 private:
@@ -45,13 +51,11 @@ private:
     QString m_unit;
     Mode m_mode;
 
-    bool m_hd;
-    qreal m_first;
-    qreal m_last;
+    qreal m_sample;
+    qreal m_origin;
     qreal m_min;
     qreal m_max;
-    qreal m_average;
-    QMap<int, int> m_hystogram;
+    QList<qreal> m_samples;
 
 
 

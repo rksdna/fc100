@@ -14,8 +14,6 @@ MockDevice::MockDevice(QObject *parent)
 
 void MockDevice::measure()
 {
-    qDebug() << "+++" << m_time.elapsed() << m_timer->interval();
-
     const int ms = qrand() % (2 * duration());
     m_timer->start(ms);
     m_time.restart();
@@ -24,7 +22,7 @@ void MockDevice::measure()
 void MockDevice::done()
 {
     const qreal time = 0.001 * QTime::currentTime().msecsSinceStartOfDay();
-    const bool v = qrand() % 2 ? true : false;
-    const qreal vv = 5000 * (1 + qSin(2 * M_PI * 0.4 * time));
-    complete(v, vv);
+    const bool v = qrand() % 100 < 90 ? true : false;
+    const qreal vv = 5000 * (1 + qSin(2 * M_PI * 0.1 * time));
+    complete(v ? vv : qQNaN());
 }

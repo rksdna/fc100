@@ -3,22 +3,14 @@
 
 #include <QQueue>
 #include <QTimer>
-#include <QObject>
+
+class QTimer;
+class QJSEngine;
+class QSettings;
 
 class Device : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(Coupling ch1Coupling READ ch1Coupling WRITE setCh1Coupling NOTIFY ch1CouplingChanged)
-    Q_PROPERTY(Probe ch1Probe READ ch1Probe WRITE setCh1Probe NOTIFY ch1ProbeChanged)
-    Q_PROPERTY(int ch1Threshold READ ch1Threshold WRITE setCh1Threshold NOTIFY ch1ThresholdChanged)
-    Q_PROPERTY(Probe ch2Probe READ ch2Probe WRITE setCh2Probe NOTIFY ch2ProbeChanged)
-    Q_PROPERTY(Coupling ch2Coupling READ ch2Coupling WRITE setCh2Coupling NOTIFY ch2CouplingChanged)
-    Q_PROPERTY(int ch2Threshold READ ch2Threshold WRITE setCh2Threshold NOTIFY ch2ThresholdChanged)
-
-    Q_PROPERTY(Clock clock READ clock WRITE setClock NOTIFY clockChanged)
-
-public:
-    static Device *createDevice(const QString &type, QObject *parent = 0);
 
 public:
     enum Coupling
@@ -78,6 +70,37 @@ public:
 
     Q_ENUM(Event)
 
+    enum Type
+    {
+        Number,
+        Time,
+        Frequency,
+    };
+
+    Q_ENUM(Type)
+
+    enum FrequencyUnit
+    {
+        Hetz,
+        KiloHertz,
+        MegaHertz,
+        GigaHertz
+    };
+
+    Q_ENUM(FrequencyUnit)
+
+    enum TimeUnit
+    {
+        Second,
+        MilliSecond,
+        MicroSecond,
+        NanoSecond
+    };
+
+    Q_ENUM(TimeUnit)
+
+public:
+    static Device *createDevice(const QString &type, QObject *parent = 0);
 
 public:
     explicit Device(QObject *parent = 0);
@@ -108,8 +131,8 @@ public:
     Clock clock() const;
     void setClock(Clock clock);
 
-    qreal clockFrequency() const;
-    void setClockFrequency(qreal frequency);
+    qreal reference() const;
+    void setReference(qreal reference);
 
     Trigger trigger() const;
     void setTrigger(Trigger trigger);
@@ -132,7 +155,42 @@ public:
     int maxSamplesCount() const;
     void setMaxSamplesCount(int count);
 
+    TimeUnit timeUnit() const;
+    void setTimeUnit(TimeUnit unit);
+
+    int timeDecimals() const;
+    void setTimeDecimals(int decimals);
+
+    FrequencyUnit frequencyUnit() const;
+    void setFrequencyUnit(FrequencyUnit unit);
+
+    int frequencyDecimals() const;
+    void setFrequencyDecimals(int decimals);
+
+    QString function() const;
+    void setFunction(const QString &function);
+
+    QString functionUnit() const;
+    void setFunctionUnit(const QString &unit);
+
+    int functionDecimals() const;
+    void setFunctionDecimals(int precision);
+
+    bool isFunctionEnabled() const;
+    void setFunctionEnabled(bool enabled);
+
+    QString portName() const;
+    void setPortName(const QString &name);
+
+    qreal sample() const;
+    qreal origin() const;
+    qreal min() const;
+    qreal max() const;
+
     QList<qreal> samples() const;
+
+    void saveToSettings(QSettings &settings);
+    void restoreFromSettings(QSettings &settings);
 
 signals:
     void ch1CouplingChanged(Coupling coupling);
@@ -156,13 +214,25 @@ signals:
     void startEventChanged(Event event);
     void stopEventChanged(Event event);
     void durationChanged(int duration);
+
     void maxSamplesCountChanged(int count);
+    void timeUnitChanged(TimeUnit unit);
+    void timeDecimalsChanged(int decimals);
+    void frequencyUnitChanged(FrequencyUnit unit);
+    void frequencyDecimalsChanged(int decimals);
+    void functionChanged(const QString &function);
+    void functionUnitChanged(const QString &unit);
+    void functionDecimalsChanged(int decimals);
+    void functionEnabledChanged(bool enabled);
+    void portNameChanged(const QString &name);
 
     void samplesChanged(const QList<qreal> &samples);
+    void cleared();
+    void sampleArr(qreal s);
 
 protected:
     virtual void measure() = 0;
-    void complete(bool valid, qreal value);
+    void complete(qreal sample);
 
 private:
     void timeout();
@@ -171,10 +241,12 @@ private:
     void setCountEventEnabled(bool enabled);
     void setStartStopEventEnabled(bool enabled);
 
+    qreal function1(qreal sample);
     QString description(int threshold, Probe probe) const;
 
 private:
     QTimer * const m_timer;
+    QJSEngine * const m_engine;
     Coupling m_ch1Coupling;
     Probe m_ch1Probe;
     int m_ch1Threshold;
@@ -182,7 +254,7 @@ private:
     Probe m_ch2Probe;
     int m_ch2Threshold;
     Clock m_clock;
-    qreal m_clockFrequency;
+    qreal m_reference;
     Trigger m_trigger;
     Mode m_mode;
     bool m_countEventEnabled;
@@ -192,10 +264,26 @@ private:
     Event m_stopEvent;
     int m_duration;
     int m_maxSamplesCount;
+    TimeUnit m_timeUnit;
+    int m_timeDecimals;
+    FrequencyUnit m_frequencyUnit;
+    int m_frequencyDecimals;
+    QString m_function;
+    QString m_functionUnit;
+    int m_functionDecimals;
+    bool m_functionEnabled;
+    QString m_portName;
 
     bool m_measure;
     bool m_delay;
+    qreal m_sample;
+    qreal m_origin;
+    qreal m_min;
+    qreal m_max;
+    qreal m_smooth;
+
     QQueue<qreal> m_samples;
+
 };
 
 #endif // DEVICE_H

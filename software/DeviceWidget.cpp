@@ -13,15 +13,19 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
 {
     setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
 
+    CommandButton * const restartButton = new CommandButton(tr("START"));
+    connect(restartButton, &CommandButton::clicked, device, &Device::restart);
+
+    CommandButton * const clearButton = new CommandButton(tr("CLEAR"));
+    connect(clearButton, &CommandButton::clicked, device, &Device::clear);
+
     CustomButton * const ch1CouplingButton = new CustomButton(tr("INPUT.1"));
-    //ch1CouplingButton->setFont(font);
     ch1CouplingButton->addValue(tr("DC"), Device::DcCoupling);
     ch1CouplingButton->addValue(tr("AC"), Device::AcCoupling);
     connect(ch1CouplingButton, reinterpret_cast<void (CustomButton::*)(Device::Coupling)>(&CustomButton::valueChanged), device, &Device::setCh1Coupling);
     connect(device, &Device::ch1CouplingChanged, ch1CouplingButton, &CustomButton::setValue);
 
     CustomButton * const ch1ProbeButton = new CustomButton(tr("PROBE.1"));
-    //ch1ProbeButton->setFont(font);
     ch1ProbeButton->addValue(tr("1:1"), Device::x1Probe);
     ch1ProbeButton->addValue(tr("1:10"), Device::x10Probe);
     ch1ProbeButton->addValue(tr("1:100"), Device::x100Probe);
@@ -29,7 +33,6 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     connect(device, &Device::ch1ProbeChanged, ch1ProbeButton, &CustomButton::setValue);
 
     CustomDial * const ch1ThresholdDial = new CustomDial(tr("LEVEL.1"));
-    //ch1ThresholdDial->setFont(font);
     ch1ThresholdDial->setRange(0, 255);
     ch1ThresholdDial->setValue(128);
     connect(ch1ThresholdDial, &CustomDial::valueChanged, device, &Device::setCh1Threshold);
@@ -37,14 +40,12 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     connect(device, &Device::ch1DescriptionChanged, ch1ThresholdDial, &CustomDial::setDescription);
 
     CustomButton * const ch2CouplingButton = new CustomButton(tr("INPUT.2"));
-    //ch2CouplingButton->setFont(font);
     ch2CouplingButton->addValue(tr("DC"), Device::DcCoupling);
     ch2CouplingButton->addValue(tr("AC"), Device::AcCoupling);
     connect(ch2CouplingButton, reinterpret_cast<void (CustomButton::*)(Device::Coupling)>(&CustomButton::valueChanged), device, &Device::setCh2Coupling);
     connect(device, &Device::ch2CouplingChanged, ch2CouplingButton, &CustomButton::setValue);
 
     CustomButton * const ch2ProbeButton = new CustomButton(tr("PROBE.2"));
-    //ch2ProbeButton->setFont(font);
     ch2ProbeButton->addValue(tr("1:1"), Device::x1Probe);
     ch2ProbeButton->addValue(tr("1:10"), Device::x10Probe);
     ch2ProbeButton->addValue(tr("1:100"), Device::x100Probe);
@@ -52,29 +53,25 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     connect(device, &Device::ch2ProbeChanged, ch2ProbeButton, &CustomButton::setValue);
 
     CustomDial * const ch2ThresholdDial = new CustomDial(tr("LEVEL.2"));
-    //ch2ThresholdDial->setFont(font);
     ch2ThresholdDial->setRange(0, 255);
     ch2ThresholdDial->setValue(128);
     connect(ch2ThresholdDial, &CustomDial::valueChanged, device, &Device::setCh2Threshold);
     connect(device, &Device::ch2ThresholdChanged, ch2ThresholdDial, &CustomDial::setValue);
     connect(device, &Device::ch2DescriptionChanged, ch2ThresholdDial, &CustomDial::setDescription);
 
-    CustomButton * const clockButton = new CustomButton(tr("REF"));
-    //clockButton->setFont(font);
-    clockButton->addValue(tr("INT"), Device::InternalClock);
-    clockButton->addValue(tr("EXT"), Device::ExternalClock);
-    connect(clockButton, reinterpret_cast<void (CustomButton::*)(Device::Clock)>(&CustomButton::valueChanged), device, &Device::setClock);
-    connect(device, &Device::clockChanged, clockButton, &CustomButton::setValue);
+    CustomButton * const clockButton = new CustomButton(tr("FUNC"));
+    clockButton->addValue(tr("NO"), false);
+    clockButton->addValue(tr("USER"), true);
+    connect(clockButton, reinterpret_cast<void (CustomButton::*)(bool)>(&CustomButton::valueChanged), device, &Device::setFunctionEnabled);
+    connect(device, &Device::functionEnabledChanged, clockButton, &CustomButton::setValue);
 
     CustomButton * const triggerButton = new CustomButton(tr("TRIGGER"));
-    //triggerButton->setFont(font);
     triggerButton->addValue(tr("AUTO"), Device::AutoTrigger);
     triggerButton->addValue(tr("MANUAL"), Device::ManualTrigger);
     connect(triggerButton, reinterpret_cast<void (CustomButton::*)(Device::Trigger)>(&CustomButton::valueChanged), device, &Device::setTrigger);
     connect(device, &Device::triggerChanged, triggerButton, &CustomButton::setValue);
 
     CustomButton * const modeButton = new CustomButton(tr("MODE"));
-    //modeButton->setFont(font);
     modeButton->addValue(tr("TIME"), Device::TimeMode);
     modeButton->addValue(tr("FREQ"), Device::FrequencyMode);
     modeButton->addValue(tr("PERIOD"), Device::PeriodMode);
@@ -87,7 +84,6 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     connect(device, &Device::modeChanged, modeButton, &CustomButton::setValue);
 
     CustomButton * const countEventButton = new CustomButton(tr("INPUT"));
-    //countEventButton->setFont(font);
     countEventButton->addValue(tr("CH1 R"), Device::Ch1RisingEdgeEvent);
     countEventButton->addValue(tr("CH1 F"), Device::Ch1FallingEdgeEvent);
     countEventButton->addValue(tr("CH2 R"), Device::Ch2RisingEdgeEvent);
@@ -97,7 +93,6 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     connect(device, &Device::countEventEnabled, countEventButton, &CustomButton::setEnabled);
 
     CustomButton * const startEventButton = new CustomButton(tr("START ON"));
-    //startEventButton->setFont(font);
     startEventButton->addValue(tr("CH1 R"), Device::Ch1RisingEdgeEvent);
     startEventButton->addValue(tr("CH1 F"), Device::Ch1FallingEdgeEvent);
     startEventButton->addValue(tr("CH2 R"), Device::Ch2RisingEdgeEvent);
@@ -107,7 +102,6 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     connect(device, &Device::startStopEventEnabled, startEventButton, &CustomButton::setEnabled);
 
     CustomButton * const stopEventButton = new CustomButton(tr("STOP ON"));
-    //stopEventButton->setFont(font);
     stopEventButton->addValue(tr("CH1 R"), Device::Ch1RisingEdgeEvent);
     stopEventButton->addValue(tr("CH1 F"), Device::Ch1FallingEdgeEvent);
     stopEventButton->addValue(tr("CH2 R"), Device::Ch2RisingEdgeEvent);
@@ -116,16 +110,7 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     connect(device, &Device::stopEventChanged, stopEventButton, &CustomButton::setValue);
     connect(device, &Device::startStopEventEnabled, stopEventButton, &CustomButton::setEnabled);
 
-    CommandButton * const restartButton = new CommandButton(tr("START"));
-    //restartButton->setFont(font);
-    connect(restartButton, &CommandButton::clicked, device, &Device::restart);
-
-    CommandButton * const clearButton = new CommandButton(tr("CLEAR"));
-    //clearButton->setFont(font);
-    connect(clearButton, &CommandButton::clicked, device, &Device::clear);
-
     CustomButton * const durationButton = new CustomButton(tr("TIME"));
-    //durationButton->setFont(font);
     durationButton->addValue(tr("5 mS"), 5);
     durationButton->addValue(tr("10 mS"), 10);
     durationButton->addValue(tr("50 mS"), 50);
@@ -138,8 +123,8 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     connect(device, &Device::durationChanged, durationButton, &CustomButton::setValue);
 
     CustomDisplay * const display = new CustomDisplay;
-    display->setFrameStyle(QFrame::StyledPanel);
-    connect(device, &Device::samplesChanged, display, &CustomDisplay::display);
+    connect(device, &Device::sampleArr, display, &CustomDisplay::display1);
+    connect(device, &Device::cleared, display, &CustomDisplay::clear);
 
     QGridLayout * const layout = new QGridLayout(this);
 

@@ -3,6 +3,7 @@
 #include <QSettings>
 #include "Device.h"
 #include "MainWindow.h"
+#include "DeviceDialog.h"
 #include "DeviceWidget.h"
 
 MainWindow::MainWindow(const QString &type, QWidget *parent)
@@ -29,8 +30,14 @@ MainWindow::MainWindow(const QString &type, QWidget *parent)
     connect(aboutAction, &QAction::triggered, this, &MainWindow::about);
 
     QSettings settings;
-    restoreState(settings.value("MainWindow/State").toByteArray());
-    restoreGeometry(settings.value("MainWindow/Geometry").toByteArray());
+    settings.beginGroup("MainWindow");
+    restoreState(settings.value("State").toByteArray());
+    restoreGeometry(settings.value("Geometry").toByteArray());
+    settings.endGroup();
+
+    settings.beginGroup("Device");
+    m_device->restoreFromSettings(settings);
+    settings.endGroup();
 
     m_device->reset();
 }
@@ -38,14 +45,24 @@ MainWindow::MainWindow(const QString &type, QWidget *parent)
 void MainWindow::closeEvent(QCloseEvent *event)
 {
     QSettings settings;
-    settings.setValue("MainWindow/State", saveState());
-    settings.setValue("MainWindow/Geometry", saveGeometry());
+    settings.beginGroup("MainWindow");
+    settings.setValue("State", saveState());
+    settings.setValue("Geometry", saveGeometry());
+    settings.endGroup();
+
+    settings.beginGroup("Device");
+    m_device->saveToSettings(settings);
+    settings.endGroup();
 
     QMainWindow::closeEvent(event);
 }
 
 void MainWindow::preferences()
 {
+    DeviceDialog * const dialog = new DeviceDialog(m_device, this);
+    connect(dialog, &DeviceDialog::finished, dialog, &QObject::deleteLater);
+
+    dialog->open();
 }
 
 void MainWindow::about()
