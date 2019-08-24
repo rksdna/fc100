@@ -1,145 +1,60 @@
-#include <QDebug>
+#include <QPainter>
 #include <QPaintEvent>
-#include <QStyleOption>
-#include <QStylePainter>
+#include <QFontMetrics>
 #include "CustomDisplay.h"
 
-CustomDisplay::CustomDisplay(QWidget *parent)
-    : QFrame(parent),
-      m_margins(20, 20, 20, 20),
-      m_decimals(3),
-      m_unit(tr("Hz")),
-      m_sample(qQNaN()),
-      m_origin(qQNaN()),
-      m_min(qQNaN()),
-      m_max(qQNaN())
+CustomDisplay::CustomDisplay(const QString &title, QWidget *parent)
+    : QWidget(parent),
+      m_color("#A5D785"),
+      m_title(title),
+      m_text(tr("---"))
 {
+    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+    setContentsMargins(10, 5, 10, 5);
 }
 
-void CustomDisplay::display(const QList<qreal> &data)
+QColor CustomDisplay::color() const
 {
-    update();
+    return m_color;
 }
 
-void CustomDisplay::display1(qreal val)
+void CustomDisplay::setColor(const QColor &color)
 {
-    m_sample = val;
-    if (qIsFinite(m_sample))
+    if (m_color != color)
     {
-        //qreal factor = 0.5;
-
-        m_origin = qIsFinite(m_origin) ? m_origin : m_sample;
-        m_min = qIsFinite(m_min) ? qMin(m_min, m_sample) : m_sample;
-        m_max = qIsFinite(m_max) ? qMax(m_max, m_sample) : m_sample;
-        /*m_smooth = qIsFinite(m_min) ? (1.0 - factor) * m_smooth + factor * m_sample : m_sample;
-
-        m_samples.enqueue(m_sample);
-        while (m_samples.count() > m_maxSamplesCount)
-            m_samples.dequeue();*/
-
-        m_samples.append(m_sample);
-        while (m_samples.count() > 500)
-            m_samples.takeFirst();
+        m_color = color;
+        update();
     }
-
-    update();
 }
 
-void CustomDisplay::clear()
+QString CustomDisplay::title() const
 {
-    m_sample = qQNaN();
-    m_origin = qQNaN();
-    m_min = qQNaN();
-    m_max = qQNaN();
-
-    m_samples.clear();
-
-    update();
+    return m_title;
 }
 
-void CustomDisplay::paintEvent(QPaintEvent *event)
+void CustomDisplay::setTitle(const QString &title)
 {
-    QStylePainter painter(this);
-    painter.translate(-0.5, -0.5);
-    painter.setRenderHint(QPainter::Antialiasing);
-
-    const QColor textColor = palette().color(QPalette::Mid);
-    const QColor valueColor = isEnabled() ? QColor("#A5D785") : textColor;
-
-    QRect content = rect();
-
-    const int he = content.height() / 5;
-    const int we = content.width() / 4;
-
-    painter.setPen(textColor);
-
-    painter.drawText(QRect(3 * we, 1 * he, we, he), Qt::AlignTop | Qt::AlignLeft, m_unit);
-
-    painter.drawText(QRect(0 * we, 0 * he, we, he), Qt::AlignVCenter | Qt::AlignRight, tr("MIN"));
-    painter.drawText(QRect(0 * we, 2 * he, we, he), Qt::AlignVCenter | Qt::AlignRight, tr("P-P"));
-    painter.drawText(QRect(3 * we, 0 * he, we, he), Qt::AlignVCenter | Qt::AlignRight, tr("MAX"));
-    painter.drawText(QRect(3 * we, 2 * he, we, he), Qt::AlignVCenter | Qt::AlignRight, tr("DEV"));
-
-    painter.setPen(valueColor);
-
-
-    QRect r(0 * we, 0 * he, we, he);
-    qreal s = 0;
-    for (int x = 0; x < r.width(); x++)
+    if (m_title != title)
     {
-        qreal p = r.height() * (m_samples.value(x * 500 / r.width()) - m_min) / (m_max - m_min);
-        painter.drawLine(r.x() + x - 1, r.y() + s, r.x() + x, r.y() + p);
-        s = p;
-
+        m_title = title;
+        updateGeometry();
+        update();
     }
-
-
-    painter.drawText(QRect(0 * we, 1 * he, we, he), Qt::AlignVCenter | Qt::AlignRight, format(m_min));
-    painter.drawText(QRect(0 * we, 3 * he, we, he), Qt::AlignVCenter | Qt::AlignRight, format(m_max));
-    painter.drawText(QRect(3 * we, 1 * he, we, he), Qt::AlignVCenter | Qt::AlignRight, format(m_max - m_min));
-    painter.drawText(QRect(3 * we, 3 * he, we, he), Qt::AlignVCenter | Qt::AlignRight, format(m_sample - m_origin));
-
-    QFont f = font();
-    f.setPixelSize(2 * he);
-
-    painter.setFont(f);
-    painter.drawText(QRect(1 * we, 1 * he, 2 * we, 2 * he), Qt::AlignVCenter | Qt::AlignRight, format(m_sample));
-
-    event->accept();
 }
 
-CustomDisplay::Mode CustomDisplay::mode() const
+QString CustomDisplay::text() const
 {
-    return m_mode;
+    return m_title;
 }
 
-void CustomDisplay::setMode(const Mode &mode)
+void CustomDisplay::setText(const QString &text)
 {
-    m_mode = mode;
-    update();
-}
-
-QString CustomDisplay::unit() const
-{
-    return m_unit;
-}
-
-void CustomDisplay::setUnit(const QString &unit)
-{
-    m_unit = unit;
-    update();
-}
-
-int CustomDisplay::decimals() const
-{
-    return m_decimals;
-}
-
-void CustomDisplay::setDecimals(int decimals)
-{
-    m_decimals = decimals;
-
-    update();
+    if (m_text != text)
+    {
+        m_text = text;
+        updateGeometry();
+        update();
+    }
 }
 
 QSize CustomDisplay::sizeHint() const
@@ -149,10 +64,31 @@ QSize CustomDisplay::sizeHint() const
 
 QSize CustomDisplay::minimumSizeHint() const
 {
-    return QSize(200, 100);
+    const QFontMetrics metrics(font());
+    const int height = metrics.height();
+    const int width = qMax(metrics.width(m_title), metrics.width(m_text));
+    return QRect(0, 0, width, 2 * height).marginsAdded(contentsMargins()).size();
 }
 
-QString CustomDisplay::format(qreal value) const
+void CustomDisplay::paintEvent(QPaintEvent *event)
 {
-    return qIsFinite(value) ? tr("%1").arg(value, 0, 'f', 3): tr("---");
+    const QColor mid = palette().color(QPalette::Mid);
+
+    const QRect content = contentsRect();
+    const int left = content.x();
+    const int top = content.y();
+    const int height = content.height() / 2;
+    const int width = content.width();
+
+    QPainter painter(this);
+    painter.translate(-0.5, -0.5);
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    painter.setPen(mid);
+    painter.drawText(QRect(left, top, width, height), Qt::AlignCenter, m_title);
+
+    painter.setPen(isEnabled() ? color() : mid);
+    painter.drawText(QRect(left, top + height, width, height), Qt::AlignCenter, m_text);
+
+    event->accept();
 }

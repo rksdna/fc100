@@ -5,6 +5,9 @@
 #include <QJSEngine>
 #include "Device.h"
 #include "MockDevice.h"
+#include "DeviceChannel.h"
+#include "DeviceReference.h"
+#include "DeviceProcessor.h"
 
 template <typename Type>
 QVariant fromEnum(Type value)
@@ -31,14 +34,11 @@ Device::Device(QObject *parent)
     : QObject(parent),
       m_timer(new QTimer(this)),
       m_engine(new QJSEngine(this)),
-      m_ch1Coupling(DcCoupling),
-      m_ch1Probe(x10Probe),
-      m_ch1Threshold(128),
-      m_ch2Coupling(DcCoupling),
-      m_ch2Probe(x10Probe),
-      m_ch2Threshold(128),
-      m_clock(InternalClock),
-      m_reference(10000000.0),
+      m_channel1(new DeviceChannel(this)),
+      m_channel2(new DeviceChannel(this)),
+      m_reference(new DeviceReference(this)),
+      m_processor(new DeviceProcessor(this)),
+
       m_trigger(AutoTrigger),
       m_mode(FrequencyMode),
       m_countEventEnabled(true),
@@ -62,28 +62,24 @@ Device::Device(QObject *parent)
     connect(m_timer, &QTimer::timeout, this, &Device::timeout);
 }
 
-void Device::reset()
+DeviceChannel *Device::channel1() const
 {
-    emit ch1CouplingChanged(m_ch1Coupling);
-    emit ch1ProbeChanged(m_ch1Probe);
-    emit ch1ThresholdChanged(m_ch1Threshold);
-    emit ch1DescriptionChanged(description(m_ch1Threshold, m_ch1Probe));
+    return m_channel1;
+}
 
-    emit ch2CouplingChanged(m_ch2Coupling);
-    emit ch2ProbeChanged(m_ch2Probe);
-    emit ch2ThresholdChanged(m_ch2Threshold);
-    emit ch2DescriptionChanged(description(m_ch2Threshold, m_ch2Probe));
+DeviceChannel *Device::channel2() const
+{
+    return m_channel2;
+}
 
-    emit clockChanged(m_clock);
-    emit clockFrequencyChanged(m_reference);
-    emit triggerChanged(m_trigger);
-    emit modeChanged(m_mode);
-    emit countEventEnabled(m_countEventEnabled);
-    emit startStopEventEnabled(m_startStopEventEnabled);
-    emit countEventChanged(m_countEvent);
-    emit startEventChanged(m_startEvent);
-    emit stopEventChanged(m_stopEvent);
-    emit durationChanged(m_duration);
+DeviceReference *Device::reference() const
+{
+    return m_reference;
+}
+
+DeviceProcessor *Device::processor() const
+{
+    return m_processor;
 }
 
 void Device::restart()
@@ -104,125 +100,6 @@ void Device::clear()
     m_max = qQNaN();
     m_smooth = qQNaN();
     m_samples.clear();
-}
-
-Device::Coupling Device::ch1Coupling() const
-{
-    return m_ch1Coupling;
-}
-
-void Device::setCh1Coupling(Coupling coupling)
-{
-    if (m_ch1Coupling != coupling)
-    {
-        m_ch1Coupling = coupling;
-        emit ch1CouplingChanged(m_ch1Coupling);
-    }
-}
-
-Device::Probe Device::ch1Probe() const
-{
-    return m_ch1Probe;
-}
-
-void Device::setCh1Probe(Probe probe)
-{
-    if (m_ch1Probe != probe)
-    {
-        m_ch1Probe = probe;
-        emit ch1ProbeChanged(m_ch1Probe);
-        emit ch1DescriptionChanged(description(m_ch1Threshold, m_ch1Probe));
-    }
-}
-
-int Device::ch1Threshold() const
-{
-    return m_ch1Threshold;
-}
-
-void Device::setCh1Threshold(int threshold)
-{
-    threshold = qBound(0, threshold, 255);
-    if (m_ch1Threshold != threshold)
-    {
-        m_ch1Threshold = threshold;
-        emit ch1ThresholdChanged(m_ch1Threshold);
-        emit ch1DescriptionChanged(description(m_ch1Threshold, m_ch1Probe));
-    }
-}
-
-Device::Coupling Device::ch2Coupling() const
-{
-    return m_ch2Coupling;
-}
-
-void Device::setCh2Coupling(Coupling coupling)
-{
-    if (m_ch2Coupling != coupling)
-    {
-        m_ch2Coupling = coupling;
-        emit ch2CouplingChanged(m_ch2Coupling);
-    }
-}
-
-Device::Probe Device::ch2Probe() const
-{
-    return m_ch2Probe;
-}
-
-void Device::setCh2Probe(Probe probe)
-{
-    if (m_ch2Probe != probe)
-    {
-        m_ch2Probe = probe;
-        emit ch2ProbeChanged(m_ch2Probe);
-        emit ch2DescriptionChanged(description(m_ch2Threshold, m_ch2Probe));
-    }
-}
-
-int Device::ch2Threshold() const
-{
-    return m_ch2Threshold;
-}
-
-void Device::setCh2Threshold(int threshold)
-{
-    threshold = qBound(0, threshold, 255);
-    if (m_ch2Threshold != threshold)
-    {
-        m_ch2Threshold = threshold;
-        emit ch2ThresholdChanged(m_ch2Threshold);
-        emit ch2DescriptionChanged(description(m_ch2Threshold, m_ch2Probe));
-    }
-}
-
-Device::Clock Device::clock() const
-{
-    return m_clock;
-}
-
-void Device::setClock(Clock clock)
-{
-    if (m_clock != clock)
-    {
-        m_clock = clock;
-        emit clockChanged(m_clock);
-    }
-}
-
-qreal Device::reference() const
-{
-    return m_reference;
-}
-
-void Device::setReference(qreal reference)
-{
-    reference = qBound(9000000.0, reference, 11000000.0);
-    if (m_reference != reference)
-    {
-        m_reference = reference;
-        emit clockFrequencyChanged(m_reference);
-    }
 }
 
 Device::Trigger Device::trigger() const
@@ -492,16 +369,18 @@ QList<qreal> Device::samples() const
 
 void Device::saveToSettings(QSettings &settings)
 {
-    settings.setValue("ch1Coupling", fromEnum(m_ch1Coupling));
-    settings.setValue("ch1Probe", fromEnum(m_ch1Probe));
-    settings.setValue("ch1Threshold", m_ch1Threshold);
+    settings.beginGroup("Channel1");
+    m_channel1->saveToSettings(settings);
+    settings.endGroup();
 
-    settings.setValue("ch2Coupling", fromEnum(m_ch2Coupling));
-    settings.setValue("ch2Probe", fromEnum(m_ch2Probe));
-    settings.setValue("ch2Threshold", m_ch2Threshold);
+    settings.beginGroup("Channel2");
+    m_channel2->saveToSettings(settings);
+    settings.endGroup();
 
-    settings.setValue("clock", fromEnum(m_clock));
-    settings.setValue("reference", m_reference);
+    settings.beginGroup("Reference");
+    m_reference->saveToSettings(settings);
+    settings.endGroup();
+
     settings.setValue("trigger", fromEnum(m_trigger));
     settings.setValue("mode", fromEnum(m_mode));
     settings.setValue("countEvent", fromEnum(m_countEvent));
@@ -524,16 +403,19 @@ void Device::saveToSettings(QSettings &settings)
 
 void Device::restoreFromSettings(QSettings &settings)
 {
-    setCh1Coupling(toEnum<Coupling>(settings.value("ch1Coupling")));
-    setCh1Probe(toEnum<Probe>(settings.value("ch1Probe")));
-    setCh1Threshold(settings.value("ch1Threshold").toInt());
+    settings.beginGroup("Channel1");
+    m_channel1->restoreFromSettings(settings);
+    settings.endGroup();
 
-    setCh2Coupling(toEnum<Coupling>(settings.value("ch2Coupling")));
-    setCh2Probe(toEnum<Probe>(settings.value("ch2Probe")));
-    setCh2Threshold(settings.value("ch2Threshold").toInt());
+    settings.beginGroup("Channel2");
+    m_channel2->restoreFromSettings(settings);
+    settings.endGroup();
 
-    setClock(toEnum<Clock>(settings.value("clock")));
-    setReference(settings.value("reference").toDouble());
+    settings.beginGroup("Reference");
+    m_reference->restoreFromSettings(settings);
+    settings.endGroup();
+
+
     setTrigger(toEnum<Trigger>(settings.value("trigger")));
     setMode(toEnum<Mode>(settings.value("mode")));
     setCountEvent(toEnum<Event>(settings.value("countEvent")));
@@ -621,38 +503,3 @@ qreal Device::function1(qreal sample)
 
     return sample;
 }
-
-QString Device::description(int threshold, Device::Probe probe) const
-{
-    switch (probe)
-    {
-    case x1Probe:
-        return tr("%1").arg(-5.0 + 10.0 * threshold / 256, 0, 'f', 2, QChar(' '));
-
-    case x10Probe:
-        return tr("%1").arg(-50.0 + 100.0 * threshold / 256, 0, 'f', 1, QChar(' '));
-
-    case x100Probe:
-        return tr("%1").arg(-500.0 + 1000.0 * threshold / 256, 0, 'f', 0, QChar(' '));
-
-    default:
-        break;
-    }
-
-    return tr("---");
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

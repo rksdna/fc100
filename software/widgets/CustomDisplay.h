@@ -1,65 +1,34 @@
 #ifndef CUSTOMDISPLAY_H
 #define CUSTOMDISPLAY_H
 
-#include <QMap>
-#include <QFrame>
+#include <QWidget>
 
-class CustomDisplay : public QFrame
+class CustomDisplay : public QWidget
 {
     Q_OBJECT
 
 public:
+    explicit CustomDisplay(const QString &title, QWidget *parent = 0);
 
-    enum Mode
-    {
-        NormalMode,
-        MinMode,
-        MaxMode,
-        BandMode,
-        DeviationMode,
-        AverageMode
-    };
+    QColor color() const;
+    void setColor(const QColor &color);
 
-public:
-    explicit CustomDisplay(QWidget *parent = 0);
+    QString title() const;
+    void setTitle(const QString &title);
 
-    void display(const QList<qreal> &data);
-
-    void display1(qreal val);
-    void clear();
-
-    int decimals() const;
-    void setDecimals(int decimals);
-
-    QString unit() const;
-    void setUnit(const QString &unit);
-
-    Mode mode() const;
-    void setMode(const Mode &mode);
+    QString text() const;
+    void setText(const QString &text);
 
     QSize sizeHint() const;
     QSize minimumSizeHint() const;
 
 protected:
-    QString format(qreal value) const;
-
     void paintEvent(QPaintEvent *event);
 
 private:
-    QMargins m_margins;
-    int m_decimals;
-    QString m_unit;
-    Mode m_mode;
-
-    qreal m_sample;
-    qreal m_origin;
-    qreal m_min;
-    qreal m_max;
-    QList<qreal> m_samples;
-
-
-
-
+    QColor m_color;
+    QString m_title;
+    QString m_text;
 };
 
 #endif // CUSTOMDISPLAY_H

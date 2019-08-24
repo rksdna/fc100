@@ -8,36 +8,15 @@ class QTimer;
 class QJSEngine;
 class QSettings;
 
+class DeviceChannel;
+class DeviceReference;
+class DeviceProcessor;
+
 class Device : public QObject
 {
     Q_OBJECT
 
 public:
-    enum Coupling
-    {
-        DcCoupling,
-        AcCoupling
-    };
-
-    Q_ENUM(Coupling)
-
-    enum Probe
-    {
-        x1Probe,
-        x10Probe,
-        x100Probe
-    };
-
-    Q_ENUM(Probe)
-
-    enum Clock
-    {
-        InternalClock,
-        ExternalClock
-    };
-
-    Q_ENUM(Clock)
-
     enum Mode
     {
         TimeMode,
@@ -70,15 +49,6 @@ public:
 
     Q_ENUM(Event)
 
-    enum Type
-    {
-        Number,
-        Time,
-        Frequency,
-    };
-
-    Q_ENUM(Type)
-
     enum FrequencyUnit
     {
         Hetz,
@@ -105,34 +75,14 @@ public:
 public:
     explicit Device(QObject *parent = 0);
 
-    void reset();
+    DeviceChannel *channel1() const;
+    DeviceChannel *channel2() const;
+    DeviceReference *reference() const;
+    DeviceProcessor *processor() const;
 
+    void tmp();
     void restart();
     void clear();
-
-    Coupling ch1Coupling() const;
-    void setCh1Coupling(Coupling coupling);
-
-    Probe ch1Probe() const;
-    void setCh1Probe(Probe probe);
-
-    int ch1Threshold() const;
-    void setCh1Threshold(int threshold);
-
-    Coupling ch2Coupling() const;
-    void setCh2Coupling(Coupling coupling);
-
-    Probe ch2Probe() const;
-    void setCh2Probe(Probe probe);
-
-    int ch2Threshold() const;
-    void setCh2Threshold(int threshold);
-
-    Clock clock() const;
-    void setClock(Clock clock);
-
-    qreal reference() const;
-    void setReference(qreal reference);
 
     Trigger trigger() const;
     void setTrigger(Trigger trigger);
@@ -193,19 +143,6 @@ public:
     void restoreFromSettings(QSettings &settings);
 
 signals:
-    void ch1CouplingChanged(Coupling coupling);
-    void ch1ProbeChanged(Probe probe);
-    void ch1ThresholdChanged(int threshold);
-    void ch1DescriptionChanged(const QString &description);
-
-    void ch2CouplingChanged(Coupling coupling);
-    void ch2ProbeChanged(Probe probe);
-    void ch2ThresholdChanged(int threshold);
-    void ch2DescriptionChanged(const QString &description);
-
-    void clockChanged(Clock clock);
-    void clockFrequencyChanged(qreal frequency);
-
     void triggerChanged(Trigger trigger);
     void modeChanged(Mode mode);
     void countEventEnabled(bool enabled);
@@ -216,6 +153,7 @@ signals:
     void durationChanged(int duration);
 
     void maxSamplesCountChanged(int count);
+
     void timeUnitChanged(TimeUnit unit);
     void timeDecimalsChanged(int decimals);
     void frequencyUnitChanged(FrequencyUnit unit);
@@ -242,19 +180,17 @@ private:
     void setStartStopEventEnabled(bool enabled);
 
     qreal function1(qreal sample);
-    QString description(int threshold, Probe probe) const;
 
 private:
     QTimer * const m_timer;
     QJSEngine * const m_engine;
-    Coupling m_ch1Coupling;
-    Probe m_ch1Probe;
-    int m_ch1Threshold;
-    Coupling m_ch2Coupling;
-    Probe m_ch2Probe;
-    int m_ch2Threshold;
-    Clock m_clock;
-    qreal m_reference;
+
+    DeviceChannel * const m_channel1;
+    DeviceChannel * const m_channel2;
+    DeviceReference * const m_reference;
+
+    DeviceProcessor * const m_processor;
+
     Trigger m_trigger;
     Mode m_mode;
     bool m_countEventEnabled;
@@ -276,6 +212,7 @@ private:
 
     bool m_measure;
     bool m_delay;
+
     qreal m_sample;
     qreal m_origin;
     qreal m_min;

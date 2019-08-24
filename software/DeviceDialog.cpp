@@ -10,54 +10,78 @@
 #include <QDialogButtonBox>
 #include "Device.h"
 #include "DeviceDialog.h"
+#include "DeviceReference.h"
+#include "DeviceProcessor.h"
+#include "Format.h"
+
+FormatWidget::FormatWidget(Format *format, QWidget *parent)
+    : QGroupBox(parent),
+      m_format(format),
+      m_unitBox(new QComboBox),
+      m_decimalsBox(new QSpinBox)
+{
+    m_unitBox->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+    m_unitBox->addItem(format->suffix(Format::NanoUnit), Format::NanoUnit);
+    m_unitBox->addItem(format->suffix(Format::MicroUnit), Format::MicroUnit);
+    m_unitBox->addItem(format->suffix(Format::MilliUnit), Format::MilliUnit);
+    m_unitBox->addItem(format->suffix(Format::OneUnit), Format::OneUnit);
+    m_unitBox->addItem(format->suffix(Format::KiloUnit), Format::KiloUnit);
+    m_unitBox->addItem(format->suffix(Format::MegaUnit), Format::MegaUnit);
+    m_unitBox->addItem(format->suffix(Format::GigaUnit), Format::GigaUnit);
+    m_unitBox->setCurrentIndex(m_unitBox->findData(format->unit()));
+
+    m_decimalsBox->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+    m_decimalsBox->setRange(Format::minDecimals(), Format::maxDecimals());
+    m_decimalsBox->setValue(format->decimals());
+
+    QBoxLayout * const layout = new QVBoxLayout(this);
+    layout->setContentsMargins(QMargins());
+    layout->addWidget(m_unitBox);
+    layout->addWidget(m_decimalsBox);
+}
+
+void FormatWidget::accept()
+{
+    m_format->setUnit(Format::Unit(m_unitBox->currentData().toInt()));
+    m_format->setDecimals(m_decimalsBox->value());
+}
 
 DeviceDialog::DeviceDialog(Device *device, QWidget *parent)
     : QDialog(parent),
       m_device(device),
-      m_clockBox(new QComboBox),
-      m_clockFrequencyBox(new QDoubleSpinBox),
-      m_timeUnitBox(new QComboBox),
-      m_timeDecimalsBox(new QSpinBox),
-      m_frequencyUnitBox(new QComboBox),
-      m_frequencyDecimalsBox(new QSpinBox),
+      m_referenceSourceBox(new QComboBox),
+      m_referenceFrequencyBox(new QDoubleSpinBox),
+      m_countFormatWidget(new FormatWidget(device->processor()->countFormat())),
+      m_timeFormatWidget(new FormatWidget(device->processor()->timeFormat())),
+      m_frequencyFormatWidget(new FormatWidget(device->processor()->frequencyFormat())),
+      m_userFormatWidget(new FormatWidget(device->processor()->userFormat())),
+      //...
       m_functionEdit(new QLineEdit),
-      m_functionUnitEdit(new QLineEdit),
-      m_functionDecimalsBox(new QSpinBox),
       m_portNameBox(new QComboBox)
 {
-    m_clockBox->addItem(tr("Internal"), Device::InternalClock);
-    m_clockBox->addItem(tr("External"), Device::ExternalClock);
-    m_clockBox->setCurrentIndex(m_clockBox->findData(device->clock()));
+    m_referenceSourceBox->addItem(tr("Internal source"), DeviceReference::InternalSource);
+    m_referenceSourceBox->addItem(tr("External source (REF)"), DeviceReference::ExternalSource);
+    m_referenceSourceBox->setCurrentIndex(m_referenceSourceBox->findData(device->reference()->source()));
 
-    m_clockFrequencyBox->setSuffix(tr(" Hz"));
-    m_clockFrequencyBox->setRange(9000000.0, 11000000.0);
-    m_clockFrequencyBox->setDecimals(3);
-    m_clockFrequencyBox->setValue(device->reference());
+    m_referenceFrequencyBox->setRange(DeviceReference::minFrequency(), DeviceReference::maxFrequency());
+    m_referenceFrequencyBox->setDecimals(3);
+    m_referenceFrequencyBox->setValue(device->reference()->frequency());
 
-    m_timeUnitBox->addItem(tr("nS"), Device::NanoSecond);
-    m_timeUnitBox->addItem(tr("uS"), Device::MicroSecond);
-    m_timeUnitBox->addItem(tr("mS"), Device::MilliSecond);
-    m_timeUnitBox->addItem(tr("S"), Device::Second);
-    m_timeUnitBox->setCurrentIndex(m_timeUnitBox->findData(device->timeUnit()));
+    QWidget * const referenceWidget = new QWidget;
+    QFormLayout * const referenceLayout = new QFormLayout(referenceWidget);
+    referenceLayout->addRow(tr("Source"), m_referenceSourceBox);
+    referenceLayout->addRow(tr("Frequency, Hz"), m_referenceFrequencyBox);
 
-    m_timeDecimalsBox->setRange(0, 9);
-    m_timeDecimalsBox->setValue(device->timeDecimals());
+    QWidget * const formatsWidget = new QWidget;
+    QFormLayout * const formatsLayout = new QFormLayout(formatsWidget);
+    formatsLayout->addRow(tr("Number"), m_countFormatWidget);
+    formatsLayout->addRow(tr("Time"), m_timeFormatWidget);
+    formatsLayout->addRow(tr("Frequency"), m_frequencyFormatWidget);
+    formatsLayout->addRow(tr("User"), m_userFormatWidget);
 
-    m_frequencyUnitBox->addItem(tr("Hz"), Device::Hetz);
-    m_frequencyUnitBox->addItem(tr("kHz"), Device::KiloHertz);
-    m_frequencyUnitBox->addItem(tr("MHz"), Device::MegaHertz);
-    m_frequencyUnitBox->addItem(tr("GHz"), Device::GigaHertz);
-    m_frequencyUnitBox->setCurrentIndex(m_frequencyUnitBox->findData(device->frequencyUnit()));
 
-    m_frequencyDecimalsBox->setRange(0, 9);
-    m_frequencyDecimalsBox->setValue(device->frequencyDecimals());
-
+    //...
     m_functionEdit->setText(device->function());
-
-    m_functionUnitEdit->setText(device->functionUnit());
-
-    m_functionDecimalsBox->setRange(0, 9);
-    m_functionDecimalsBox->setValue(device->functionDecimals());
 
     m_portNameBox->addItem(tr("Auto"), QString());
     foreach (const QSerialPortInfo &info, QSerialPortInfo::availablePorts())
@@ -65,30 +89,13 @@ DeviceDialog::DeviceDialog(Device *device, QWidget *parent)
 
     m_portNameBox->setCurrentIndex(m_portNameBox->findData(device->portName()));
 
-    QWidget * const refWidget = new QWidget;
-    QFormLayout * const refLayout = new QFormLayout(refWidget);
-    refLayout->addRow(tr("Clock source"), m_clockBox);
-    refLayout->addRow(tr("Clock frequency"), m_clockFrequencyBox);
-
-    QWidget * const preferencesWidget = new QWidget;
-    QFormLayout * const preferencesLayout = new QFormLayout(preferencesWidget);
-    preferencesLayout->addRow(tr("Time unit"), m_timeUnitBox);
-    preferencesLayout->addRow(tr("Time precision"), m_timeDecimalsBox);
-
-    preferencesLayout->addRow(tr("Frequency unit"), m_frequencyUnitBox);
-    preferencesLayout->addRow(tr("Frequency precision"), m_frequencyDecimalsBox);
-
-    preferencesLayout->addRow(tr("Function"), m_functionEdit);
-    preferencesLayout->addRow(tr("Function unit"), m_functionUnitEdit);
-    preferencesLayout->addRow(tr("Function precision"), m_functionDecimalsBox);
-
     QWidget * const connectionWidget = new QWidget;
     QFormLayout * const connectionLayout = new QFormLayout(connectionWidget);
     connectionLayout->addRow(tr("Port"), m_portNameBox);
 
     QTabWidget * const tabWidget = new QTabWidget;
-    tabWidget->addTab(preferencesWidget, tr("Preferences"));
-    tabWidget->addTab(refWidget, tr("Clock"));
+    tabWidget->addTab(referenceWidget, tr("Reference"));
+    tabWidget->addTab(formatsWidget, tr("Formats"));
     tabWidget->addTab(connectionWidget, tr("Connection"));
 
     QDialogButtonBox * const buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
@@ -100,21 +107,30 @@ DeviceDialog::DeviceDialog(Device *device, QWidget *parent)
     layout->addWidget(buttonBox);
 
     QSettings settings;
-    restoreGeometry(settings.value("DeviceDialog/Geometry").toByteArray());
+    settings.beginGroup("DeviceDialog");
+    restoreGeometry(settings.value("Geometry").toByteArray());
+    settings.endGroup();
 }
 
 void DeviceDialog::accept()
 {
-    m_device->setClock(Device::Clock(m_clockBox->currentData().toInt()));
-    m_device->setReference(m_clockFrequencyBox->value());
-    m_device->setTimeUnit(Device::TimeUnit(m_timeUnitBox->currentData().toInt()));
+    m_device->reference()->setSource(DeviceReference::Source(m_referenceSourceBox->currentData().toInt()));
+    m_device->reference()->setFrequency(m_referenceFrequencyBox->value());
+
+    m_countFormatWidget->accept();
+    m_timeFormatWidget->accept();
+    m_frequencyFormatWidget->accept();
+    m_userFormatWidget->accept();
+
+    //...
+    /*m_device->setTimeUnit(Device::TimeUnit(m_timeUnitBox->currentData().toInt()));
     m_device->setTimeDecimals(m_timeDecimalsBox->value());
     m_device->setFrequencyUnit(Device::FrequencyUnit(m_frequencyUnitBox->currentData().toInt()));
     m_device->setFrequencyDecimals(m_frequencyDecimalsBox->value());
     m_device->setFunction(m_functionEdit->text());
     m_device->setFunctionUnit(m_functionUnitEdit->text());
     m_device->setFunctionDecimals(m_functionDecimalsBox->value());
-    m_device->setPortName(m_portNameBox->currentData().toString());
+    m_device->setPortName(m_portNameBox->currentData().toString());*/
 
     QDialog::accept();
 }
@@ -122,7 +138,10 @@ void DeviceDialog::accept()
 void DeviceDialog::hideEvent(QHideEvent *event)
 {
     QSettings settings;
-    settings.setValue("DeviceDialog/Geometry", saveGeometry());
+    settings.beginGroup("DeviceDialog");
+    settings.setValue("Geometry", saveGeometry());
+    settings.endGroup();
 
     QDialog::hideEvent(event);
 }
+

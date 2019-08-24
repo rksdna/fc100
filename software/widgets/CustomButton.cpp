@@ -1,41 +1,45 @@
 #include <QPaintEvent>
-#include <QApplication>
-#include <QFontMetrics>
 #include <QStyleOption>
 #include <QStylePainter>
 #include "CustomButton.h"
 
-CustomButton::CustomButton(const QString &text, QWidget *parent)
+CustomButton::CustomButton(const QString &title, QWidget *parent)
     : QAbstractButton(parent),
-      m_margins(10, 5, 10, 5),
-      m_value(-1)
+      m_title(title),
+      m_color("#A5D785")
 {
-    setText(text);
     setFocusPolicy(Qt::StrongFocus);
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-
-    connect(this, &QAbstractButton::clicked, this, &CustomButton::changeValue);
+    setContentsMargins(10, 10, 10, 10);
 }
 
-int CustomButton::value() const
+QColor CustomButton::color() const
 {
-    return m_value;
+    return m_color;
 }
 
-void CustomButton::setValue(int value)
+void CustomButton::setColor(const QColor &color)
 {
-    if (m_value != value)
+    if (m_color != color)
     {
-        m_value = value;
+        m_color = color;
         update();
-
-        emit valueChanged(m_value);
     }
 }
 
-void CustomButton::addValue(const QString &text, int value)
+QString CustomButton::title() const
 {
-    m_items.insert(value, text);
+    return m_title;
+}
+
+void CustomButton::setTitle(const QString &title)
+{
+    if (m_title != title)
+    {
+        m_title = title;
+        updateGeometry();
+        update();
+    }
 }
 
 QSize CustomButton::sizeHint() const
@@ -45,64 +49,25 @@ QSize CustomButton::sizeHint() const
 
 QSize CustomButton::minimumSizeHint() const
 {
-    const QFontMetrics metrics(font());
-    const int height = metrics.height();
-    int width = metrics.width(text());
-    foreach (const QString &text, m_items)
-        width = qMax(width, metrics.width(text));
-
-    const QRect content = QRect(0, 0, width, 2 * height).marginsAdded(m_margins);
-
-    QStyleOptionButton option;
-    initStyleOption(&option);
-    return style()->sizeFromContents(QStyle::CT_PushButton, &option, content.size(), this).expandedTo(QApplication::globalStrut());
+    return QRect(QPoint(), contentSize()).marginsAdded(contentsMargins()).size();
 }
 
 void CustomButton::paintEvent(QPaintEvent *event)
 {
-    QStyleOptionButton option;
-    initStyleOption(&option);
-
-    const QColor textColor = palette().color(QPalette::Mid);
-    const QColor valueColor = isEnabled() ? QColor("#A5D785") : textColor;
-
-    const QString value = isEnabled() ? m_items.value(m_value, tr("---")) : tr("---");
-
-    const QRect content = style()->subElementRect(QStyle::SE_PushButtonContents, &option, this).marginsRemoved(m_margins);
-    const int x = content.x();
-    const int y = content.y();
-    const int height = content.height() / 2;
-    const int width = content.width();
-
     QStylePainter painter(this);
     painter.translate(-0.5, -0.5);
     painter.setRenderHint(QPainter::Antialiasing);
 
+    QStyleOptionButton option;
+    option.initFrom(this);
+    option.features = QStyleOptionButton::None;
+    if (isDown())
+        option.state |= QStyle::State_Sunken;
+
     painter.drawControl(QStyle::CE_PushButton, option);
 
-    painter.setFont(font());
-
-    painter.setPen(textColor);
-    painter.drawText(QRect(x, y, width, height), Qt::AlignCenter, text());
-    painter.drawLine(x, y + height, x + width, y + height);
-
-    painter.setPen(valueColor);
-    painter.drawText(QRect(x, y + height, width, height), Qt::AlignCenter, value);
+    paintContent(contentsRect(), painter);
 
     event->accept();
-}
-
-void CustomButton::initStyleOption(QStyleOptionButton *option) const
-{
-    option->initFrom(this);
-    option->features = QStyleOptionButton::None;
-    if (isDown())
-        option->state |= QStyle::State_Sunken;
-}
-
-void CustomButton::changeValue()
-{
-    const QList<int> values = m_items.keys();
-    setValue(values.at((values.indexOf(m_value) + 1) % values.count()));
 }
 

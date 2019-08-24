@@ -38,8 +38,6 @@ MainWindow::MainWindow(const QString &type, QWidget *parent)
     settings.beginGroup("Device");
     m_device->restoreFromSettings(settings);
     settings.endGroup();
-
-    m_device->reset();
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)

@@ -1,13 +1,15 @@
 INCLUDEPATH += $$PWD
 
 SOURCES += \
-    $$PWD/CustomButton.cpp \
     $$PWD/CustomDial.cpp \
-    $$PWD/CommandButton.cpp \
-    $$PWD/CustomDisplay.cpp
+    $$PWD/CustomDisplay.cpp \
+    $$PWD/CustomButton.cpp \
+    $$PWD/CustomPushButton.cpp \
+    $$PWD/CustomOptionButton.cpp
 
 HEADERS += \
-    $$PWD/CustomButton.h \
     $$PWD/CustomDial.h \
-    $$PWD/CommandButton.h \
-    $$PWD/CustomDisplay.h
+    $$PWD/CustomDisplay.h \
+    $$PWD/CustomButton.h \
+    $$PWD/CustomPushButton.h \
+    $$PWD/CustomOptionButton.h

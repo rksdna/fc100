@@ -4,127 +4,129 @@
 #include "Device.h"
 #include "CustomDial.h"
 #include "DeviceWidget.h"
-#include "CustomButton.h"
+#include "DeviceChannel.h"
 #include "CustomDisplay.h"
-#include "CommandButton.h"
+#include "CustomPushButton.h"
+#include "CustomOptionButton.h"
+
 
 DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     : QWidget(parent)
 {
     setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
 
-    CommandButton * const restartButton = new CommandButton(tr("START"));
-    connect(restartButton, &CommandButton::clicked, device, &Device::restart);
+    CustomOptionButton * const ch1CouplingButton = new CustomOptionButton(tr("INPUT.1"));
+    ch1CouplingButton->addValueOption(tr("DC"), DeviceChannel::DcCoupling);
+    ch1CouplingButton->addValueOption(tr("AC"), DeviceChannel::AcCoupling);
+    connect(ch1CouplingButton, reinterpret_cast<void (CustomOptionButton::*)(DeviceChannel::Coupling)>(&CustomOptionButton::valueChanged), device->channel1(), &DeviceChannel::setCoupling);
+    connect(device->channel1(), &DeviceChannel::couplingChanged, ch1CouplingButton, &CustomOptionButton::setValue);
 
-    CommandButton * const clearButton = new CommandButton(tr("CLEAR"));
-    connect(clearButton, &CommandButton::clicked, device, &Device::clear);
-
-    CustomButton * const ch1CouplingButton = new CustomButton(tr("INPUT.1"));
-    ch1CouplingButton->addValue(tr("DC"), Device::DcCoupling);
-    ch1CouplingButton->addValue(tr("AC"), Device::AcCoupling);
-    connect(ch1CouplingButton, reinterpret_cast<void (CustomButton::*)(Device::Coupling)>(&CustomButton::valueChanged), device, &Device::setCh1Coupling);
-    connect(device, &Device::ch1CouplingChanged, ch1CouplingButton, &CustomButton::setValue);
-
-    CustomButton * const ch1ProbeButton = new CustomButton(tr("PROBE.1"));
-    ch1ProbeButton->addValue(tr("1:1"), Device::x1Probe);
-    ch1ProbeButton->addValue(tr("1:10"), Device::x10Probe);
-    ch1ProbeButton->addValue(tr("1:100"), Device::x100Probe);
-    connect(ch1ProbeButton, reinterpret_cast<void (CustomButton::*)(Device::Probe)>(&CustomButton::valueChanged), device, &Device::setCh1Probe);
-    connect(device, &Device::ch1ProbeChanged, ch1ProbeButton, &CustomButton::setValue);
+    CustomOptionButton * const ch1ProbeButton = new CustomOptionButton(tr("PROBE.1"));
+    ch1ProbeButton->addValueOption(tr("1:1"), DeviceChannel::x1Probe);
+    ch1ProbeButton->addValueOption(tr("1:10"), DeviceChannel::x10Probe);
+    ch1ProbeButton->addValueOption(tr("1:100"), DeviceChannel::x100Probe);
+    connect(ch1ProbeButton, reinterpret_cast<void (CustomOptionButton::*)(DeviceChannel::Probe)>(&CustomOptionButton::valueChanged), device->channel1(), &DeviceChannel::setProbe);
+    connect(device->channel1(), &DeviceChannel::probeChanged, ch1ProbeButton, &CustomOptionButton::setValue);
 
     CustomDial * const ch1ThresholdDial = new CustomDial(tr("LEVEL.1"));
-    ch1ThresholdDial->setRange(0, 255);
-    ch1ThresholdDial->setValue(128);
-    connect(ch1ThresholdDial, &CustomDial::valueChanged, device, &Device::setCh1Threshold);
-    connect(device, &Device::ch1ThresholdChanged, ch1ThresholdDial, &CustomDial::setValue);
-    connect(device, &Device::ch1DescriptionChanged, ch1ThresholdDial, &CustomDial::setDescription);
+    ch1ThresholdDial->setRange(DeviceChannel::minThreshold(), DeviceChannel::maxThreshold());
+    connect(ch1ThresholdDial, &CustomDial::valueChanged, device->channel1(), &DeviceChannel::setThreshold);
+    connect(device->channel1(), &DeviceChannel::thresholdChanged, ch1ThresholdDial, &CustomDial::setValue);
+    connect(device->channel1(), &DeviceChannel::textChanged, ch1ThresholdDial, &CustomDial::setText);
 
-    CustomButton * const ch2CouplingButton = new CustomButton(tr("INPUT.2"));
-    ch2CouplingButton->addValue(tr("DC"), Device::DcCoupling);
-    ch2CouplingButton->addValue(tr("AC"), Device::AcCoupling);
-    connect(ch2CouplingButton, reinterpret_cast<void (CustomButton::*)(Device::Coupling)>(&CustomButton::valueChanged), device, &Device::setCh2Coupling);
-    connect(device, &Device::ch2CouplingChanged, ch2CouplingButton, &CustomButton::setValue);
+    CustomOptionButton * const ch2CouplingButton = new CustomOptionButton(tr("INPUT.2"));
+    ch2CouplingButton->addValueOption(tr("DC"), DeviceChannel::DcCoupling);
+    ch2CouplingButton->addValueOption(tr("AC"), DeviceChannel::AcCoupling);
+    connect(ch2CouplingButton, reinterpret_cast<void (CustomOptionButton::*)(DeviceChannel::Coupling)>(&CustomOptionButton::valueChanged), device->channel2(), &DeviceChannel::setCoupling);
+    connect(device->channel2(), &DeviceChannel::couplingChanged, ch2CouplingButton, &CustomOptionButton::setValue);
 
-    CustomButton * const ch2ProbeButton = new CustomButton(tr("PROBE.2"));
-    ch2ProbeButton->addValue(tr("1:1"), Device::x1Probe);
-    ch2ProbeButton->addValue(tr("1:10"), Device::x10Probe);
-    ch2ProbeButton->addValue(tr("1:100"), Device::x100Probe);
-    connect(ch2ProbeButton, reinterpret_cast<void (CustomButton::*)(Device::Probe)>(&CustomButton::valueChanged), device, &Device::setCh2Probe);
-    connect(device, &Device::ch2ProbeChanged, ch2ProbeButton, &CustomButton::setValue);
+    CustomOptionButton * const ch2ProbeButton = new CustomOptionButton(tr("PROBE.2"));
+    ch2ProbeButton->addValueOption(tr("1:1"), DeviceChannel::x1Probe);
+    ch2ProbeButton->addValueOption(tr("1:10"), DeviceChannel::x10Probe);
+    ch2ProbeButton->addValueOption(tr("1:10"), DeviceChannel::x100Probe);
+    connect(ch2ProbeButton, reinterpret_cast<void (CustomOptionButton::*)(DeviceChannel::Probe)>(&CustomOptionButton::valueChanged), device->channel2(), &DeviceChannel::setProbe);
+    connect(device->channel2(), &DeviceChannel::probeChanged, ch2ProbeButton, &CustomOptionButton::setValue);
 
     CustomDial * const ch2ThresholdDial = new CustomDial(tr("LEVEL.2"));
-    ch2ThresholdDial->setRange(0, 255);
-    ch2ThresholdDial->setValue(128);
-    connect(ch2ThresholdDial, &CustomDial::valueChanged, device, &Device::setCh2Threshold);
-    connect(device, &Device::ch2ThresholdChanged, ch2ThresholdDial, &CustomDial::setValue);
-    connect(device, &Device::ch2DescriptionChanged, ch2ThresholdDial, &CustomDial::setDescription);
+    ch2ThresholdDial->setRange(DeviceChannel::minThreshold(), DeviceChannel::maxThreshold());
+    connect(ch2ThresholdDial, &CustomDial::valueChanged, device->channel2(), &DeviceChannel::setThreshold);
+    connect(device->channel2(), &DeviceChannel::thresholdChanged, ch2ThresholdDial, &CustomDial::setValue);
+    connect(device->channel2(), &DeviceChannel::textChanged, ch2ThresholdDial, &CustomDial::setText);
 
-    CustomButton * const clockButton = new CustomButton(tr("FUNC"));
-    clockButton->addValue(tr("NO"), false);
-    clockButton->addValue(tr("USER"), true);
-    connect(clockButton, reinterpret_cast<void (CustomButton::*)(bool)>(&CustomButton::valueChanged), device, &Device::setFunctionEnabled);
-    connect(device, &Device::functionEnabledChanged, clockButton, &CustomButton::setValue);
 
-    CustomButton * const triggerButton = new CustomButton(tr("TRIGGER"));
-    triggerButton->addValue(tr("AUTO"), Device::AutoTrigger);
-    triggerButton->addValue(tr("MANUAL"), Device::ManualTrigger);
-    connect(triggerButton, reinterpret_cast<void (CustomButton::*)(Device::Trigger)>(&CustomButton::valueChanged), device, &Device::setTrigger);
-    connect(device, &Device::triggerChanged, triggerButton, &CustomButton::setValue);
+    CustomPushButton * const restartButton = new CustomPushButton(tr("START"));
+    connect(restartButton, &CustomPushButton::clicked, device, &Device::restart);
 
-    CustomButton * const modeButton = new CustomButton(tr("MODE"));
-    modeButton->addValue(tr("TIME"), Device::TimeMode);
-    modeButton->addValue(tr("FREQ"), Device::FrequencyMode);
-    modeButton->addValue(tr("PERIOD"), Device::PeriodMode);
-    modeButton->addValue(tr("COUNTER"), Device::CountMode);
-    modeButton->addValue(tr("DUTY"), Device::DutyMode);
-    modeButton->addValue(tr("G FREQ"), Device::GateFrequencyMode);
-    modeButton->addValue(tr("G PERIOD"), Device::GatePeriodMode);
-    modeButton->addValue(tr("G COUNTER"), Device::GateCountMode);
-    connect(modeButton, reinterpret_cast<void (CustomButton::*)(Device::Mode)>(&CustomButton::valueChanged), device, &Device::setMode);
-    connect(device, &Device::modeChanged, modeButton, &CustomButton::setValue);
+    CustomPushButton * const clearButton = new CustomPushButton(tr("CLEAR"));
+    connect(clearButton, &CustomPushButton::clicked, device, &Device::clear);
 
-    CustomButton * const countEventButton = new CustomButton(tr("INPUT"));
-    countEventButton->addValue(tr("CH1 R"), Device::Ch1RisingEdgeEvent);
-    countEventButton->addValue(tr("CH1 F"), Device::Ch1FallingEdgeEvent);
-    countEventButton->addValue(tr("CH2 R"), Device::Ch2RisingEdgeEvent);
-    countEventButton->addValue(tr("CH2 F"), Device::Ch2FallingEdgeEvent);
-    connect(countEventButton, reinterpret_cast<void (CustomButton::*)(Device::Event)>(&CustomButton::valueChanged), device, &Device::setCountEvent);
-    connect(device, &Device::countEventChanged, countEventButton, &CustomButton::setValue);
-    connect(device, &Device::countEventEnabled, countEventButton, &CustomButton::setEnabled);
 
-    CustomButton * const startEventButton = new CustomButton(tr("START ON"));
-    startEventButton->addValue(tr("CH1 R"), Device::Ch1RisingEdgeEvent);
-    startEventButton->addValue(tr("CH1 F"), Device::Ch1FallingEdgeEvent);
-    startEventButton->addValue(tr("CH2 R"), Device::Ch2RisingEdgeEvent);
-    startEventButton->addValue(tr("CH2 F"), Device::Ch2FallingEdgeEvent);
-    connect(startEventButton, reinterpret_cast<void (CustomButton::*)(Device::Event)>(&CustomButton::valueChanged), device, &Device::setStartEvent);
-    connect(device, &Device::startEventChanged, startEventButton, &CustomButton::setValue);
-    connect(device, &Device::startStopEventEnabled, startEventButton, &CustomButton::setEnabled);
 
-    CustomButton * const stopEventButton = new CustomButton(tr("STOP ON"));
-    stopEventButton->addValue(tr("CH1 R"), Device::Ch1RisingEdgeEvent);
-    stopEventButton->addValue(tr("CH1 F"), Device::Ch1FallingEdgeEvent);
-    stopEventButton->addValue(tr("CH2 R"), Device::Ch2RisingEdgeEvent);
-    stopEventButton->addValue(tr("CH2 F"), Device::Ch2FallingEdgeEvent);
-    connect(stopEventButton, reinterpret_cast<void (CustomButton::*)(Device::Event)>(&CustomButton::valueChanged), device, &Device::setStopEvent);
-    connect(device, &Device::stopEventChanged, stopEventButton, &CustomButton::setValue);
-    connect(device, &Device::startStopEventEnabled, stopEventButton, &CustomButton::setEnabled);
 
-    CustomButton * const durationButton = new CustomButton(tr("TIME"));
-    durationButton->addValue(tr("5 mS"), 5);
-    durationButton->addValue(tr("10 mS"), 10);
-    durationButton->addValue(tr("50 mS"), 50);
-    durationButton->addValue(tr("100 mS"), 100);
-    durationButton->addValue(tr("500 mS"), 500);
-    durationButton->addValue(tr("1 S"), 1000);
-    durationButton->addValue(tr("5 S"), 5000);
-    durationButton->addValue(tr("10 S"), 10000);
-    connect(durationButton, &CustomButton::valueChanged, device, &Device::setDuration);
-    connect(device, &Device::durationChanged, durationButton, &CustomButton::setValue);
+    CustomOptionButton * const clockButton = new CustomOptionButton(tr("FUNC"));
+    clockButton->addValueOption(tr("NO"), false);
+    clockButton->addValueOption(tr("USER"), true);
+    connect(clockButton, reinterpret_cast<void (CustomOptionButton::*)(bool)>(&CustomOptionButton::valueChanged), device, &Device::setFunctionEnabled);
+    connect(device, &Device::functionEnabledChanged, clockButton, &CustomOptionButton::setValue);
 
-    CustomDisplay * const display = new CustomDisplay;
-    connect(device, &Device::sampleArr, display, &CustomDisplay::display1);
-    connect(device, &Device::cleared, display, &CustomDisplay::clear);
+    CustomOptionButton * const triggerButton = new CustomOptionButton(tr("TRIGGER"));
+    triggerButton->addValueOption(tr("AUTO"), Device::AutoTrigger);
+    triggerButton->addValueOption(tr("MANUAL"), Device::ManualTrigger);
+    connect(triggerButton, reinterpret_cast<void (CustomOptionButton::*)(Device::Trigger)>(&CustomOptionButton::valueChanged), device, &Device::setTrigger);
+    connect(device, &Device::triggerChanged, triggerButton, &CustomOptionButton::setValue);
+
+    CustomOptionButton * const modeButton = new CustomOptionButton(tr("MODE"));
+    modeButton->addValueOption(tr("TIME"), Device::TimeMode);
+    modeButton->addValueOption(tr("FREQ"), Device::FrequencyMode);
+    modeButton->addValueOption(tr("PERIOD"), Device::PeriodMode);
+    modeButton->addValueOption(tr("COUNTER"), Device::CountMode);
+    modeButton->addValueOption(tr("DUTY"), Device::DutyMode);
+    modeButton->addValueOption(tr("G FREQ"), Device::GateFrequencyMode);
+    modeButton->addValueOption(tr("G PERIOD"), Device::GatePeriodMode);
+    modeButton->addValueOption(tr("G COUNTER"), Device::GateCountMode);
+    connect(modeButton, reinterpret_cast<void (CustomOptionButton::*)(Device::Mode)>(&CustomOptionButton::valueChanged), device, &Device::setMode);
+    connect(device, &Device::modeChanged, modeButton, &CustomOptionButton::setValue);
+
+    CustomOptionButton * const countEventButton = new CustomOptionButton(tr("INPUT"));
+    countEventButton->addValueOption(tr("CH1 R"), Device::Ch1RisingEdgeEvent);
+    countEventButton->addValueOption(tr("CH1 F"), Device::Ch1FallingEdgeEvent);
+    countEventButton->addValueOption(tr("CH2 R"), Device::Ch2RisingEdgeEvent);
+    countEventButton->addValueOption(tr("CH2 F"), Device::Ch2FallingEdgeEvent);
+    connect(countEventButton, reinterpret_cast<void (CustomOptionButton::*)(Device::Event)>(&CustomOptionButton::valueChanged), device, &Device::setCountEvent);
+    connect(device, &Device::countEventChanged, countEventButton, &CustomOptionButton::setValue);
+    connect(device, &Device::countEventEnabled, countEventButton, &CustomOptionButton::setEnabled);
+
+    CustomOptionButton * const startEventButton = new CustomOptionButton(tr("START ON"));
+    startEventButton->addValueOption(tr("CH1 R"), Device::Ch1RisingEdgeEvent);
+    startEventButton->addValueOption(tr("CH1 F"), Device::Ch1FallingEdgeEvent);
+    startEventButton->addValueOption(tr("CH2 R"), Device::Ch2RisingEdgeEvent);
+    startEventButton->addValueOption(tr("CH2 F"), Device::Ch2FallingEdgeEvent);
+    connect(startEventButton, reinterpret_cast<void (CustomOptionButton::*)(Device::Event)>(&CustomOptionButton::valueChanged), device, &Device::setStartEvent);
+    connect(device, &Device::startEventChanged, startEventButton, &CustomOptionButton::setValue);
+    connect(device, &Device::startStopEventEnabled, startEventButton, &CustomOptionButton::setEnabled);
+
+    CustomOptionButton * const stopEventButton = new CustomOptionButton(tr("STOP ON"));
+    stopEventButton->addValueOption(tr("CH1 R"), Device::Ch1RisingEdgeEvent);
+    stopEventButton->addValueOption(tr("CH1 F"), Device::Ch1FallingEdgeEvent);
+    stopEventButton->addValueOption(tr("CH2 R"), Device::Ch2RisingEdgeEvent);
+    stopEventButton->addValueOption(tr("CH2 F"), Device::Ch2FallingEdgeEvent);
+    connect(stopEventButton, reinterpret_cast<void (CustomOptionButton::*)(Device::Event)>(&CustomOptionButton::valueChanged), device, &Device::setStopEvent);
+    connect(device, &Device::stopEventChanged, stopEventButton, &CustomOptionButton::setValue);
+    connect(device, &Device::startStopEventEnabled, stopEventButton, &CustomOptionButton::setEnabled);
+
+    CustomOptionButton * const durationButton = new CustomOptionButton(tr("TIME"));
+    durationButton->addValueOption(tr("5 mS"), 5);
+    durationButton->addValueOption(tr("10 mS"), 10);
+    durationButton->addValueOption(tr("50 mS"), 50);
+    durationButton->addValueOption(tr("100 mS"), 100);
+    durationButton->addValueOption(tr("500 mS"), 500);
+    durationButton->addValueOption(tr("1 S"), 1000);
+    durationButton->addValueOption(tr("5 S"), 5000);
+    durationButton->addValueOption(tr("10 S"), 10000);
+    connect(durationButton, &CustomOptionButton::valueChanged, device, &Device::setDuration);
+    connect(device, &Device::durationChanged, durationButton, &CustomOptionButton::setValue);
+
+    CustomDisplay * const display = new CustomDisplay(tr("MIN"));
 
     QGridLayout * const layout = new QGridLayout(this);
 
