@@ -16,5 +16,5 @@ void CustomPushButton::paintContent(const QRect &content, QPainter &painter) con
 QSize CustomPushButton::contentSize() const
 {
     const QFontMetrics metrics(font());
-    return QSize(metrics.width(text()), metrics.height());
+    return QSize(metrics.width(title()), metrics.height());
 }
