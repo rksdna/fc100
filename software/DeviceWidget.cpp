@@ -5,10 +5,10 @@
 #include "CustomDial.h"
 #include "DeviceWidget.h"
 #include "DeviceChannel.h"
-#include "CustomDisplay.h"
+#include "CustomTextDisplay.h"
 #include "CustomPushButton.h"
 #include "CustomOptionButton.h"
-
+#include "CustomBarDisplay.h"
 
 DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     : QWidget(parent)
@@ -126,11 +126,14 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     connect(durationButton, &CustomOptionButton::valueChanged, device, &Device::setDuration);
     connect(device, &Device::durationChanged, durationButton, &CustomOptionButton::setValue);
 
-    CustomDisplay * const display = new CustomDisplay(tr("MIN"));
+    CustomTextDisplay * const display = new CustomTextDisplay(tr("MIN"));
+
+    CustomBarDisplay * const hv = new CustomBarDisplay();
 
     QGridLayout * const layout = new QGridLayout(this);
 
-    layout->addWidget(display, 0, 0, 1, 7);
+    layout->addWidget(display, 0, 0, 1, 4);
+    layout->addWidget(hv, 0, 5, 1, 3);
 
     layout->addWidget(ch1CouplingButton, 1, 0);
     layout->addWidget(ch1ProbeButton, 1, 1);

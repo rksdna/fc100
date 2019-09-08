@@ -8,28 +8,22 @@ class CustomDisplay : public QWidget
     Q_OBJECT
 
 public:
-    explicit CustomDisplay(const QString &title, QWidget *parent = 0);
+    explicit CustomDisplay(QWidget *parent = 0);
 
     QColor color() const;
     void setColor(const QColor &color);
-
-    QString title() const;
-    void setTitle(const QString &title);
-
-    QString text() const;
-    void setText(const QString &text);
 
     QSize sizeHint() const;
     QSize minimumSizeHint() const;
 
 protected:
+    virtual void paintContent(const QRect &content, QPainter &painter) const = 0;
+    virtual QSize contentSize() const = 0;
+
     void paintEvent(QPaintEvent *event);
 
 private:
     QColor m_color;
-    QString m_title;
-    QString m_text;
 };
 
 #endif // CUSTOMDISPLAY_H
-

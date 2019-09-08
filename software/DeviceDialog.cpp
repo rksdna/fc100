@@ -12,10 +12,9 @@
 #include "DeviceDialog.h"
 #include "DeviceReference.h"
 #include "DeviceProcessor.h"
-#include "Format.h"
 
-FormatWidget::FormatWidget(Format *format, QWidget *parent)
-    : QGroupBox(parent),
+/*FormatWidget::FormatWidget(const QString &title, Format *format, QWidget *parent)
+    : QGroupBox(title, parent),
       m_format(format),
       m_unitBox(new QComboBox),
       m_decimalsBox(new QSpinBox)
@@ -34,27 +33,26 @@ FormatWidget::FormatWidget(Format *format, QWidget *parent)
     m_decimalsBox->setRange(Format::minDecimals(), Format::maxDecimals());
     m_decimalsBox->setValue(format->decimals());
 
-    QBoxLayout * const layout = new QVBoxLayout(this);
-    layout->setContentsMargins(QMargins());
-    layout->addWidget(m_unitBox);
-    layout->addWidget(m_decimalsBox);
+    QFormLayout * const layout = new QFormLayout(this);
+    layout->addRow(tr("Unit"), m_unitBox);
+    layout->addRow(tr("Decimals"), m_decimalsBox);
 }
 
 void FormatWidget::accept()
 {
     m_format->setUnit(Format::Unit(m_unitBox->currentData().toInt()));
     m_format->setDecimals(m_decimalsBox->value());
-}
+}*/
 
 DeviceDialog::DeviceDialog(Device *device, QWidget *parent)
     : QDialog(parent),
       m_device(device),
       m_referenceSourceBox(new QComboBox),
       m_referenceFrequencyBox(new QDoubleSpinBox),
-      m_countFormatWidget(new FormatWidget(device->processor()->countFormat())),
-      m_timeFormatWidget(new FormatWidget(device->processor()->timeFormat())),
-      m_frequencyFormatWidget(new FormatWidget(device->processor()->frequencyFormat())),
-      m_userFormatWidget(new FormatWidget(device->processor()->userFormat())),
+      /*m_countFormatWidget(new FormatWidget(tr("Count"), device->processor()->countFormat())),
+      m_timeFormatWidget(new FormatWidget(tr("Time"), device->processor()->timeFormat())),
+      m_frequencyFormatWidget(new FormatWidget(tr("Frequency"), device->processor()->frequencyFormat())),
+      m_userFormatWidget(new FormatWidget(tr("User"), device->processor()->userFormat())),*/
       //...
       m_functionEdit(new QLineEdit),
       m_portNameBox(new QComboBox)
@@ -74,11 +72,10 @@ DeviceDialog::DeviceDialog(Device *device, QWidget *parent)
 
     QWidget * const formatsWidget = new QWidget;
     QFormLayout * const formatsLayout = new QFormLayout(formatsWidget);
-    formatsLayout->addRow(tr("Number"), m_countFormatWidget);
-    formatsLayout->addRow(tr("Time"), m_timeFormatWidget);
-    formatsLayout->addRow(tr("Frequency"), m_frequencyFormatWidget);
-    formatsLayout->addRow(tr("User"), m_userFormatWidget);
-
+    /*formatsLayout->addWidget(m_countFormatWidget);
+    formatsLayout->addWidget(m_timeFormatWidget);
+    formatsLayout->addWidget(m_frequencyFormatWidget);
+    formatsLayout->addWidget(m_userFormatWidget);*/
 
     //...
     m_functionEdit->setText(device->function());
@@ -117,10 +114,10 @@ void DeviceDialog::accept()
     m_device->reference()->setSource(DeviceReference::Source(m_referenceSourceBox->currentData().toInt()));
     m_device->reference()->setFrequency(m_referenceFrequencyBox->value());
 
-    m_countFormatWidget->accept();
+    /*m_countFormatWidget->accept();
     m_timeFormatWidget->accept();
     m_frequencyFormatWidget->accept();
-    m_userFormatWidget->accept();
+    m_userFormatWidget->accept();*/
 
     //...
     /*m_device->setTimeUnit(Device::TimeUnit(m_timeUnitBox->currentData().toInt()));

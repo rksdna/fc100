@@ -12,12 +12,14 @@ include(translations/translations.pri)
 SOURCES += main.cpp \
     MainWindow.cpp \
     DeviceWidget.cpp \
-    DeviceDialog.cpp
+    DeviceDialog.cpp \
+    FormatWidget.cpp
 
 HEADERS += \
     MainWindow.h \
     DeviceWidget.h \
-    DeviceDialog.h
+    DeviceDialog.h \
+    FormatWidget.h
 
 RESOURCES += \
     fc100.qrc

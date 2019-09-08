@@ -1,6 +1,6 @@
 #include <QSettings>
 #include "Enum.h"
-#include "Format.h"
+#include "Sample.h"
 #include "DeviceChannel.h"
 
 int DeviceChannel::minThreshold()
@@ -71,13 +71,13 @@ QString DeviceChannel::text() const
     switch (m_probe)
     {
     case x1Probe:
-        return Format::format(voltage, 2, Format::OneUnit, Format::VoltageType);
+        return Sample::toString(voltage, Sample::VoltageType, Sample::NoUnit, 2);
 
     case x10Probe:
-        return Format::format(10 * voltage, 1, Format::OneUnit, Format::VoltageType);
+        return Sample::toString(10 * voltage, Sample::VoltageType, Sample::NoUnit, 1);
 
     case x100Probe:
-        return Format::format(100 * voltage, 0, Format::OneUnit, Format::VoltageType);
+        return Sample::toString(100 * voltage, Sample::VoltageType, Sample::NoUnit, 0);
 
     default:
         break;

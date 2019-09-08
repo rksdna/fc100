@@ -1,5 +1,9 @@
 INCLUDEPATH += $$PWD
 
-SOURCES +=
+SOURCES += \
+    $$PWD/Sample.cpp \
+    $$PWD/Enum.cpp
 
-HEADERS +=
+HEADERS += \
+    $$PWD/Sample.h \
+    $$PWD/Enum.h
