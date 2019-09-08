@@ -10,29 +10,23 @@ class CustomTrendDisplay : public CustomDisplay
 public:
     explicit CustomTrendDisplay(QWidget *parent = 0);
 
+    QSize trendSize() const;
+    void setTrendSize(const QSize &size);
+
+    QVector<qreal> trend() const;
+    void setTrend(const QVector<qreal> &trend);
+
 protected:
     void paintContent(const QRect &content, QPainter &painter) const;
     QSize contentSize() const;
 
 private:
-    int CustomBarDisplay::map(int top, int bottom, qreal min, qreal value, qreal max) const
-    {
-        return qFuzzyCompare(max, min) ? (top + bottom) / 2 : bottom - (bottom - top) * (value - min) / (max - min);
-    }
-
-    void updateCache()
-    {
-        m_min = 0.0;
-        m_max = 0.0;
-        foreach (qreal point, m_points)
-        {
-            m_min = qMin(m_min, bar);
-            m_max = qMax(m_max, bar);
-        }
-    }
+    int map(int top, int bottom, qreal min, qreal value, qreal max) const;
+    void updateCache();
 
 private:
-    QList<qreal> m_points;
+    QSize m_trendSize;
+    QVector<qreal> m_trend;
     qreal m_min;
     qreal m_max;
 };

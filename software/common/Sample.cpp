@@ -121,12 +121,17 @@ QString Sample::toString(Sample::Unit unit)
 
 QString Sample::toString(Sample::Type type, Sample::Unit unit)
 {
-    return tr("%1%2").arg(toString(type), toString(unit));
+    return tr("%1%2").arg(toString(unit), toString(type));
 }
 
 QString Sample::toString(qreal value, Sample::Type type, Sample::Unit unit, int decimals)
 {
     return tr("%1%2").arg(value * qPow(10, -unit), 0, 'f', decimals).arg(toString(type, unit));
+}
+
+QString Sample::toString(qreal value, Sample::Type type)
+{
+    return toString(value, type, format()->unit(type), format()->decimals(type));
 }
 
 Sample::Format *Sample::format()
@@ -143,7 +148,7 @@ Sample::Sample(Sample::Type type, qreal value)
 
 QString Sample::toString() const
 {
-    return toString(format()->unit(m_type), format()->decimals(m_type));
+    return toString(m_value, m_type);
 }
 
 QString Sample::toString(Sample::Unit unit, int decimals) const

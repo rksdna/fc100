@@ -47,7 +47,7 @@ void DeviceReference::setFrequency(qreal frequency)
     }
 }
 
-void DeviceReference::saveToSettings(QSettings &settings)
+void DeviceReference::saveToSettings(QSettings &settings) const
 {
     settings.setValue("Source", fromEnum(source()));
     settings.setValue("Frequency", frequency());

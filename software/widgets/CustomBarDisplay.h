@@ -13,8 +13,8 @@ public:
     QSize barSize() const;
     void setBarSize(const QSize &size);
 
-    QList<qreal> bars() const;
-    void setBars(const QList<qreal> &bars);
+    QVector<qreal> bars() const;
+    void setBars(const QVector<qreal> &bars);
 
 protected:
     void paintContent(const QRect &content, QPainter &painter) const;
@@ -26,7 +26,7 @@ private:
 
 private:
     QSize m_barSize;
-    QList<qreal> m_bars;
+    QVector<qreal> m_bars;
     qreal m_min;
     qreal m_max;
 };

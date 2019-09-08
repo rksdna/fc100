@@ -45,7 +45,7 @@ public:
 
     QString text() const;
 
-    void saveToSettings(QSettings &settings);
+    void saveToSettings(QSettings &settings) const;
     void restoreFromSettings(QSettings &settings);
 
 signals:

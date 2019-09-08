@@ -23,6 +23,6 @@ void MockDevice::done()
 {
     const qreal time = 0.001 * QTime::currentTime().msecsSinceStartOfDay();
     const bool v = qrand() % 100 < 90 ? true : false;
-    const qreal vv = 5000 * (1 + qSin(2 * M_PI * 0.1 * time));
+    const qreal vv = 5000 * (1 + qSin(2 * M_PI * 1 * time));
     complete(v ? vv : qQNaN());
 }

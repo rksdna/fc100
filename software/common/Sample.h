@@ -70,6 +70,7 @@ public:
     static QString toString(Unit unit);
     static QString toString(Type type, Unit unit);
     static QString toString(qreal value, Type type, Unit unit, int decimals);
+    static QString toString(qreal value, Type type);
 
 public:
     static Format *format();

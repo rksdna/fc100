@@ -139,7 +139,7 @@ public:
 
     QList<qreal> samples() const;
 
-    void saveToSettings(QSettings &settings);
+    void saveToSettings(QSettings &settings) const;
     void restoreFromSettings(QSettings &settings);
 
 signals:
@@ -166,7 +166,6 @@ signals:
 
     void samplesChanged(const QList<qreal> &samples);
     void cleared();
-    void sampleArr(qreal s);
 
 protected:
     virtual void measure() = 0;
@@ -212,15 +211,6 @@ private:
 
     bool m_measure;
     bool m_delay;
-
-    qreal m_sample;
-    qreal m_origin;
-    qreal m_min;
-    qreal m_max;
-    qreal m_smooth;
-
-    QQueue<qreal> m_samples;
-
 };
 
 #endif // DEVICE_H

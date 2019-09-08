@@ -92,14 +92,7 @@ void Device::restart()
 
 void Device::clear()
 {
-    emit cleared();
-
-    m_sample = qQNaN();
-    m_origin = qQNaN();
-    m_min = qQNaN();
-    m_max = qQNaN();
-    m_smooth = qQNaN();
-    m_samples.clear();
+    m_processor->clear();
 }
 
 Device::Trigger Device::trigger() const
@@ -362,12 +355,7 @@ void Device::setPortName(const QString &name)
     }
 }
 
-QList<qreal> Device::samples() const
-{
-    return m_samples;
-}
-
-void Device::saveToSettings(QSettings &settings)
+void Device::saveToSettings(QSettings &settings) const
 {
     settings.beginGroup("Channel1");
     m_channel1->saveToSettings(settings);
@@ -438,22 +426,7 @@ void Device::restoreFromSettings(QSettings &settings)
 
 void Device::complete(qreal sample)
 {
-    m_sample = function1(sample);
-    if (qIsFinite(m_sample))
-    {
-        qreal factor = 0.5;
-
-        m_origin = qIsFinite(m_origin) ? m_origin : m_sample;
-        m_min = qIsFinite(m_min) ? qMin(m_min, sample) : m_sample;
-        m_max = qIsFinite(m_min) ? qMax(m_max, sample) : m_sample;
-        m_smooth = qIsFinite(m_min) ? (1.0 - factor) * m_smooth + factor * m_sample : m_sample;
-
-        m_samples.enqueue(m_sample);
-        while (m_samples.count() > m_maxSamplesCount)
-            m_samples.dequeue();
-    }
-
-    emit sampleArr(m_sample);
+    m_processor->take(sample);
 
     m_measure = false;
     if (m_trigger == AutoTrigger && !m_delay)

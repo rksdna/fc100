@@ -3,7 +3,7 @@
 #include <QSettings>
 #include "Device.h"
 #include "MainWindow.h"
-#include "DeviceDialog.h"
+#include "PreferencesDialog.h"
 #include "DeviceWidget.h"
 
 MainWindow::MainWindow(const QString &type, QWidget *parent)
@@ -57,8 +57,8 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 void MainWindow::preferences()
 {
-    DeviceDialog * const dialog = new DeviceDialog(m_device, this);
-    connect(dialog, &DeviceDialog::finished, dialog, &QObject::deleteLater);
+    PreferencesDialog * const dialog = new PreferencesDialog(m_device, this);
+    connect(dialog, &PreferencesDialog::finished, dialog, &QObject::deleteLater);
 
     dialog->open();
 }

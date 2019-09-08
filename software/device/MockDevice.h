@@ -19,3 +19,5 @@ private:
 };
 
 #endif // MOCKDEVICE_H
+
+

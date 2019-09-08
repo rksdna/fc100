@@ -1,6 +1,5 @@
 #include <QGridLayout>
 #include <QFontDatabase>
-#include <QPushButton>
 #include "Device.h"
 #include "CustomDial.h"
 #include "DeviceWidget.h"
@@ -9,6 +8,8 @@
 #include "CustomPushButton.h"
 #include "CustomOptionButton.h"
 #include "CustomBarDisplay.h"
+#include "CustomTrendDisplay.h"
+#include "DeviceProcessor.h"
 
 DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     : QWidget(parent)
@@ -53,15 +54,11 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     connect(device->channel2(), &DeviceChannel::thresholdChanged, ch2ThresholdDial, &CustomDial::setValue);
     connect(device->channel2(), &DeviceChannel::textChanged, ch2ThresholdDial, &CustomDial::setText);
 
-
     CustomPushButton * const restartButton = new CustomPushButton(tr("START"));
     connect(restartButton, &CustomPushButton::clicked, device, &Device::restart);
 
     CustomPushButton * const clearButton = new CustomPushButton(tr("CLEAR"));
-    connect(clearButton, &CustomPushButton::clicked, device, &Device::clear);
-
-
-
+    connect(clearButton, &CustomPushButton::clicked, device->processor(), &DeviceProcessor::clear);
 
     CustomOptionButton * const clockButton = new CustomOptionButton(tr("FUNC"));
     clockButton->addValueOption(tr("NO"), false);
@@ -126,35 +123,70 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     connect(durationButton, &CustomOptionButton::valueChanged, device, &Device::setDuration);
     connect(device, &Device::durationChanged, durationButton, &CustomOptionButton::setValue);
 
-    CustomTextDisplay * const display = new CustomTextDisplay(tr("MIN"));
+    CustomTextDisplay * const minDisplay = new CustomTextDisplay(tr("MIN"));
+    connect(device->processor(), &DeviceProcessor::minChanged, minDisplay, &CustomTextDisplay::setText);
 
-    CustomBarDisplay * const hv = new CustomBarDisplay();
+    CustomTextDisplay * const maxDisplay = new CustomTextDisplay(tr("MAX"));
+    connect(device->processor(), &DeviceProcessor::maxChanged, maxDisplay, &CustomTextDisplay::setText);
+
+    CustomTextDisplay * const bandDisplay = new CustomTextDisplay(tr("MAX - MIN"));
+    connect(device->processor(), &DeviceProcessor::bandChanged, bandDisplay, &CustomTextDisplay::setText);
+
+    CustomTextDisplay * const meanDisplay = new CustomTextDisplay(tr("MEAN"));
+    connect(device->processor(), &DeviceProcessor::meanChanged, meanDisplay, &CustomTextDisplay::setText);
+
+    CustomTextDisplay * const standartDeviationDisplay = new CustomTextDisplay(tr("SD"));
+    connect(device->processor(), &DeviceProcessor::standartDeviationChanged, standartDeviationDisplay, &CustomTextDisplay::setText);
+
+    CustomTextDisplay * const countDisplay = new CustomTextDisplay(tr("COUNT"));
+    connect(device->processor(), &DeviceProcessor::countChanged, countDisplay, &CustomTextDisplay::setText);
+
+    CustomTrendDisplay * const trendDisplay = new CustomTrendDisplay;
+    connect(device->processor(), &DeviceProcessor::trendChanged, trendDisplay, &CustomTrendDisplay::setTrend);
+
+    CustomBarDisplay * const barsDisplay = new CustomBarDisplay;
+    connect(device->processor(), &DeviceProcessor::barsChanged, barsDisplay, &CustomBarDisplay::setBars);
+
+    CustomTextDisplay * const timeDisplay = new CustomTextDisplay(tr("TIME"));
+    connect(device->processor(), &DeviceProcessor::timeChanged, timeDisplay, &CustomTextDisplay::setText);
+
+    CustomTextDisplay * const absoluteDisplay = new CustomTextDisplay(tr("ABS"));
+    connect(device->processor(), &DeviceProcessor::absoluteChanged, absoluteDisplay, &CustomTextDisplay::setText);
+
+    CustomTextDisplay * const relativeDisplay = new CustomTextDisplay(tr("REL"));
+    connect(device->processor(), &DeviceProcessor::relativeChanged, relativeDisplay, &CustomTextDisplay::setText);
 
     QGridLayout * const layout = new QGridLayout(this);
 
-    layout->addWidget(display, 0, 0, 1, 4);
-    layout->addWidget(hv, 0, 5, 1, 3);
+    layout->addWidget(minDisplay, 0, 0);
+    layout->addWidget(maxDisplay, 0, 1);
+    layout->addWidget(bandDisplay, 0, 2);
+    layout->addWidget(meanDisplay, 0, 4);
+    layout->addWidget(standartDeviationDisplay, 0, 5);
+    layout->addWidget(countDisplay, 0, 6);
 
-    layout->addWidget(ch1CouplingButton, 1, 0);
-    layout->addWidget(ch1ProbeButton, 1, 1);
-    layout->addWidget(ch1ThresholdDial, 2, 0, 2, 2);
+    layout->addWidget(trendDisplay, 1, 0, 1, 3);
+    layout->addWidget(barsDisplay, 1, 4, 1, 3);
 
-    layout->addWidget(ch2CouplingButton, 1, 5);
-    layout->addWidget(ch2ProbeButton, 1, 6);
-    layout->addWidget(ch2ThresholdDial, 2, 5, 2, 2);
+    layout->addWidget(timeDisplay, 2, 0, 1, 2);
+    layout->addWidget(absoluteDisplay, 2, 2, 1, 3);
+    layout->addWidget(relativeDisplay, 2, 5, 1, 2);
 
-    layout->addWidget(triggerButton, 1, 2);
-    layout->addWidget(restartButton, 1, 3);
-    layout->addWidget(clearButton, 1, 4);
+    layout->addWidget(ch1CouplingButton, 3, 0);
+    layout->addWidget(ch1ProbeButton, 3, 1);
+    layout->addWidget(triggerButton, 3, 2);
+    layout->addWidget(restartButton, 3, 3);
+    layout->addWidget(clearButton, 3, 4);
+    layout->addWidget(ch2CouplingButton, 3, 5);
+    layout->addWidget(ch2ProbeButton, 3, 6);
 
-    layout->addWidget(modeButton, 2, 2);
-    layout->addWidget(durationButton, 2, 3);
-    layout->addWidget(clockButton, 2, 4);
+    layout->addWidget(ch1ThresholdDial, 4, 0, 2, 2);
+    layout->addWidget(modeButton, 4, 2);
+    layout->addWidget(durationButton, 4, 3);
+    layout->addWidget(clockButton, 4, 4);
+    layout->addWidget(ch2ThresholdDial, 4, 5, 2, 2);
 
-    layout->addWidget(countEventButton, 3, 2);
-    layout->addWidget(startEventButton, 3, 3);
-    layout->addWidget(stopEventButton, 3, 4);
-
+    layout->addWidget(countEventButton, 5, 2);
+    layout->addWidget(startEventButton, 5, 3);
+    layout->addWidget(stopEventButton, 5, 4);
 }
-
-

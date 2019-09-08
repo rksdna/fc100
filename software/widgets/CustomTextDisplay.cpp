@@ -2,6 +2,8 @@
 #include <QFontMetrics>
 #include "CustomTextDisplay.h"
 
+#include "Sample.h"
+
 CustomTextDisplay::CustomTextDisplay(const QString &title, QWidget *parent)
     : CustomDisplay(parent),
       m_title(title),
@@ -53,7 +55,6 @@ void CustomTextDisplay::paintContent(const QRect &content, QPainter &painter) co
 
     painter.setPen(isEnabled() ? color() : mid);
     painter.drawText(QRect(left, top + height, width, height), Qt::AlignCenter, m_text);
-
 }
 
 QSize CustomTextDisplay::contentSize() const

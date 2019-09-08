@@ -86,7 +86,7 @@ QString DeviceChannel::text() const
     return tr("---");
 }
 
-void DeviceChannel::saveToSettings(QSettings &settings)
+void DeviceChannel::saveToSettings(QSettings &settings) const
 {
     settings.setValue("Coupling", fromEnum(coupling()));
     settings.setValue("Probe", fromEnum(probe()));

@@ -42,5 +42,8 @@ void CustomDisplay::paintEvent(QPaintEvent *event)
 
     paintContent(contentsRect(), painter);
 
+    /*painter.setPen(palette().color(QPalette::Dark));
+    painter.drawRect(rect().adjusted(1, 1, -1, -1));*/
+
     event->accept();
 }
