@@ -11,14 +11,10 @@ include(translations/translations.pri)
 
 SOURCES += main.cpp \
     MainWindow.cpp \
-    DeviceWidget.cpp \
-    FormatWidget.cpp \
     PreferencesDialog.cpp
 
 HEADERS += \
     MainWindow.h \
-    DeviceWidget.h \
-    FormatWidget.h \
     PreferencesDialog.h
 
 RESOURCES += \

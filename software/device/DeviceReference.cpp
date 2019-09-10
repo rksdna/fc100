@@ -26,11 +26,7 @@ DeviceReference::Source DeviceReference::source() const
 
 void DeviceReference::setSource(Source source)
 {
-    if (m_source != source)
-    {
-        m_source = source;
-        emit sourceChanged(m_source);
-    }
+    m_source = source;
 }
 
 qreal DeviceReference::frequency() const
@@ -40,11 +36,7 @@ qreal DeviceReference::frequency() const
 
 void DeviceReference::setFrequency(qreal frequency)
 {
-    if (m_frequency != frequency)
-    {
-        m_frequency = frequency;
-        emit frequencyChanged(m_frequency);
-    }
+    m_frequency = frequency;
 }
 
 void DeviceReference::saveToSettings(QSettings &settings) const
@@ -56,5 +48,5 @@ void DeviceReference::saveToSettings(QSettings &settings) const
 void DeviceReference::restoreFromSettings(QSettings &settings)
 {
     setSource(toEnum<Source>(settings.value("Source"), InternalSource));
-    setFrequency(settings.value("Frequency").toDouble());
+    setFrequency(settings.value("Frequency", 10E+6).toDouble());
 }

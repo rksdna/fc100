@@ -34,10 +34,6 @@ public:
     void saveToSettings(QSettings &settings) const;
     void restoreFromSettings(QSettings &settings);
 
-signals:
-    void sourceChanged(Source source);
-    void frequencyChanged(qreal frequency);
-
 private:
     Source m_source;
     qreal m_frequency;

@@ -4,12 +4,12 @@
 #include "CustomDial.h"
 #include "DeviceWidget.h"
 #include "DeviceChannel.h"
-#include "CustomTextDisplay.h"
-#include "CustomPushButton.h"
-#include "CustomOptionButton.h"
-#include "CustomBarDisplay.h"
-#include "CustomTrendDisplay.h"
 #include "DeviceProcessor.h"
+#include "CustomPushButton.h"
+#include "CustomBarDisplay.h"
+#include "CustomTextDisplay.h"
+#include "CustomOptionButton.h"
+#include "CustomTrendDisplay.h"
 
 DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     : QWidget(parent)
@@ -60,11 +60,11 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     CustomPushButton * const clearButton = new CustomPushButton(tr("CLEAR"));
     connect(clearButton, &CustomPushButton::clicked, device->processor(), &DeviceProcessor::clear);
 
-    CustomOptionButton * const clockButton = new CustomOptionButton(tr("FUNC"));
-    clockButton->addValueOption(tr("NO"), false);
-    clockButton->addValueOption(tr("USER"), true);
-    connect(clockButton, reinterpret_cast<void (CustomOptionButton::*)(bool)>(&CustomOptionButton::valueChanged), device, &Device::setFunctionEnabled);
-    connect(device, &Device::functionEnabledChanged, clockButton, &CustomOptionButton::setValue);
+    CustomOptionButton * const conversionButton = new CustomOptionButton(tr("CONVERSION"));
+    conversionButton->addValueOption(tr("NONE"), DeviceProcessor::NoConversion);
+    conversionButton->addValueOption(tr("EXPRESSION"), DeviceProcessor::ExpressionConversion);
+    connect(conversionButton, reinterpret_cast<void (CustomOptionButton::*)(DeviceProcessor::Conversion)>(&CustomOptionButton::valueChanged), device->processor(), &DeviceProcessor::setConversion);
+    connect(device->processor(), &DeviceProcessor::conversionChanged, conversionButton, &CustomOptionButton::setValue);
 
     CustomOptionButton * const triggerButton = new CustomOptionButton(tr("TRIGGER"));
     triggerButton->addValueOption(tr("AUTO"), Device::AutoTrigger);
@@ -183,7 +183,7 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     layout->addWidget(ch1ThresholdDial, 4, 0, 2, 2);
     layout->addWidget(modeButton, 4, 2);
     layout->addWidget(durationButton, 4, 3);
-    layout->addWidget(clockButton, 4, 4);
+    layout->addWidget(conversionButton, 4, 4);
     layout->addWidget(ch2ThresholdDial, 4, 5, 2, 2);
 
     layout->addWidget(countEventButton, 5, 2);

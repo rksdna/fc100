@@ -7,7 +7,10 @@ SOURCES += \
     $$PWD/DeviceReference.cpp \
     $$PWD/DeviceProcessor.cpp \
     $$PWD/DeviceReferenceWidget.cpp \
-    $$PWD/DeviceProcessorWidget.cpp
+    $$PWD/DeviceProcessorWidget.cpp \
+    $$PWD/DeviceWidget.cpp \
+    $$PWD/DeviceProcessorFormatWidget.cpp \
+    $$PWD/DeviceController.cpp
 
 HEADERS += \
     $$PWD/Device.h \
@@ -16,4 +19,7 @@ HEADERS += \
     $$PWD/DeviceReference.h \
     $$PWD/DeviceProcessor.h \
     $$PWD/DeviceReferenceWidget.h \
-    $$PWD/DeviceProcessorWidget.h
+    $$PWD/DeviceProcessorWidget.h \
+    $$PWD/DeviceWidget.h \
+    $$PWD/DeviceProcessorFormatWidget.h \
+    $$PWD/DeviceController.h

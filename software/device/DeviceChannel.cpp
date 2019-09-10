@@ -1,7 +1,7 @@
 #include <QSettings>
 #include "Enum.h"
-#include "Sample.h"
 #include "DeviceChannel.h"
+#include "DeviceProcessor.h"
 
 int DeviceChannel::minThreshold()
 {
@@ -71,13 +71,13 @@ QString DeviceChannel::text() const
     switch (m_probe)
     {
     case x1Probe:
-        return Sample::toString(voltage, Sample::VoltageType, Sample::NoUnit, 2);
+        return DeviceProcessor::toString(voltage, DeviceProcessor::VoltageType, DeviceProcessor::NoUnit, 2);
 
     case x10Probe:
-        return Sample::toString(10 * voltage, Sample::VoltageType, Sample::NoUnit, 1);
+        return DeviceProcessor::toString(10 * voltage, DeviceProcessor::VoltageType, DeviceProcessor::NoUnit, 1);
 
     case x100Probe:
-        return Sample::toString(100 * voltage, Sample::VoltageType, Sample::NoUnit, 0);
+        return DeviceProcessor::toString(100 * voltage, DeviceProcessor::VoltageType, DeviceProcessor::NoUnit, 0);
 
     default:
         break;
@@ -97,6 +97,6 @@ void DeviceChannel::restoreFromSettings(QSettings &settings)
 {
     setCoupling(toEnum<Coupling>(settings.value("Coupling"), DcCoupling));
     setProbe(toEnum<Probe>(settings.value("Probe"), x1Probe));
-    setThreshold(settings.value("Threshold").toInt());
+    setThreshold(settings.value("Threshold", 128).toInt());
 }
 

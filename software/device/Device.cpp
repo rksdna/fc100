@@ -1,8 +1,7 @@
 #include <QDebug>
-#include <QObject>
+#include <QTimer>
 #include <QMetaEnum>
 #include <QSettings>
-#include <QJSEngine>
 #include "Device.h"
 #include "MockDevice.h"
 #include "DeviceChannel.h"
@@ -33,12 +32,10 @@ Device *Device::createDevice(const QString &type, QObject *parent)
 Device::Device(QObject *parent)
     : QObject(parent),
       m_timer(new QTimer(this)),
-      m_engine(new QJSEngine(this)),
       m_channel1(new DeviceChannel(this)),
       m_channel2(new DeviceChannel(this)),
       m_reference(new DeviceReference(this)),
       m_processor(new DeviceProcessor(this)),
-
       m_trigger(AutoTrigger),
       m_mode(FrequencyMode),
       m_countEventEnabled(true),
@@ -47,19 +44,16 @@ Device::Device(QObject *parent)
       m_startEvent(Ch1RisingEdgeEvent),
       m_stopEvent(Ch1RisingEdgeEvent),
       m_duration(100),
-      m_maxSamplesCount(10),
-      m_timeUnit(Second),
-      m_timeDecimals(3),
-      m_frequencyUnit(Hetz),
-      m_frequencyDecimals(3),
-      m_functionDecimals(3),
-      m_functionEnabled(false),
       m_measure(false),
       m_delay(false)
 {
     m_timer->setSingleShot(true);
     m_timer->setTimerType(Qt::PreciseTimer);
     connect(m_timer, &QTimer::timeout, this, &Device::timeout);
+
+    connect(m_processor, &DeviceProcessor::cacheInvalidated, this, &Device::clearThenRestart);
+    connect(m_processor, &DeviceProcessor::cacheFilled, this, &Device::stop);
+
 }
 
 DeviceChannel *Device::channel1() const
@@ -93,6 +87,11 @@ void Device::restart()
 void Device::clear()
 {
     m_processor->clear();
+}
+
+void Device::stop()
+{
+    setTrigger(ManualTrigger);
 }
 
 Device::Trigger Device::trigger() const
@@ -207,140 +206,6 @@ void Device::setDuration(int duration)
     }
 }
 
-int Device::maxSamplesCount() const
-{
-    return m_maxSamplesCount;
-}
-
-void Device::setMaxSamplesCount(int count)
-{
-    count = qBound(5, count, 50);
-    if (m_maxSamplesCount != count)
-    {
-        m_maxSamplesCount = count;
-        emit maxSamplesCountChanged(m_maxSamplesCount);
-
-        //....
-    }
-}
-
-Device::TimeUnit Device::timeUnit() const
-{
-    return m_timeUnit;
-}
-
-void Device::setTimeUnit(TimeUnit unit)
-{
-    if (m_timeUnit != unit)
-    {
-        m_timeUnit = unit;
-        emit timeUnitChanged(m_timeUnit);
-    }
-}
-
-int Device::timeDecimals() const
-{
-    return m_timeDecimals;
-}
-
-void Device::setTimeDecimals(int decimals)
-{
-    decimals = qBound(0, decimals, 9);
-    if (m_timeDecimals != decimals)
-    {
-        m_timeDecimals = decimals;
-        emit timeDecimalsChanged(m_timeDecimals);
-    }
-}
-
-Device::FrequencyUnit Device::frequencyUnit() const
-{
-    return m_frequencyUnit;
-}
-
-void Device::setFrequencyUnit(FrequencyUnit unit)
-{
-    if (m_frequencyUnit != unit)
-    {
-        m_frequencyUnit = unit;
-        emit frequencyUnitChanged(m_frequencyUnit);
-    }
-}
-
-int Device::frequencyDecimals() const
-{
-    return m_frequencyDecimals;
-}
-
-void Device::setFrequencyDecimals(int decimals)
-{
-    if (m_frequencyDecimals != decimals)
-    {
-        m_frequencyDecimals = decimals;
-        emit frequencyDecimalsChanged(m_frequencyDecimals);
-    }
-}
-
-QString Device::function() const
-{
-    return m_function;
-}
-
-void Device::setFunction(const QString &function)
-{
-    if (m_function != function)
-    {
-        m_function = function;
-        emit functionChanged(m_function);
-
-        clearThenRestart();
-    }
-}
-
-QString Device::functionUnit() const
-{
-    return m_functionUnit;
-}
-
-void Device::setFunctionUnit(const QString &unit)
-{
-    if (m_functionUnit != unit)
-    {
-        m_functionUnit = unit;
-        emit functionUnitChanged(m_functionUnit);
-    }
-}
-
-int Device::functionDecimals() const
-{
-    return m_functionDecimals;
-}
-
-void Device::setFunctionDecimals(int decimals)
-{
-    if (m_functionDecimals != decimals)
-    {
-        m_functionDecimals = decimals;
-        emit functionDecimalsChanged(decimals);
-    }
-}
-
-bool Device::isFunctionEnabled() const
-{
-    return m_functionEnabled;
-}
-
-void Device::setFunctionEnabled(bool enabled)
-{
-    if (m_functionEnabled != enabled)
-    {
-        m_functionEnabled = enabled;
-        emit functionEnabledChanged(m_functionEnabled);
-
-        clearThenRestart();
-    }
-}
-
 QString Device::portName() const
 {
     return m_portName;
@@ -351,7 +216,7 @@ void Device::setPortName(const QString &name)
     if (m_portName != name)
     {
         m_portName = name;
-        emit portNameChanged(m_portName);
+        //emit portNameChanged(m_portName);
     }
 }
 
@@ -369,6 +234,11 @@ void Device::saveToSettings(QSettings &settings) const
     m_reference->saveToSettings(settings);
     settings.endGroup();
 
+    settings.beginGroup("Processor");
+    m_processor->saveToSettings(settings);
+    settings.endGroup();
+
+
     settings.setValue("trigger", fromEnum(m_trigger));
     settings.setValue("mode", fromEnum(m_mode));
     settings.setValue("countEvent", fromEnum(m_countEvent));
@@ -376,15 +246,6 @@ void Device::saveToSettings(QSettings &settings) const
     settings.setValue("stopEvent", fromEnum(m_stopEvent));
     settings.setValue("duration", m_duration);
 
-    settings.setValue("maxSamplesCount", m_maxSamplesCount);
-    settings.setValue("timeUnit", fromEnum(m_timeUnit));
-    settings.setValue("timeDecimals", m_timeDecimals);
-    settings.setValue("frequencyUnit", fromEnum(m_frequencyUnit));
-    settings.setValue("frequencyDecimals", m_frequencyDecimals);
-    settings.setValue("function", m_function);
-    settings.setValue("functionUnit", m_functionUnit);
-    settings.setValue("functionDecimals", m_functionDecimals);
-    settings.setValue("functionEnabled", m_functionEnabled);
 
     settings.setValue("portName", m_portName);
 }
@@ -403,6 +264,9 @@ void Device::restoreFromSettings(QSettings &settings)
     m_reference->restoreFromSettings(settings);
     settings.endGroup();
 
+    settings.beginGroup("Processor");
+    m_processor->restoreFromSettings(settings);
+    settings.endGroup();
 
     setTrigger(toEnum<Trigger>(settings.value("trigger")));
     setMode(toEnum<Mode>(settings.value("mode")));
@@ -411,22 +275,12 @@ void Device::restoreFromSettings(QSettings &settings)
     setStopEvent(toEnum<Event>(settings.value("stopEvent")));
     setDuration(settings.value("duration").toInt());
 
-    setMaxSamplesCount(settings.value("maxSamplesCount").toInt());
-    setTimeUnit(toEnum<TimeUnit>(settings.value("timeUnit")));
-    setTimeDecimals(settings.value("timeDecimals").toInt());
-    setFrequencyUnit(toEnum<FrequencyUnit>(settings.value("frequencyUnit")));
-    setFrequencyDecimals(settings.value("frequencyDecimals").toInt());
-    setFunction(settings.value("function").toString());
-    setFunctionUnit(settings.value("functionUnit").toString());
-    setFunctionDecimals(settings.value("functionDecimals").toInt());
-    setFunctionEnabled(settings.value("functionEnabled").toBool());
-
     setPortName(settings.value("portName").toString());
 }
 
 void Device::complete(qreal sample)
 {
-    m_processor->take(sample);
+    m_processor->take(DeviceProcessor::FrequencyType, sample, qQNaN());
 
     m_measure = false;
     if (m_trigger == AutoTrigger && !m_delay)
@@ -464,15 +318,4 @@ void Device::setStartStopEventEnabled(bool enabled)
         m_startStopEventEnabled = enabled;
         emit startStopEventEnabled(m_startStopEventEnabled);
     }
-}
-
-qreal Device::function1(qreal sample)
-{
-    if (qIsFinite(sample) && m_functionEnabled)
-    {
-        m_engine->globalObject().setProperty("x", sample);
-        return m_engine->evaluate(m_function).toNumber();
-    }
-
-    return sample;
 }
