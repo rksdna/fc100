@@ -14,6 +14,7 @@ int main(int argc, char *argv[])
     QApplication application(argc, argv);
     application.setApplicationName(DEPLOY_PRODUCT);
     application.setApplicationVersion(DEPLOY_VERSION);
+    application.setOrganizationName(QString());
     application.setApplicationDisplayName(QString("%1 %2").arg(DEPLOY_PRODUCT, DEPLOY_VERSION));
 
     QIcon icon;

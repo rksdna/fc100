@@ -1,10 +1,11 @@
 #include <QMenu>
+#include <QDebug>
 #include <QMenuBar>
 #include <QSettings>
 #include "Device.h"
 #include "MainWindow.h"
-#include "PreferencesDialog.h"
 #include "DeviceWidget.h"
+#include "PreferencesDialog.h"
 
 MainWindow::MainWindow(const QString &type, QWidget *parent)
     : QMainWindow(parent),
@@ -38,6 +39,8 @@ MainWindow::MainWindow(const QString &type, QWidget *parent)
     settings.beginGroup("Device");
     m_device->restoreFromSettings(settings);
     settings.endGroup();
+
+    qDebug() << settings.fileName();
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)

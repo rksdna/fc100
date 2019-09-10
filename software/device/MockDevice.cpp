@@ -1,7 +1,9 @@
-#include <QtMath>
+#include <QTimer>
 #include <QDebug>
+#include <QtMath>
 #include <QDateTime>
 #include "MockDevice.h"
+#include "DeviceController.h"
 
 MockDevice::MockDevice(QObject *parent)
     : Device(parent),
@@ -14,7 +16,7 @@ MockDevice::MockDevice(QObject *parent)
 
 void MockDevice::measure()
 {
-    const int ms = qrand() % (2 * duration());
+    const int ms = qrand() % (2 * controller()->duration());
     m_timer->start(ms);
     m_time.restart();
 }
