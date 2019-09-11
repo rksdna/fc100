@@ -8,7 +8,8 @@ SOURCES += \
     $$PWD/CustomBarDisplay.cpp \
     $$PWD/CustomTextDisplay.cpp \
     $$PWD/CustomDisplay.cpp \
-    $$PWD/CustomTrendDisplay.cpp
+    $$PWD/CustomTrendDisplay.cpp \
+    $$PWD/CustomColorButton.cpp
 
 HEADERS += \
     $$PWD/CustomDial.h \
@@ -18,4 +19,5 @@ HEADERS += \
     $$PWD/CustomBarDisplay.h \
     $$PWD/CustomTextDisplay.h \
     $$PWD/CustomDisplay.h \
-    $$PWD/CustomTrendDisplay.h
+    $$PWD/CustomTrendDisplay.h \
+    $$PWD/CustomColorButton.h

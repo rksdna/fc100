@@ -2,6 +2,7 @@
 #define DEVICEPROCESSOR_H
 
 #include <QMap>
+#include <QColor>
 #include <QVector>
 #include <QObject>
 
@@ -82,6 +83,9 @@ public:
     Mode mode() const;
     void setMode(Mode mode);
 
+    QColor color() const;
+    void setColor(const QColor &color);
+
     void clear();
     void take(Type type, qreal value, qreal time);
 
@@ -107,6 +111,8 @@ signals:
     void countChanged(const QString &text);
     void trendChanged(const QVector<qreal> &trend);
     void barsChanged(const QVector<qreal> &bars);
+
+    void colorChanged(const QColor &color);
 
     void cacheInvalidated();
     void cacheFilled();
@@ -137,6 +143,7 @@ private:
     QString m_expression;
     Mode m_mode;
     int m_size;
+    QColor m_color;
     Type m_type;
     qreal m_time;
     qreal m_absolute;

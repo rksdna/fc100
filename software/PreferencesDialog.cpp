@@ -4,21 +4,26 @@
 #include <QDialogButtonBox>
 #include "Device.h"
 #include "PreferencesDialog.h"
-#include "DeviceProcessorWidget.h"
-#include "DeviceReferenceWidget.h"
+#include "DeviceProcessingWidget.h"
+#include "DeviceHardwareWidget.h"
+#include "DevicePreferencesWidget.h"
 
 PreferencesDialog::PreferencesDialog(Device *device, QWidget *parent)
     : QDialog(parent)
 {
-    DeviceReferenceWidget * const referenceWidget = new DeviceReferenceWidget(device->reference());
-    connect(this, &QDialog::accepted, referenceWidget, &DeviceReferenceWidget::accept);
+    DeviceHardwareWidget * const hardwareWidget = new DeviceHardwareWidget(device);
+    connect(this, &QDialog::accepted, hardwareWidget, &DeviceHardwareWidget::accept);
 
-    DeviceProcessorWidget * const processorWidget = new DeviceProcessorWidget(device->processor());
-    connect(this, &QDialog::accepted, processorWidget, &DeviceProcessorWidget::accept);
+    DeviceProcessingWidget * const processingWidget = new DeviceProcessingWidget(device);
+    connect(this, &QDialog::accepted, processingWidget, &DeviceProcessingWidget::accept);
+
+    DevicePreferencesWidget * const preferencesWidget = new DevicePreferencesWidget(device);
+    connect(this, &QDialog::accepted, preferencesWidget, &DevicePreferencesWidget::accept);
 
     QTabWidget * const tabWidget = new QTabWidget;
-    tabWidget->addTab(referenceWidget, tr("Reference"));
-    tabWidget->addTab(processorWidget, tr("Processing"));
+    tabWidget->addTab(hardwareWidget, tr("Hardware"));
+    tabWidget->addTab(processingWidget, tr("Processing"));
+    tabWidget->addTab(preferencesWidget, tr("Preferences"));
 
     QDialogButtonBox * const buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
     connect(buttonBox, &QDialogButtonBox::accepted, this, &PreferencesDialog::accept);

@@ -2,9 +2,9 @@
 #include <QComboBox>
 #include <QFormLayout>
 #include "Enum.h"
-#include "DeviceProcessorFormatWidget.h"
+#include "DeviceFormatBox.h"
 
-DeviceProcessorFormatWidget::DeviceProcessorFormatWidget(const QString &title, DeviceProcessor *processor, DeviceProcessor::Type type, QWidget *parent)
+DeviceFormatBox::DeviceFormatBox(const QString &title, DeviceProcessor *processor, DeviceProcessor::Type type, QWidget *parent)
     : QGroupBox(title, parent),
       m_processor(processor),
       m_type(type),
@@ -24,7 +24,7 @@ DeviceProcessorFormatWidget::DeviceProcessorFormatWidget(const QString &title, D
     layout->addRow(tr("Decimals"), m_decimalsBox);
 }
 
-void DeviceProcessorFormatWidget::accept()
+void DeviceFormatBox::accept()
 {
     m_processor->setUnit(m_type, DeviceProcessor::Unit(m_unitBox->currentData().toInt()));
     m_processor->setDecimals(m_type, m_decimalsBox->value());

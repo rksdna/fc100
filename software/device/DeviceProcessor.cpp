@@ -129,6 +129,20 @@ void DeviceProcessor::setSize(int size)
     }
 }
 
+QColor DeviceProcessor::color() const
+{
+    return m_color;
+}
+
+void DeviceProcessor::setColor(const QColor &color)
+{
+    if (m_color != color)
+    {
+        m_color = color;
+        emit colorChanged(m_color);
+    }
+}
+
 void DeviceProcessor::clear()
 {
     m_time = qQNaN();
@@ -195,6 +209,8 @@ void DeviceProcessor::saveToSettings(QSettings &settings) const
 
     settings.setValue("Mode", fromEnum(mode()));
     settings.setValue("Size", size());
+
+    settings.setValue("Color", color());
 }
 
 void DeviceProcessor::restoreFromSettings(QSettings &settings)
@@ -212,6 +228,8 @@ void DeviceProcessor::restoreFromSettings(QSettings &settings)
 
     setMode(toEnum<Mode>(settings.value("Mode"), SlidingMode));
     setSize(settings.value("Size", 256).toInt());
+
+    setColor(settings.value("Color", QColor(Qt::red)).value<QColor>());
 }
 
 QString DeviceProcessor::toString(DeviceProcessor::Unit unit, bool prefix)
@@ -394,3 +412,5 @@ void DeviceProcessor::refresh()
         emit barsChanged(histogram);
     }
 }
+
+

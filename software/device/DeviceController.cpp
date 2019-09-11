@@ -6,9 +6,7 @@ DeviceController::DeviceController(QObject *parent)
     : QObject(parent),
       m_trigger(AutoTrigger),
       m_mode(FrequencyMode),
-      m_countEventEnabled(true),
       m_countEvent(Ch1RisingEdgeEvent),
-      m_startStopEventEnabled(false),
       m_startEvent(Ch1RisingEdgeEvent),
       m_stopEvent(Ch1RisingEdgeEvent),
       m_duration(100)
@@ -38,35 +36,34 @@ void DeviceController::setMode(Mode mode)
 {
     if (m_mode != mode)
     {
-        switch (m_mode = mode)
-        {
-        case TimeMode:
-            setCountEventEnabled(false);
-            setStartStopEventEnabled(true);
-            break;
-
-        case FrequencyMode:
-        case PeriodMode:
-        case CountMode:
-        case DutyMode:
-            setCountEventEnabled(true);
-            setStartStopEventEnabled(false);
-            break;
-
-        case GatePeriodMode:
-        case GateFrequencyMode:
-        case GateCountMode:
-            setCountEventEnabled(true);
-            setStartStopEventEnabled(true);
-            break;
-
-        default:
-            break;
-        }
+        m_mode = mode;
 
         emit modeChanged(m_mode);
+        emit countEventEnabled(isCountEventEnabled());
+        emit startStopEventEnabled(isStartStopEventEnabled());
+
         emit controlInvalidated();
     }
+}
+
+bool DeviceController::isCountEventEnabled() const
+{
+    switch (m_mode)
+    {
+    case FrequencyMode:
+    case PeriodMode:
+    case CountMode:
+    case DutyMode:
+    case GatePeriodMode:
+    case GateFrequencyMode:
+    case GateCountMode:
+        return true;
+
+    default:
+        break;
+    }
+
+    return false;
 }
 
 DeviceController::Event DeviceController::countEvent() const
@@ -81,6 +78,23 @@ void DeviceController::setCountEvent(Event event)
         m_countEvent = event;
         emit countEventChanged(m_countEvent);
     }
+}
+
+bool DeviceController::isStartStopEventEnabled() const
+{
+    switch (m_mode)
+    {
+    case TimeMode:
+    case GatePeriodMode:
+    case GateFrequencyMode:
+    case GateCountMode:
+        return true;
+
+    default:
+        break;
+    }
+
+    return false;
 }
 
 DeviceController::Event DeviceController::startEvent() const
@@ -125,6 +139,20 @@ void DeviceController::setDuration(int duration)
     }
 }
 
+QColor DeviceController::color() const
+{
+    return m_color;
+}
+
+void DeviceController::setColor(const QColor &color)
+{
+    if (m_color != color)
+    {
+        m_color = color;
+        emit colorChanged(m_color);
+    }
+}
+
 void DeviceController::saveToSettings(QSettings &settings) const
 {
     settings.setValue("Trigger", fromEnum(trigger()));
@@ -133,6 +161,7 @@ void DeviceController::saveToSettings(QSettings &settings) const
     settings.setValue("StartEvent", fromEnum(startEvent()));
     settings.setValue("StopEvent", fromEnum(stopEvent()));
     settings.setValue("Duration", duration());
+    settings.setValue("Color", color());
 }
 
 void DeviceController::restoreFromSettings(QSettings &settings)
@@ -143,22 +172,5 @@ void DeviceController::restoreFromSettings(QSettings &settings)
     setStartEvent(toEnum<Event>(settings.value("StartEvent"), Ch1RisingEdgeEvent));
     setStopEvent(toEnum<Event>(settings.value("StopEvent"), Ch1RisingEdgeEvent));
     setDuration(settings.value("Duration", 100).toInt());
-}
-
-void DeviceController::setCountEventEnabled(bool enabled)
-{
-    if (m_countEventEnabled != enabled)
-    {
-        m_countEventEnabled = enabled;
-        emit countEventEnabled(m_countEventEnabled);
-    }
-}
-
-void DeviceController::setStartStopEventEnabled(bool enabled)
-{
-    if (m_startStopEventEnabled != enabled)
-    {
-        m_startStopEventEnabled = enabled;
-        emit startStopEventEnabled(m_startStopEventEnabled);
-    }
+    setColor(settings.value("Color", QColor(Qt::red)).value<QColor>());
 }

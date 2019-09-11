@@ -2,8 +2,6 @@
 #include <QFontMetrics>
 #include "CustomTextDisplay.h"
 
-#include "Sample.h"
-
 CustomTextDisplay::CustomTextDisplay(const QString &title, QWidget *parent)
     : CustomDisplay(parent),
       m_title(title),

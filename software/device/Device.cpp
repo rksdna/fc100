@@ -3,6 +3,7 @@
 #include <QSettings>
 #include "Device.h"
 #include "MockDevice.h"
+#include "TargetDevice.h"
 #include "DeviceChannel.h"
 #include "DeviceReference.h"
 #include "DeviceProcessor.h"
@@ -10,9 +11,10 @@
 
 Device *Device::createDevice(const QString &type, QObject *parent)
 {
-    Q_UNUSED(type)
+    if (type == "mock")
+        return new MockDevice(parent);
 
-    return new MockDevice(parent);
+    return new TargetDevice(parent);
 }
 
 Device::Device(QObject *parent)
@@ -23,6 +25,7 @@ Device::Device(QObject *parent)
       m_channel2(new DeviceChannel(this)),
       m_controller(new DeviceController(this)),
       m_processor(new DeviceProcessor(this)),
+      m_ready(false),
       m_measure(false),
       m_delay(false)
 {
@@ -72,7 +75,7 @@ void Device::setPortName(const QString &name)
     {
         m_portName = name;
 
-        //$TODO
+        open();
     }
 }
 
@@ -162,4 +165,19 @@ void Device::clearThenRestart()
     if (m_measure)
         start();
 }
+
+bool Device::isReady() const
+{
+    return m_ready;
+}
+
+void Device::setReady(bool ready)
+{
+    if (m_ready != ready)
+    {
+        m_ready = ready;
+        emit readyChanged(m_ready);
+    }
+}
+
 

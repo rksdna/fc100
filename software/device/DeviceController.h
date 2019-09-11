@@ -1,6 +1,7 @@
 #ifndef DEVICECONTROLLER_H
 #define DEVICECONTROLLER_H
 
+#include <QColor>
 #include <QObject>
 
 class QSettings;
@@ -51,8 +52,12 @@ public:
     Mode mode() const;
     void setMode(Mode mode);
 
+    bool isCountEventEnabled() const;
+
     Event countEvent() const;
     void setCountEvent(Event event);
+
+    bool isStartStopEventEnabled() const;
 
     Event startEvent() const;
     void setStartEvent(Event event);
@@ -62,6 +67,9 @@ public:
 
     int duration() const;
     void setDuration(int duration);
+
+    QColor color() const;
+    void setColor(const QColor &color);
 
     void saveToSettings(QSettings &settings) const;
     void restoreFromSettings(QSettings &settings);
@@ -77,23 +85,20 @@ signals:
     void startEventChanged(Event event);
     void stopEventChanged(Event event);
 
+    void colorChanged(const QColor &color);
+
     void durationChanged(int duration);
 
     void controlInvalidated();
 
 private:
-    void setCountEventEnabled(bool enabled);
-    void setStartStopEventEnabled(bool enabled);
-
-private:
     Trigger m_trigger;
     Mode m_mode;
-    bool m_countEventEnabled;
     Event m_countEvent;
-    bool m_startStopEventEnabled;
     Event m_startEvent;
     Event m_stopEvent;
     int m_duration;
+    QColor m_color;
 };
 
 #endif // DEVICECONTROLLER_H

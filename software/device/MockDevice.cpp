@@ -14,6 +14,12 @@ MockDevice::MockDevice(QObject *parent)
     connect(m_timer, &QTimer::timeout, this, &MockDevice::done);
 }
 
+void MockDevice::open()
+{
+    setReady(false);
+    setReady(true);
+}
+
 void MockDevice::measure()
 {
     const int ms = qrand() % (2 * controller()->duration());

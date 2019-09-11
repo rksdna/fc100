@@ -6,11 +6,13 @@ SOURCES += \
     $$PWD/DeviceChannel.cpp \
     $$PWD/DeviceReference.cpp \
     $$PWD/DeviceProcessor.cpp \
-    $$PWD/DeviceReferenceWidget.cpp \
-    $$PWD/DeviceProcessorWidget.cpp \
     $$PWD/DeviceWidget.cpp \
-    $$PWD/DeviceProcessorFormatWidget.cpp \
-    $$PWD/DeviceController.cpp
+    $$PWD/DeviceController.cpp \
+    $$PWD/DevicePreferencesWidget.cpp \
+    $$PWD/DeviceFormatBox.cpp \
+    $$PWD/DeviceProcessingWidget.cpp \
+    $$PWD/DeviceHardwareWidget.cpp \
+    $$PWD/TargetDevice.cpp
 
 HEADERS += \
     $$PWD/Device.h \
@@ -18,8 +20,10 @@ HEADERS += \
     $$PWD/DeviceChannel.h \
     $$PWD/DeviceReference.h \
     $$PWD/DeviceProcessor.h \
-    $$PWD/DeviceReferenceWidget.h \
-    $$PWD/DeviceProcessorWidget.h \
     $$PWD/DeviceWidget.h \
-    $$PWD/DeviceProcessorFormatWidget.h \
-    $$PWD/DeviceController.h
+    $$PWD/DeviceController.h \
+    $$PWD/DevicePreferencesWidget.h \
+    $$PWD/DeviceFormatBox.h \
+    $$PWD/DeviceProcessingWidget.h \
+    $$PWD/DeviceHardwareWidget.h \
+    $$PWD/TargetDevice.h

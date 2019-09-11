@@ -1,11 +1,11 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 
+#include <QColor>
 #include <QObject>
 
 class QTimer;
 class QSettings;
-
 class DeviceChannel;
 class DeviceProcessor;
 class DeviceReference;
@@ -14,10 +14,6 @@ class DeviceController;
 class Device : public QObject
 {
     Q_OBJECT
-
-public:
-
-
 
 public:
     static Device *createDevice(const QString &type, QObject *parent = 0);
@@ -34,14 +30,22 @@ public:
     QString portName() const;
     void setPortName(const QString &name);
 
+    virtual void open() = 0;
     void start();
     void stop();
 
     void saveToSettings(QSettings &settings) const;
     void restoreFromSettings(QSettings &settings);
 
+    bool isReady() const;
+
+signals:
+    void readyChanged(bool online);
+
 protected:
     virtual void measure() = 0;
+
+    void setReady(bool ready);
     void complete(qreal sample);
 
 private:
@@ -56,6 +60,7 @@ private:
     DeviceController * const m_controller;
     DeviceProcessor * const m_processor;
     QString m_portName;
+    bool m_ready;
     bool m_measure;
     bool m_delay;
 };
