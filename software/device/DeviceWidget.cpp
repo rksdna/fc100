@@ -20,8 +20,8 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     DeviceProcessor * const processor = device->processor();
     DeviceController * const controller = device->controller();
 
-    setEnabled(device->isReady());
     setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
+    setEnabled(device->isReady());
     connect(device, &Device::readyChanged, this, &DeviceWidget::setEnabled);
 
     CustomOptionButton * const ch1CouplingButton = new CustomOptionButton(tr("INPUT.1"));
@@ -92,9 +92,9 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     connect(controller, &DeviceController::colorChanged, clearButton, &CustomButton::setColor);
     connect(clearButton, &CustomPushButton::clicked, processor, &DeviceProcessor::clear);
 
-    CustomOptionButton * const conversionButton = new CustomOptionButton(tr("CONVERSION"));
+    CustomOptionButton * const conversionButton = new CustomOptionButton(tr("CONV."));
     conversionButton->addValueOption(tr("NONE"), DeviceProcessor::NoConversion);
-    conversionButton->addValueOption(tr("EXPRESSION"), DeviceProcessor::ExpressionConversion);
+    conversionButton->addValueOption(tr("EXPR."), DeviceProcessor::ExpressionConversion);
     conversionButton->setValue(processor->conversion());
     conversionButton->setColor(controller->color());
     connect(controller, &DeviceController::colorChanged, conversionButton, &CustomButton::setColor);

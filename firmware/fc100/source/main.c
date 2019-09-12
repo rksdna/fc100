@@ -21,7 +21,7 @@
  * THE SOFTWARE.
  */
 
-#include <threads.h>
+/*#include <threads.h>
 #include <timers.h>
 #include <debug.h>
 #include <cdc.h>
@@ -286,6 +286,40 @@ void main(void)
 
     startup_device();
     start_thread(&control_thread, (function_t)control_handler, 0, control_stack, sizeof(control_stack));
+    start_cdc_service();
+    set_cdc_timeout(10);
+    while (1)
+    {
+        struct shp_socket socket;
+        bind_shp_socket(&socket, socket_handler, read_cdc_data, write_cdc_data);
+
+        yield_thread((condition_t)has_cdc_connection, 0);
+        debug("cdc connected\n");
+        while (has_cdc_connection())
+            poll_shp_socket(&socket);
+
+        debug("cdc disconnected\n");
+    }
+}*/
+
+#include <threads.h>
+#include <timers.h>
+#include <debug.h>
+#include <cdc.h>
+#include "device.h"
+#include "shp.h"
+
+static void socket_handler(struct shp_socket *socket, const void *data, u32_t size)
+{
+    const u8_t response[12];
+    write_device_counter(0, data, size);
+    read_device_counter(size, response, sizeof(response));
+    send_shp_response(socket, &response, sizeof(response));
+}
+
+void main(void)
+{
+    startup_device();
     start_cdc_service();
     set_cdc_timeout(10);
     while (1)

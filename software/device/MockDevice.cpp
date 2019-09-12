@@ -4,6 +4,7 @@
 #include <QDateTime>
 #include "MockDevice.h"
 #include "DeviceController.h"
+#include "DeviceProcessor.h"
 
 MockDevice::MockDevice(QObject *parent)
     : Device(parent),
@@ -32,5 +33,7 @@ void MockDevice::done()
     const qreal time = 0.001 * QTime::currentTime().msecsSinceStartOfDay();
     const bool v = qrand() % 100 < 90 ? true : false;
     const qreal vv = 5000 * (1 + qSin(2 * M_PI * 1 * time));
-    complete(v ? vv : qQNaN());
+    const qreal t = 0.001 * m_time.elapsed();
+
+    processor()->take(DeviceProcessor::FrequencyType, v ? vv : qQNaN(), v ? t : qQNaN());
 }

@@ -54,6 +54,8 @@ signals:
     void thresholdChanged(int threshold);
     void textChanged(const QString &text);
 
+    void channelInvalidated();
+
 private:
     Coupling m_coupling;
     Probe m_probe;

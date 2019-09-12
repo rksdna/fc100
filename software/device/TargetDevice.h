@@ -1,6 +1,7 @@
 #ifndef TARGETDEVICE_H
 #define TARGETDEVICE_H
 
+#include <QTime>
 #include "Device.h"
 
 class QTimer;
@@ -23,74 +24,51 @@ private:
     enum State
     {
         IdleState,
-        TriggerState,
-        WaitState
+        T1State,
+        T1TState,
+        T2State,
+        T2TState,
+        T3State,
+        T4State,
+        T5State,
+        T6State,
+        T7State,
     };
 
-    struct ShpRequest
+
+    struct Regs
     {
-        ShpRequest();
+        Regs();
 
-        QByteArray serialize(bool request = false) const;
+        QByteArray serialize() const;
+        void deserialize(const QByteArray &data);
 
-        quint8 threshold1;
-        quint8 threshold2;
-        quint8 coupling1;
-        quint8 coupling2;
-        quint16 burst;
-        quint16 duration;
-        quint8 counterEvent;
-        quint8 timerClock;
-        quint8 startEdge;
-        quint8 stopEdge;
-    };
-
-    struct ShpResponse
-    {
-        enum
-        {
-            IdleState,
-            ReadyState,
-            TriggerState,
-            Busy1State,
-            Busy2State,
-            Busy3State,
-            Calibration1State,
-            Calibration2State
-        };
-
-        ShpResponse();
-
-        bool deserialize(const QByteArray &data);
-
-        quint16 state;
-        quint16 voltage;
-        quint32 counter;
-        quint32 timer;
-        quint8 startDivident;
-        quint8 startDivider;
-        quint8 stopDivident;
-        quint8 stopDivider;
+        quint8 dac1;
+        quint8 dac2;
+        quint8 mode;
+        quint8 ctrl;
+        quint8 id;
+        quint8 ack;
+        quint8 tac_strt;
+        quint8 tac_stop;
+        quint32 cnt;
+        quint32 tmr;
     };
 
 private:
-    quint8 checksum(const QByteArray &data);
-
-    void open1();
-    void close1();
-
-    void read(const QByteArray &data);
-
+    State proc(State state);
+    void hop();
     void write(const QByteArray &data);
-
-    void onReadyRead();
-
-    void onTimeout();
+    void read();
+    quint8 checksum(const QByteArray &data);
 
 private:
     QTimer * const m_timer;
     QSerialPort * const m_port;
     State m_state;
+    QTime m_tm;
+    Regs m_regs;
+
 };
 
 #endif // TARGETDEVICE_H

@@ -46,7 +46,7 @@ protected:
     virtual void measure() = 0;
 
     void setReady(bool ready);
-    void complete(qreal sample);
+    void complete();
 
 private:
     void timeout();

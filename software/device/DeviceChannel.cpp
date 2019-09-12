@@ -32,6 +32,7 @@ void DeviceChannel::setCoupling(Coupling coupling)
     {
         m_coupling = coupling;
         emit couplingChanged(m_coupling);
+        emit channelInvalidated();
     }
 }
 
@@ -62,6 +63,7 @@ void DeviceChannel::setThreshold(int threshold)
         m_threshold = threshold;
         emit thresholdChanged(m_threshold);
         emit textChanged(text());
+        emit channelInvalidated();
     }
 }
 

@@ -142,10 +142,8 @@ void Device::restoreFromSettings(QSettings &settings)
     settings.endGroup();
 }
 
-void Device::complete(qreal sample)
+void Device::complete()
 {
-    m_processor->take(DeviceProcessor::FrequencyType, sample, qQNaN());
-
     m_measure = false;
     if (m_controller->trigger() == DeviceController::AutoTrigger && !m_delay)
         start();
