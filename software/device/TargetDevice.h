@@ -3,6 +3,8 @@
 
 #include <QTime>
 #include "Device.h"
+#include "DeviceProcessor.h"
+#include "Regs.h"
 
 class QTimer;
 class QSerialPort;
@@ -24,40 +26,30 @@ private:
     enum State
     {
         IdleState,
-        T1State,
-        T1TState,
-        T2State,
-        T2TState,
-        T3State,
-        T4State,
-        T5State,
-        T6State,
-        T7State,
-    };
+        CalibrateFullScaleState,
+        CalibrateZeroScaleState,
 
+        Ps1State,
+        Ps2State,
+        Ps3State,
+        Ps4State,
 
-    struct Regs
-    {
-        Regs();
+        Single1State,
+        Burst0State,
+        Burst1State,
 
-        QByteArray serialize() const;
-        void deserialize(const QByteArray &data);
-
-        quint8 dac1;
-        quint8 dac2;
-        quint8 mode;
-        quint8 ctrl;
-        quint8 id;
-        quint8 ack;
-        quint8 tac_strt;
-        quint8 tac_stop;
-        quint32 cnt;
-        quint32 tmr;
+        Burst2State,
+        Burst3State,
+        Burst4State
     };
 
 private:
-    State proc(State state);
-    void hop();
+    QString preparePortName(const QString &name) const;
+
+    State fail() const;
+    State done() const;
+
+    State proc(State state, int elapsed);
     void write(const QByteArray &data);
     void read();
     quint8 checksum(const QByteArray &data);
@@ -66,9 +58,14 @@ private:
     QTimer * const m_timer;
     QSerialPort * const m_port;
     State m_state;
-    QTime m_tm;
+    QTime m_time;
     Regs m_regs;
-
+    bool m_measure;
+    int m_tac_start;
+    int m_tac_stop;
+    int m_duration;
+    qreal m_ti;
+    DeviceProcessor::Type m_type;
 };
 
 #endif // TARGETDEVICE_H

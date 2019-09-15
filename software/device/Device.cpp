@@ -19,20 +19,13 @@ Device *Device::createDevice(const QString &type, QObject *parent)
 
 Device::Device(QObject *parent)
     : QObject(parent),
-      m_timer(new QTimer(this)),
       m_reference(new DeviceReference(this)),
       m_channel1(new DeviceChannel(this)),
       m_channel2(new DeviceChannel(this)),
       m_controller(new DeviceController(this)),
       m_processor(new DeviceProcessor(this)),
-      m_ready(false),
-      m_measure(false),
-      m_delay(false)
+      m_ready(false)
 {
-    m_timer->setSingleShot(true);
-    m_timer->setTimerType(Qt::PreciseTimer);
-    connect(m_timer, &QTimer::timeout, this, &Device::timeout);
-
     connect(m_controller, &DeviceController::controlInvalidated, this, &Device::clearThenRestart);
 
     connect(m_processor, &DeviceProcessor::cacheInvalidated, this, &Device::clearThenRestart);
@@ -81,9 +74,6 @@ void Device::setPortName(const QString &name)
 
 void Device::start()
 {
-    m_measure = true;
-    m_delay = true;
-    m_timer->start(m_controller->duration());
     measure();
 }
 
@@ -142,26 +132,9 @@ void Device::restoreFromSettings(QSettings &settings)
     settings.endGroup();
 }
 
-void Device::complete()
-{
-    m_measure = false;
-    if (m_controller->trigger() == DeviceController::AutoTrigger && !m_delay)
-        start();
-}
-
-void Device::timeout()
-{
-    m_delay = false;
-    if (m_controller->trigger() == DeviceController::AutoTrigger && !m_measure)
-        start();
-}
-
 void Device::clearThenRestart()
 {
     m_processor->clear();
-
-    if (m_measure)
-        start();
 }
 
 bool Device::isReady() const

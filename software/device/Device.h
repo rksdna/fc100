@@ -4,7 +4,6 @@
 #include <QColor>
 #include <QObject>
 
-class QTimer;
 class QSettings;
 class DeviceChannel;
 class DeviceProcessor;
@@ -50,10 +49,9 @@ protected:
 
 private:
     void timeout();
-    void clearThenRestart();
+    void clearThenRestart();    
 
 private:
-    QTimer * const m_timer;
     DeviceReference * const m_reference;
     DeviceChannel * const m_channel1;
     DeviceChannel * const m_channel2;
@@ -61,8 +59,6 @@ private:
     DeviceProcessor * const m_processor;
     QString m_portName;
     bool m_ready;
-    bool m_measure;
-    bool m_delay;
 };
 
 #endif // DEVICE_H

@@ -71,6 +71,30 @@ DeviceController::Event DeviceController::countEvent() const
     return m_countEvent;
 }
 
+DeviceController::Event DeviceController::complementCountEvent() const
+{
+    switch (m_countEvent)
+    {
+    case Ch1RisingEdgeEvent:
+        return Ch1FallingEdgeEvent;
+
+    case Ch1FallingEdgeEvent:
+        return Ch1RisingEdgeEvent;
+
+    case Ch2RisingEdgeEvent:
+        return Ch2FallingEdgeEvent;
+
+    case Ch2FallingEdgeEvent:
+        return Ch2FallingEdgeEvent;
+
+    default:
+        break;
+    }
+
+    return Ch1RisingEdgeEvent;
+}
+
+
 void DeviceController::setCountEvent(Event event)
 {
     if (m_countEvent != event)

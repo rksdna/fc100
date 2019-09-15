@@ -1,7 +1,8 @@
-#include <QTimer>
 #include <QDebug>
-#include <QDataStream>
+#include <QTimer>
 #include <QSerialPort>
+#include <QSerialPortInfo>
+#include "Regs.h"
 #include "TargetDevice.h"
 #include "DeviceChannel.h"
 #include "DeviceReference.h"
@@ -10,115 +11,139 @@
 #include "DeviceChannel.h"
 #include "DeviceReference.h"
 
-#define COUNTER_DAC1 ((quint8)0x00)
-#define COUNTER_DAC2 ((quint8)0x01)
-#define COUNTER_MODE ((quint8)0x02)
-#define COUNTER_CTRL ((quint8)0x03)
-#define COUNTER_ID ((quint8)0x04)
-#define COUNTER_ACK ((quint8)0x05)
-#define COUNTER_TAC_START ((quint8)0x06)
-#define COUNTER_TAC_STOP ((quint8)0x07)
-#define COUNTER_CNT ((quint8)0x08)
-#define COUNTER_TMR ((quint8)0x0C)
-
-#define COUNTER_DAC_DAC ((quint8)0xFF)
-
-#define COUNTER_MODE_STRT ((quint8)0x03)
-#define COUNTER_MODE_STRT_0 ((quint8)0x01)
-#define COUNTER_MODE_STRT_1 ((quint8)0x02)
-#define COUNTER_MODE_STRT_CH1R ((quint8)0x00)
-#define COUNTER_MODE_STRT_CH1F ((quint8)0x01)
-#define COUNTER_MODE_STRT_CH2R ((quint8)0x02)
-#define COUNTER_MODE_STRT_CH2F ((quint8)0x03)
-
-#define COUNTER_MODE_STOP ((quint8)0x0C)
-#define COUNTER_MODE_STOP_0 ((quint8)0x04)
-#define COUNTER_MODE_STOP_1 ((quint8)0x08)
-#define COUNTER_MODE_STOP_CH1R ((quint8)0x00)
-#define COUNTER_MODE_STOP_CH1F ((quint8)0x04)
-#define COUNTER_MODE_STOP_CH2R ((quint8)0x08)
-#define COUNTER_MODE_STOP_CH2F ((quint8)0x0C)
-
-#define COUNTER_MODE_CNT ((quint8)0x30)
-#define COUNTER_MODE_CNT_0 ((quint8)0x10)
-#define COUNTER_MODE_CNT_1 ((quint8)0x20)
-#define COUNTER_MODE_CNT_CH1R ((quint8)0x00)
-#define COUNTER_MODE_CNT_CH1F ((quint8)0x10)
-#define COUNTER_MODE_CNT_CH2R ((quint8)0x20)
-#define COUNTER_MODE_CNT_CH2F ((quint8)0x30)
-
-#define COUNTER_MODE_TMR ((quint8)0x40)
-#define COUNTER_MODE_TMR_CLK ((quint8)0x00)
-#define COUNTER_MODE_TMR_REF ((quint8)0x40)
-
-#define COUNTER_MODE_CLR ((quint8)0x80)
-
-#define COUNTER_CTRL_STRT ((quint8)0x01)
-#define COUNTER_CTRL_STOP ((quint8)0x02)
-#define COUNTER_CTRL_CLB_ZS ((quint8)0x04)
-#define COUNTER_CTRL_CLB_FS ((quint8)0x08)
-#define COUNTER_CTRL_HPF_CH1 ((quint8)0x10)
-#define COUNTER_CTRL_HPF_CH2 ((quint8)0x20)
-#define COUNTER_CTRL_TEST ((quint8)0x40)
-#define COUNTER_CTRL_CLR ((quint8)0x80)
-
-#define COUNTER_TAC_TAC ((quint8)0xFF)
-
-#define COUNTER_ACK_STOP ((quint8)0x01)
-#define COUNTER_ACK_STRT ((quint8)0x02)
-
-#define COUNTER_ID_ID ((quint8)0xFF)
-
-#define COUNTER_CNT_CNT ((quint32)0xFFFFFFFF)
-#define COUNTER_TMR_TMR ((quint32)0xFFFFFFFF)
-
-TargetDevice::Regs::Regs()
-    : dac1(0),
-      dac2(0),
-      mode(0),
-      ctrl(0),
-      id(0),
-      ack(0),
-      tac_strt(0),
-      tac_stop(0),
-      cnt(0),
-      tmr(0)
+static quint8 dac(int threshold)
 {
+    return 255 - threshold;
 }
 
-QByteArray TargetDevice::Regs::serialize() const
+static quint8 hpf1(DeviceChannel::Coupling coupling)
 {
-    QByteArray data;
-    QDataStream stream(&data, QIODevice::WriteOnly);
-    stream.setByteOrder(QDataStream::LittleEndian);
+    switch (coupling)
+    {
+    case DeviceChannel::DcCoupling:
+        return 0;
 
-    stream << dac1;
-    stream << dac2;
-    stream << mode;
-    stream << ctrl;
+    case DeviceChannel::AcCoupling:
+        return COUNTER_CTRL_HPF_CH1;
 
-    return data;
+    default:
+        break;
+    }
+
+    return 0;
 }
 
-void TargetDevice::Regs::deserialize(const QByteArray &data)
+static quint8 hpf2(DeviceChannel::Coupling coupling)
 {
-    QDataStream stream(data);
-    stream.setByteOrder(QDataStream::LittleEndian);
+    switch (coupling)
+    {
+    case DeviceChannel::DcCoupling:
+        return 0;
 
-    stream >> id;
-    stream >> ack;
-    stream >> tac_strt;
-    stream >> tac_stop;
-    stream >> cnt;
-    stream >> tmr;
+    case DeviceChannel::AcCoupling:
+        return COUNTER_CTRL_HPF_CH2;
+
+    default:
+        break;
+    }
+
+    return 0;
+}
+
+static quint8 start1(DeviceController::Event event)
+{
+    switch (event)
+    {
+    case DeviceController::Ch1RisingEdgeEvent:
+        return COUNTER_MODE_STRT_CH1R;
+
+    case DeviceController::Ch1FallingEdgeEvent:
+        return COUNTER_MODE_STRT_CH1F;
+
+    case DeviceController::Ch2RisingEdgeEvent:
+        return COUNTER_MODE_STRT_CH2R;
+
+    case DeviceController::Ch2FallingEdgeEvent:
+        return COUNTER_MODE_STRT_CH2F;
+
+    default:
+        break;
+    }
+
+    return 0;
+}
+
+static quint8 stop1(DeviceController::Event event)
+{
+    switch (event)
+    {
+    case DeviceController::Ch1RisingEdgeEvent:
+        return COUNTER_MODE_STOP_CH1R;
+
+    case DeviceController::Ch1FallingEdgeEvent:
+        return COUNTER_MODE_STOP_CH1F;
+
+    case DeviceController::Ch2RisingEdgeEvent:
+        return COUNTER_MODE_STOP_CH2R;
+
+    case DeviceController::Ch2FallingEdgeEvent:
+        return COUNTER_MODE_STOP_CH2F;
+
+    default:
+        break;
+    }
+
+    return 0;
+}
+
+static quint8 count(DeviceController::Event event)
+{
+    switch (event)
+    {
+    case DeviceController::Ch1RisingEdgeEvent:
+        return COUNTER_MODE_CNT_CH1R;
+
+    case DeviceController::Ch1FallingEdgeEvent:
+        return COUNTER_MODE_CNT_CH1F;
+
+    case DeviceController::Ch2RisingEdgeEvent:
+        return COUNTER_MODE_CNT_CH2R;
+
+    case DeviceController::Ch2FallingEdgeEvent:
+        return COUNTER_MODE_CNT_CH2F;
+
+    default:
+        break;
+    }
+
+    return 0;
+}
+
+static quint8 ref(DeviceReference::Source source)
+{
+    switch (source)
+    {
+    case DeviceReference::InternalSource:
+        return COUNTER_MODE_TMR_CLK;
+
+    case DeviceReference::ExternalSource:
+        return COUNTER_MODE_TMR_REF;
+
+    default:
+        break;
+    }
+
+    return 0;
 }
 
 TargetDevice::TargetDevice(QObject *parent)
     : Device(parent),
       m_timer(new QTimer(this)),
       m_port(new QSerialPort(this)),
-      m_state(IdleState)
+      m_state(IdleState),
+      m_measure(false)
 {
+    m_timer->setSingleShot(true);
     connect(m_timer, &QTimer::timeout, this, &TargetDevice::open);
     connect(m_port, &QSerialPort::readyRead, this, &TargetDevice::read);
 }
@@ -130,7 +155,7 @@ void TargetDevice::open()
     if (m_port->isOpen())
         m_port->close();
 
-    m_port->setPortName(portName());
+    m_port->setPortName(preparePortName(portName()));
     if (m_port->open(QSerialPort::ReadWrite))
     {
         write(m_regs.serialize());
@@ -141,101 +166,276 @@ void TargetDevice::open()
 
 void TargetDevice::measure()
 {
-    m_tm.restart();
-    m_state = T1State;
+    m_state = IdleState;
+    m_measure = true;
 }
 
-TargetDevice::State TargetDevice::proc(State state)
+QString TargetDevice::preparePortName(const QString &name) const
+{
+    if (!name.isEmpty())
+        return name;
+
+    foreach (const QSerialPortInfo &info, QSerialPortInfo::availablePorts())
+    {
+        if (info.vendorIdentifier() == 0x0483 && info.productIdentifier() == 0x5740 && !info.isBusy())
+            return info.systemLocation();
+    }
+
+    return QString();
+}
+
+TargetDevice::State TargetDevice::fail() const
+{
+    processor()->take(m_type, qQNaN(), qQNaN());
+    return IdleState;
+}
+
+TargetDevice::State TargetDevice::done() const
+{
+    const qreal clock = reference()->frequency();
+    const qreal counter = m_regs.cnt;
+    const qreal start = qreal(m_regs.tac_strt) / m_tac_start;
+    const qreal stop = qreal(m_regs.tac_stop) / m_tac_stop;
+    const qreal timer = qreal(m_regs.tmr) + start - stop;
+
+    switch (m_type)
+    {
+    case DeviceProcessor::NoType:
+        processor()->take(m_type, counter, timer / clock);
+        break;
+
+    case DeviceProcessor::DutyType:
+
+        processor()->take(m_type, m_ti / timer, timer / clock);
+        break;
+
+    case DeviceProcessor::TimeType:
+        processor()->take(m_type, timer / counter / clock, timer / clock);
+        break;
+
+    case DeviceProcessor::FrequencyType:
+        processor()->take(m_type, counter / timer * clock, timer / clock);
+        break;
+
+    default:
+        processor()->take(m_type, qQNaN(), timer / clock);
+        break;
+    }
+
+    return IdleState;
+}
+
+TargetDevice::State TargetDevice::proc(State state, int elapsed)
 {
     setReady(m_regs.id == 0xAA);
 
     const bool is_started = m_regs.ack & COUNTER_ACK_STRT;
     const bool is_stopped = m_regs.ack & COUNTER_ACK_STOP;
     const bool is_ready = is_started && is_stopped;
-    const bool is_free = !is_started && !is_stopped;
 
     switch (state)
     {
     case IdleState:
-        m_regs.dac1 = 255 - channel1()->threshold();
-        m_regs.dac2 = 255 - channel2()->threshold();
-        m_regs.mode = COUNTER_MODE_CLR;
-        m_regs.ctrl = COUNTER_CTRL_CLR;
-        break;
+        m_regs.dac1 = dac(channel1()->threshold());
+        m_regs.dac2 = dac(channel2()->threshold());
+        m_regs.mode = ref(reference()->source());
+        m_regs.ctrl =
+                hpf1(channel1()->coupling()) |
+                hpf2(channel2()->coupling()) |
+                COUNTER_CTRL_CLR;
 
-    case T1State:
-        m_regs.mode = COUNTER_MODE_CLR;
-        m_regs.ctrl = COUNTER_CTRL_CLR;
-        return is_free ? T1TState : T1State;
-
-    case T1TState:
-        if (is_ready)
+        if (m_measure)
         {
-            qDebug() << "+" << m_regs.tac_strt;
-            qDebug() << "+" << m_regs.tac_stop;
-            return T2State;
+            m_measure = controller()->trigger() == DeviceController::AutoTrigger;
+            return CalibrateFullScaleState;
         }
 
-        m_regs.mode = 0;
-        m_regs.ctrl = COUNTER_CTRL_CLB_ZS;
-        return T1TState;
+        break;
 
-    case T2State:
-        m_regs.mode = COUNTER_MODE_CLR;
-        m_regs.ctrl = COUNTER_CTRL_CLR;
-        return is_free ? T2TState : T2State;
-
-    case T2TState:
+    case CalibrateFullScaleState:
         if (is_ready)
         {
-            qDebug() << "-" << m_regs.tac_strt;
-            qDebug() << "-" << m_regs.tac_stop;
+            m_regs.ctrl |= COUNTER_CTRL_CLR;
+            m_regs.ctrl &= ~COUNTER_CTRL_CLB_FS;
+
+            m_tac_start = m_regs.tac_strt;
+            m_tac_stop = m_regs.tac_stop;
+            return CalibrateZeroScaleState;
+        }
+
+        m_regs.ctrl &= ~COUNTER_CTRL_CLR;
+        m_regs.ctrl |= COUNTER_CTRL_CLB_FS;
+        break;
+
+    case CalibrateZeroScaleState:
+        if (is_ready)
+        {
+            m_regs.ctrl |= COUNTER_CTRL_CLR;
+            m_regs.ctrl &= ~COUNTER_CTRL_CLB_ZS;
+
+            m_tac_start -= m_regs.tac_strt;
+            m_tac_stop -= m_regs.tac_stop;
+
+            switch (controller()->mode())
+            {
+            case DeviceController::TimeMode:
+                m_type = DeviceProcessor::TimeType;
+                return Single1State;
+
+            case DeviceController::FrequencyMode:
+                m_type = DeviceProcessor::FrequencyType;
+                return Burst1State;
+
+            case DeviceController::PeriodMode:
+                m_type = DeviceProcessor::TimeType;
+                return Burst1State;
+
+            case DeviceController::CountMode:
+                m_type = DeviceProcessor::NoType;
+                return Burst1State;
+
+            case DeviceController::DutyMode:
+                m_type = DeviceProcessor::DutyType;
+                return Ps1State;
+
+            case DeviceController::GateFrequencyMode:
+                m_type = DeviceProcessor::FrequencyType;
+                return Burst0State;
+
+            case DeviceController::GatePeriodMode:
+                m_type = DeviceProcessor::TimeType;
+                return Burst0State;
+
+            case DeviceController::GateCountMode:
+                m_type = DeviceProcessor::NoType;
+                return Burst0State;
+
+            default:
+                break;
+            }
+
             return IdleState;
         }
 
-        m_regs.mode = 0;
-        m_regs.ctrl = COUNTER_CTRL_CLB_FS;
-        return T2TState;
+        m_regs.ctrl &= ~COUNTER_CTRL_CLR;
+        m_regs.ctrl |= COUNTER_CTRL_CLB_ZS;
+        break;
+
+    case Ps1State:
+        m_duration = controller()->duration();
+        m_regs.mode |= start1(controller()->countEvent());
+        m_regs.mode |= stop1(controller()->complementCountEvent());
+        m_regs.mode |= count(controller()->complementCountEvent());
+        m_regs.ctrl &= ~COUNTER_CTRL_CLR;
+        m_regs.ctrl |= COUNTER_CTRL_STRT | COUNTER_CTRL_STOP;
+        return Ps2State;
+
+    case Ps2State:
+        if (is_started)
+        {
+            m_regs.ctrl |= COUNTER_CTRL_TEST;
+            return Ps3State;
+        }
+
+        if (elapsed > m_duration)
+            return fail();
 
         break;
+
+    case Ps3State:
+        if (is_ready)
+        {
+            const qreal start = qreal(m_regs.tac_strt) / m_tac_start;
+            const qreal stop = qreal(m_regs.tac_stop) / m_tac_stop;
+            const qreal timer = qreal(m_regs.tmr) + start - stop;
+
+            m_ti = timer;
+
+            m_regs.mode ^= COUNTER_MODE_STOP_0;
+            m_regs.mode ^= COUNTER_MODE_CNT_0;
+            m_regs.ctrl |= COUNTER_CTRL_CLR;
+            m_regs.ctrl &= ~COUNTER_CTRL_TEST;
+            m_regs.ctrl &= ~COUNTER_CTRL_STOP;
+            m_regs.ctrl &= ~COUNTER_CTRL_STRT;
+
+            return Ps4State;
+        }
+
+        if (elapsed > m_duration)
+            return fail();
+
+        break;
+
+    case Ps4State:
+        m_regs.ctrl &= ~COUNTER_CTRL_CLR;
+        m_regs.ctrl |= COUNTER_CTRL_STRT | COUNTER_CTRL_STOP;
+        return Burst2State;
+
+    case Single1State:
+        m_duration = controller()->duration();
+        m_regs.mode |= start1(controller()->startEvent());
+        m_regs.mode |= stop1(controller()->stopEvent());
+        m_regs.mode |= count(controller()->stopEvent());
+        m_regs.ctrl &= ~COUNTER_CTRL_CLR;
+        m_regs.ctrl |= COUNTER_CTRL_STRT | COUNTER_CTRL_STOP;
+        return Burst2State;
+
+    case Burst0State:
+        m_duration = controller()->duration();
+        m_regs.mode |= start1(controller()->startEvent());
+        m_regs.mode |= stop1(controller()->stopEvent());
+        m_regs.mode |= count(controller()->countEvent());
+        m_regs.ctrl &= ~COUNTER_CTRL_CLR;
+        m_regs.ctrl |= COUNTER_CTRL_STRT | COUNTER_CTRL_STOP;
+        return Burst2State;
+
+    case Burst1State:
+        m_duration = controller()->duration();
+        m_regs.mode |= start1(controller()->countEvent());
+        m_regs.mode |= stop1(controller()->countEvent());
+        m_regs.mode |= count(controller()->countEvent());
+        m_regs.ctrl &= ~COUNTER_CTRL_CLR;
+        m_regs.ctrl |= COUNTER_CTRL_STRT;
+        return Burst2State;
+
+    case Burst2State:
+        if (is_started)
+        {
+            m_regs.ctrl |= COUNTER_CTRL_TEST;
+            return Burst3State;
+        }
+
+        if (elapsed > m_duration)
+            return fail();
+
+        break;
+
+    case Burst3State:
+        if (elapsed > m_duration)
+        {
+            m_regs.ctrl |= COUNTER_CTRL_STOP;
+            return Burst4State;
+        }
+
+        break;
+
+    case Burst4State:
+        if (is_ready)
+        {
+            return done();
+        }
+
+        if (elapsed > m_duration)
+            return fail();
+
+        break;
+
     default:
         break;
     }
 
     return state;
-
-
-    /*m_regs.ctrl |= COUNTER_CTRL_TEST;
-
-    switch (channel1()->coupling())
-    {
-    case DeviceChannel::DcCoupling:
-        m_regs.ctrl &= ~COUNTER_CTRL_HPF_CH1;
-        break;
-
-    case DeviceChannel::AcCoupling:
-        m_regs.ctrl |= COUNTER_CTRL_HPF_CH1;
-        break;
-
-    default:
-        break;
-    }
-
-    switch (channel2()->coupling())
-    {
-    case DeviceChannel::DcCoupling:
-        m_regs.ctrl &= ~COUNTER_CTRL_HPF_CH2;
-        break;
-
-    case DeviceChannel::AcCoupling:
-        m_regs.ctrl |= COUNTER_CTRL_HPF_CH2;
-        break;
-
-    default:
-        break;
-    }*/
 }
-
 
 void TargetDevice::write(const QByteArray &data)
 {
@@ -259,7 +459,13 @@ void TargetDevice::read()
             {
                 data.chop(1);
                 m_regs.deserialize(data);
-                m_state = proc(m_state);
+                const State state = proc(m_state, m_time.elapsed());
+                if (state != m_state)
+                {
+                    m_state = state;
+                    m_time.restart();
+                }
+
                 write(m_regs.serialize());
             }
         }

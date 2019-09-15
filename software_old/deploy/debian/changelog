@@ -1,5 +1,0 @@
-DEB_PRODUCT (DEB_VERSION) unstable; urgency=low
-
-  * [changelog here].
-
- -- DEB_MAINTAINER  DEB_DATE

@@ -18,9 +18,9 @@ public:
         PeriodMode,
         CountMode,
         DutyMode,
-        GatePeriodMode,
         GateFrequencyMode,
-        GateCountMode,
+        GatePeriodMode,        
+        GateCountMode
     };
 
     Q_ENUM(Mode)
@@ -55,6 +55,7 @@ public:
     bool isCountEventEnabled() const;
 
     Event countEvent() const;
+    Event complementCountEvent() const;
     void setCountEvent(Event event);
 
     bool isStartStopEventEnabled() const;
