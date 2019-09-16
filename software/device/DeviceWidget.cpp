@@ -85,7 +85,7 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     CustomPushButton * const restartButton = new CustomPushButton(tr("START"));
     restartButton->setColor(controller->color());
     connect(controller, &DeviceController::colorChanged, restartButton, &CustomButton::setColor);
-    connect(restartButton, &CustomPushButton::clicked, device, &Device::start);
+    connect(restartButton, &CustomPushButton::clicked, device, &Device::restart);
 
     CustomPushButton * const clearButton = new CustomPushButton(tr("CLEAR"));
     clearButton->setColor(controller->color());

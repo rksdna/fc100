@@ -15,7 +15,7 @@ MockDevice::MockDevice(QObject *parent)
     connect(m_timer, &QTimer::timeout, this, &MockDevice::done);
 }
 
-void MockDevice::open()
+void MockDevice::reconnect()
 {
     setReady(false);
     setReady(true);

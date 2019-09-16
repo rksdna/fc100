@@ -29,27 +29,26 @@ public:
     QString portName() const;
     void setPortName(const QString &name);
 
-    virtual void open() = 0;
-    void start();
+    virtual void reconnect() = 0;
+    bool isReady() const;
+
+    virtual void restart() = 0;
+    virtual bool isStarted() const = 0;
+
     void stop();
 
     void saveToSettings(QSettings &settings) const;
     void restoreFromSettings(QSettings &settings);
 
-    bool isReady() const;
-
 signals:
     void readyChanged(bool online);
 
 protected:
-    virtual void measure() = 0;
-
+    QString internalPortName() const;
     void setReady(bool ready);
-    void complete();
 
 private:
-    void timeout();
-    void clearThenRestart();    
+    void clearThenRestart();
 
 private:
     DeviceReference * const m_reference;

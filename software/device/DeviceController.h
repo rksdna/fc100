@@ -55,7 +55,6 @@ public:
     bool isCountEventEnabled() const;
 
     Event countEvent() const;
-    Event complementCountEvent() const;
     void setCountEvent(Event event);
 
     bool isStartStopEventEnabled() const;

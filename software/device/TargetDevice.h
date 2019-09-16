@@ -3,7 +3,7 @@
 
 #include <QTime>
 #include "Device.h"
-#include "DeviceProcessor.h"
+#include "DeviceController.h"
 #include "Regs.h"
 
 class QTimer;
@@ -16,11 +16,10 @@ class TargetDevice : public Device
 public:
     explicit TargetDevice(QObject *parent = 0);
 
-public:
-    void open();
+    void reconnect();
 
-protected:
-    void measure();
+    void restart();
+    bool isStarted() const;
 
 private:
     enum State
@@ -28,27 +27,20 @@ private:
         IdleState,
         CalibrateFullScaleState,
         CalibrateZeroScaleState,
+        RunState,
 
-        Ps1State,
+
         Ps2State,
         Ps3State,
         Ps4State,
-
-        Single1State,
-        Burst0State,
-        Burst1State,
-
         Burst2State,
         Burst3State,
-        Burst4State
+        Burst4State,
+        DropState,
+
     };
 
 private:
-    QString preparePortName(const QString &name) const;
-
-    State fail() const;
-    State done() const;
-
     State proc(State state, int elapsed);
     void write(const QByteArray &data);
     void read();
@@ -65,7 +57,8 @@ private:
     int m_tac_stop;
     int m_duration;
     qreal m_ti;
-    DeviceProcessor::Type m_type;
+    //DeviceProcessor::Type m_type;
+    DeviceController::Mode m_mode;
 };
 
 #endif // TARGETDEVICE_H

@@ -10,7 +10,7 @@ public:
     explicit MockDevice(QObject *parent = 0);
 
 protected:
-    void open();
+    void reconnect();
     void measure();
     void done();
 

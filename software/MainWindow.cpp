@@ -40,7 +40,7 @@ MainWindow::MainWindow(const QString &type, QWidget *parent)
     m_device->restoreFromSettings(settings);
     settings.endGroup();
 
-    m_device->open();
+    m_device->reconnect();
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)

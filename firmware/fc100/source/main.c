@@ -302,7 +302,7 @@ void main(void)
     }
 }*/
 
-#include <threads.h>
+/*#include <threads.h>
 #include <timers.h>
 #include <debug.h>
 #include <cdc.h>
@@ -334,4 +334,358 @@ void main(void)
 
         debug("cdc disconnected\n");
     }
+}*/
+
+#include <threads.h>
+#include <timers.h>
+#include <debug.h>
+#include <tools.h>
+#include <cdc.h>
+#include "device.h"
+#include "counter.h"
+#include "shp.h"
+
+#define V_ON 475
+#define V_OFF 465
+
+enum state
+{
+    IDLE_STATE,
+    START_TIME_STATE,
+    START_FREQUENCY_STATE,
+    START_DUTY_STATE,
+    START_GATED_FREQUENCY_STATE,
+    Ps2State,
+    Ps3State,
+    Ps4State,
+    BUSY_1_STATE,
+    BUSY_2_STATE,
+    BUSY_3_STATE,
+    CALIBRATION_1_STATE,
+    CALIBRATION_2_STATE,
+};
+
+struct
+{
+    u8_t threshold1;
+    u8_t threshold2;
+    u8_t coupling1;
+    u8_t coupling2;
+    u8_t ref_source;
+    u8_t start_event;
+    u8_t stop_event;
+    u8_t count_event;
+    u32_t duration;
+} params;
+
+struct output
+{
+    u32_t counter;
+    u32_t timer;
+} out;
+
+u32_t duration;
+
+
+char tx[256];
+u32_t tx_size;
+
+static void put_cdc(void *data, char value)
+{
+    if (tx_size < sizeof(tx))
+        tx[tx_size++] = value;
+
+    if (value == '\n')
+    {
+        if (has_cdc_connection())
+            write_cdc_data(tx, tx_size);
+
+        tx_size = 0;
+    }
 }
+
+struct stream cdc_stream = {put_cdc, 0};
+
+static enum state control(enum state state, u32_t elapsed, struct counter *regs)
+{
+    switch (state)
+    {
+    case IDLE_STATE:
+        regs->dac1 = 255 - params.threshold1;
+        regs->dac2 = 255 - params.threshold2;
+        regs->mode =
+                COUNTER_MODE_CLR;
+        regs->ctrl =
+                COUNTER_CTRL_HPF_CH1_BITS(params.coupling1) |
+                COUNTER_CTRL_HPF_CH2_BITS(params.coupling2) |
+                COUNTER_CTRL_CLR;
+        break;
+
+    case START_TIME_STATE:
+        duration = params.duration;
+        regs->dac1 = 255 - params.threshold1;
+        regs->dac2 = 255 - params.threshold2;
+
+        regs->mode =
+                COUNTER_MODE_STRT_BITS(params.start_event) |
+                COUNTER_MODE_STOP_BITS(params.stop_event) |
+                COUNTER_MODE_CNT_BITS(params.stop_event) |
+                COUNTER_MODE_TMR_BITS(params.ref_source) |
+                COUNTER_MODE_CLR;
+
+        regs->ctrl =
+                COUNTER_CTRL_HPF_CH1_BITS(params.coupling1) |
+                COUNTER_CTRL_HPF_CH2_BITS(params.coupling2) |
+                COUNTER_CTRL_STRT | COUNTER_CTRL_STOP;
+
+        return BUSY_1_STATE;
+
+    case START_FREQUENCY_STATE:
+        duration = params.duration;
+        regs->dac1 = 255 - params.threshold1;
+        regs->dac2 = 255 - params.threshold2;
+
+        regs->mode =
+                COUNTER_MODE_STRT_BITS(params.count_event) |
+                COUNTER_MODE_STOP_BITS(params.count_event) |
+                COUNTER_MODE_CNT_BITS(params.count_event) |
+                COUNTER_MODE_TMR_BITS(params.ref_source) |
+                COUNTER_MODE_CLR;
+
+        regs->ctrl =
+                COUNTER_CTRL_HPF_CH1_BITS(params.coupling1) |
+                COUNTER_CTRL_HPF_CH2_BITS(params.coupling2) |
+                COUNTER_CTRL_STRT;
+
+        return BUSY_1_STATE;
+
+    case START_DUTY_STATE:
+        duration = params.duration;
+        regs->dac1 = 255 - params.threshold1;
+        regs->dac2 = 255 - params.threshold2;
+
+        regs->mode =
+                COUNTER_MODE_STRT_BITS(params.count_event) |
+                COUNTER_MODE_STOP_BITS(params.count_event) |
+                COUNTER_MODE_CNT_BITS(params.count_event) |
+                COUNTER_MODE_TMR_BITS(params.ref_source) |
+                COUNTER_MODE_CLR;
+
+        regs->ctrl =
+                COUNTER_CTRL_HPF_CH1_BITS(params.coupling1) |
+                COUNTER_CTRL_HPF_CH2_BITS(params.coupling2) |
+                COUNTER_CTRL_STRT | COUNTER_CTRL_STOP;
+
+        return Ps2State;
+
+    case START_GATED_FREQUENCY_STATE:
+        duration = params.duration;
+        regs->dac1 = 255 - params.threshold1;
+        regs->dac2 = 255 - params.threshold2;
+
+        regs->mode =
+                COUNTER_MODE_STRT_BITS(params.start_event) |
+                COUNTER_MODE_STOP_BITS(params.stop_event) |
+                COUNTER_MODE_CNT_BITS(params.count_event) |
+                COUNTER_MODE_TMR_BITS(params.ref_source) |
+                COUNTER_MODE_CLR;
+
+        regs->ctrl =
+                COUNTER_CTRL_HPF_CH1_BITS(params.coupling1) |
+                COUNTER_CTRL_HPF_CH2_BITS(params.coupling2) |
+                COUNTER_CTRL_STRT;
+
+        return BUSY_1_STATE;
+
+    case Ps2State:
+        regs->mode &= ~COUNTER_MODE_CLR;
+        if (regs->ack & COUNTER_ACK_STRT)
+        {
+            regs->ctrl |= COUNTER_CTRL_TEST;
+            return Ps3State;
+        }
+
+        if (elapsed > duration)
+            return IDLE_STATE;
+
+        break;
+
+    case Ps3State:
+        if (regs->ack & COUNTER_ACK_STOP)
+        {
+            print(&cdc_stream, "B %d, %d, %d, %d\n", regs->tac_strt, regs->tac_stop, regs->cnt, regs->tmr);
+
+            debug("B %d, %d, %d, %d\n", regs->tac_strt, regs->tac_stop, regs->cnt, regs->tmr);
+
+            regs->mode ^= COUNTER_MODE_STOP_0 | COUNTER_MODE_CNT_0;
+            regs->mode |= COUNTER_MODE_CLR;
+            return BUSY_1_STATE;
+        }
+
+        if (elapsed > duration)
+        {
+
+            return IDLE_STATE;
+        }
+
+        break;
+
+    case BUSY_1_STATE:
+        regs->mode &= ~COUNTER_MODE_CLR;
+        if (regs->ack & COUNTER_ACK_STRT)
+        {
+            regs->ctrl |= COUNTER_CTRL_TEST;
+            return BUSY_2_STATE;
+        }
+
+        if (elapsed > duration)
+        {
+
+            return IDLE_STATE;
+        }
+
+        break;
+
+    case BUSY_2_STATE:
+        if (elapsed > duration)
+        {
+            regs->ctrl |= COUNTER_CTRL_STOP;
+            return BUSY_3_STATE;
+        }
+
+        break;
+
+    case BUSY_3_STATE:
+        if (regs->ack & COUNTER_ACK_STOP)
+        {
+            print(&cdc_stream, "R %d, %d, %d, %d\n", regs->tac_strt, regs->tac_stop, regs->cnt, regs->tmr);
+
+            debug("R %d, %d, %d, %d\n", regs->tac_strt, regs->tac_stop, regs->cnt, regs->tmr);
+
+            regs->mode |= COUNTER_MODE_CLR;
+            regs->ctrl &= ~(COUNTER_CTRL_STRT | COUNTER_CTRL_STOP);
+            regs->ctrl |= COUNTER_CTRL_CLB_FS;
+            return CALIBRATION_1_STATE;
+        }
+
+        if (elapsed > duration)
+        {
+            return IDLE_STATE;
+        }
+
+        break;
+
+    case CALIBRATION_1_STATE:
+        regs->mode &= ~COUNTER_MODE_CLR;
+        if (regs->ack & COUNTER_ACK_STOP)
+        {
+            print(&cdc_stream, "FS %d, %d\n", regs->tac_strt, regs->tac_stop);
+
+            debug("FS %d, %d\n", regs->tac_strt, regs->tac_stop);
+
+            regs->mode |= COUNTER_MODE_CLR;
+            regs->ctrl &= ~COUNTER_CTRL_CLB_FS;
+            regs->ctrl |= COUNTER_CTRL_CLB_ZS;
+            return CALIBRATION_2_STATE;
+        }
+
+        break;
+
+    case CALIBRATION_2_STATE:
+        regs->mode &= ~COUNTER_MODE_CLR;
+        if (regs->ack & COUNTER_ACK_STOP)
+        {
+            print(&cdc_stream, "ZS %d, %d\n", regs->tac_strt, regs->tac_stop);
+
+
+            debug("ZS %d, %d\n", regs->tac_strt, regs->tac_stop);
+
+            regs->mode |= COUNTER_MODE_CLR;
+            regs->ctrl &= ~(COUNTER_CTRL_CLB_ZS | COUNTER_CTRL_TEST);
+            return START_DUTY_STATE;
+        }
+
+        break;
+
+    default:
+        break;
+    }
+
+    return state;
+}
+
+static void control_handler(void *arg)
+{
+    WASTE(arg);
+    enum state state = START_DUTY_STATE;
+    struct timer tm;
+    struct counter regs;
+
+    sleep(250);
+    if (get_device_voltage() > V_ON)
+    {
+        debug("control started\n");
+        startup_device_counter(250);
+        start_timer(&tm, -1);
+        while (get_device_voltage() > V_OFF)
+        {
+            const enum state next = control(state, tm.ticks, &regs);
+            if (next != state)
+            {
+                state = next;
+                stop_timer(&tm);
+                start_timer(&tm, -1);
+            }
+
+            write_device_counter(COUNTER_DAC1, &regs.dac1, 4);
+            read_device_counter(COUNTER_ID, &regs.id, 12);
+        }
+
+        stop_timer(&tm);
+        shutdown_device_counter();
+        debug("control stopped\n");
+    }
+}
+
+static void socket_handler(struct shp_socket *socket, const void *data, u32_t size)
+{
+    const u8_t response[12];
+    write_device_counter(0, data, size);
+    read_device_counter(size, response, sizeof(response));
+    send_shp_response(socket, &response, sizeof(response));
+}
+
+
+
+void main(void)
+{
+    static struct thread control_thread;
+    static u8_t control_stack[256];
+
+    static char rx[256];
+    static char tx[256];
+
+    params.threshold1 = 128;
+    params.threshold2 = 128;
+    params.duration = 500;
+
+    startup_device();
+    start_thread(&control_thread, (function_t)control_handler, 0, control_stack, sizeof(control_stack));
+    start_cdc_service();
+    set_cdc_timeout(10);
+    while (1)
+    {
+        struct shp_socket socket;
+        bind_shp_socket(&socket, socket_handler, read_cdc_data, write_cdc_data);
+
+        yield_thread((condition_t)has_cdc_connection, 0);
+        debug("cdc connected\n");
+        while (has_cdc_connection())
+        {
+            poll_shp_socket(&socket);
+        }
+
+        debug("cdc disconnected\n");
+    }
+}
+

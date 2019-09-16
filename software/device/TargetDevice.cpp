@@ -144,18 +144,18 @@ TargetDevice::TargetDevice(QObject *parent)
       m_measure(false)
 {
     m_timer->setSingleShot(true);
-    connect(m_timer, &QTimer::timeout, this, &TargetDevice::open);
+    connect(m_timer, &QTimer::timeout, this, &TargetDevice::reconnect);
     connect(m_port, &QSerialPort::readyRead, this, &TargetDevice::read);
 }
 
-void TargetDevice::open()
+void TargetDevice::reconnect()
 {
     setReady(false);
 
     if (m_port->isOpen())
         m_port->close();
 
-    m_port->setPortName(preparePortName(portName()));
+    m_port->setPortName(internalPortName());
     if (m_port->open(QSerialPort::ReadWrite))
     {
         write(m_regs.serialize());
@@ -164,65 +164,15 @@ void TargetDevice::open()
         m_timer->start(500);
 }
 
-void TargetDevice::measure()
+void TargetDevice::restart()
 {
     m_state = IdleState;
     m_measure = true;
 }
 
-QString TargetDevice::preparePortName(const QString &name) const
+bool TargetDevice::isStarted() const
 {
-    if (!name.isEmpty())
-        return name;
-
-    foreach (const QSerialPortInfo &info, QSerialPortInfo::availablePorts())
-    {
-        if (info.vendorIdentifier() == 0x0483 && info.productIdentifier() == 0x5740 && !info.isBusy())
-            return info.systemLocation();
-    }
-
-    return QString();
-}
-
-TargetDevice::State TargetDevice::fail() const
-{
-    processor()->take(m_type, qQNaN(), qQNaN());
-    return IdleState;
-}
-
-TargetDevice::State TargetDevice::done() const
-{
-    const qreal clock = reference()->frequency();
-    const qreal counter = m_regs.cnt;
-    const qreal start = qreal(m_regs.tac_strt) / m_tac_start;
-    const qreal stop = qreal(m_regs.tac_stop) / m_tac_stop;
-    const qreal timer = qreal(m_regs.tmr) + start - stop;
-
-    switch (m_type)
-    {
-    case DeviceProcessor::NoType:
-        processor()->take(m_type, counter, timer / clock);
-        break;
-
-    case DeviceProcessor::DutyType:
-
-        processor()->take(m_type, m_ti / timer, timer / clock);
-        break;
-
-    case DeviceProcessor::TimeType:
-        processor()->take(m_type, timer / counter / clock, timer / clock);
-        break;
-
-    case DeviceProcessor::FrequencyType:
-        processor()->take(m_type, counter / timer * clock, timer / clock);
-        break;
-
-    default:
-        processor()->take(m_type, qQNaN(), timer / clock);
-        break;
-    }
-
-    return IdleState;
+    return m_state != IdleState;
 }
 
 TargetDevice::State TargetDevice::proc(State state, int elapsed)
@@ -246,6 +196,9 @@ TargetDevice::State TargetDevice::proc(State state, int elapsed)
 
         if (m_measure)
         {
+
+
+
             m_measure = controller()->trigger() == DeviceController::AutoTrigger;
             return CalibrateFullScaleState;
         }
@@ -276,59 +229,58 @@ TargetDevice::State TargetDevice::proc(State state, int elapsed)
             m_tac_start -= m_regs.tac_strt;
             m_tac_stop -= m_regs.tac_stop;
 
-            switch (controller()->mode())
-            {
-            case DeviceController::TimeMode:
-                m_type = DeviceProcessor::TimeType;
-                return Single1State;
-
-            case DeviceController::FrequencyMode:
-                m_type = DeviceProcessor::FrequencyType;
-                return Burst1State;
-
-            case DeviceController::PeriodMode:
-                m_type = DeviceProcessor::TimeType;
-                return Burst1State;
-
-            case DeviceController::CountMode:
-                m_type = DeviceProcessor::NoType;
-                return Burst1State;
-
-            case DeviceController::DutyMode:
-                m_type = DeviceProcessor::DutyType;
-                return Ps1State;
-
-            case DeviceController::GateFrequencyMode:
-                m_type = DeviceProcessor::FrequencyType;
-                return Burst0State;
-
-            case DeviceController::GatePeriodMode:
-                m_type = DeviceProcessor::TimeType;
-                return Burst0State;
-
-            case DeviceController::GateCountMode:
-                m_type = DeviceProcessor::NoType;
-                return Burst0State;
-
-            default:
-                break;
-            }
-
-            return IdleState;
+            return RunState;
         }
 
         m_regs.ctrl &= ~COUNTER_CTRL_CLR;
         m_regs.ctrl |= COUNTER_CTRL_CLB_ZS;
         break;
 
-    case Ps1State:
-        m_duration = controller()->duration();
-        m_regs.mode |= start1(controller()->countEvent());
-        m_regs.mode |= stop1(controller()->complementCountEvent());
-        m_regs.mode |= count(controller()->complementCountEvent());
+    case RunState:
         m_regs.ctrl &= ~COUNTER_CTRL_CLR;
-        m_regs.ctrl |= COUNTER_CTRL_STRT | COUNTER_CTRL_STOP;
-        return Ps2State;
+
+        m_mode = controller()->mode();
+        m_duration = controller()->duration();
+        switch (m_mode)
+        {
+        case DeviceController::TimeMode:
+            m_regs.mode |= start1(controller()->startEvent());
+            m_regs.mode |= stop1(controller()->stopEvent());
+            m_regs.mode |= count(controller()->stopEvent());
+            m_regs.ctrl |= COUNTER_CTRL_STRT | COUNTER_CTRL_STOP;
+            return Burst2State;
+
+        case DeviceController::FrequencyMode:
+        case DeviceController::PeriodMode:
+        case DeviceController::CountMode:
+            m_regs.mode |= start1(controller()->countEvent());
+            m_regs.mode |= stop1(controller()->countEvent());
+            m_regs.mode |= count(controller()->countEvent());
+            m_regs.ctrl |= COUNTER_CTRL_STRT;
+            return Burst2State;
+
+        case DeviceController::DutyMode:
+            m_regs.mode |= start1(controller()->countEvent());
+            m_regs.mode |= stop1(controller()->countEvent());
+            m_regs.mode |= count(controller()->countEvent());
+            m_regs.ctrl |= COUNTER_CTRL_STRT | COUNTER_CTRL_STOP;
+            return Ps2State;
+
+        case DeviceController::GateFrequencyMode:
+        case DeviceController::GatePeriodMode:
+        case DeviceController::GateCountMode:
+            m_regs.mode |= start1(controller()->startEvent());
+            m_regs.mode |= stop1(controller()->stopEvent());
+            m_regs.mode |= count(controller()->countEvent());
+            m_regs.ctrl &= ~COUNTER_CTRL_CLR;
+            m_regs.ctrl |= COUNTER_CTRL_STRT | COUNTER_CTRL_STOP;
+            return Burst2State;
+
+        default:
+            break;
+        }
+
+        break;
 
     case Ps2State:
         if (is_started)
@@ -338,7 +290,7 @@ TargetDevice::State TargetDevice::proc(State state, int elapsed)
         }
 
         if (elapsed > m_duration)
-            return fail();
+            return DropState;
 
         break;
 
@@ -357,45 +309,17 @@ TargetDevice::State TargetDevice::proc(State state, int elapsed)
             m_regs.ctrl &= ~COUNTER_CTRL_TEST;
             m_regs.ctrl &= ~COUNTER_CTRL_STOP;
             m_regs.ctrl &= ~COUNTER_CTRL_STRT;
-
             return Ps4State;
         }
 
         if (elapsed > m_duration)
-            return fail();
+            return DropState;
 
         break;
 
     case Ps4State:
         m_regs.ctrl &= ~COUNTER_CTRL_CLR;
         m_regs.ctrl |= COUNTER_CTRL_STRT | COUNTER_CTRL_STOP;
-        return Burst2State;
-
-    case Single1State:
-        m_duration = controller()->duration();
-        m_regs.mode |= start1(controller()->startEvent());
-        m_regs.mode |= stop1(controller()->stopEvent());
-        m_regs.mode |= count(controller()->stopEvent());
-        m_regs.ctrl &= ~COUNTER_CTRL_CLR;
-        m_regs.ctrl |= COUNTER_CTRL_STRT | COUNTER_CTRL_STOP;
-        return Burst2State;
-
-    case Burst0State:
-        m_duration = controller()->duration();
-        m_regs.mode |= start1(controller()->startEvent());
-        m_regs.mode |= stop1(controller()->stopEvent());
-        m_regs.mode |= count(controller()->countEvent());
-        m_regs.ctrl &= ~COUNTER_CTRL_CLR;
-        m_regs.ctrl |= COUNTER_CTRL_STRT | COUNTER_CTRL_STOP;
-        return Burst2State;
-
-    case Burst1State:
-        m_duration = controller()->duration();
-        m_regs.mode |= start1(controller()->countEvent());
-        m_regs.mode |= stop1(controller()->countEvent());
-        m_regs.mode |= count(controller()->countEvent());
-        m_regs.ctrl &= ~COUNTER_CTRL_CLR;
-        m_regs.ctrl |= COUNTER_CTRL_STRT;
         return Burst2State;
 
     case Burst2State:
@@ -406,7 +330,7 @@ TargetDevice::State TargetDevice::proc(State state, int elapsed)
         }
 
         if (elapsed > m_duration)
-            return fail();
+            return DropState;
 
         break;
 
@@ -422,13 +346,45 @@ TargetDevice::State TargetDevice::proc(State state, int elapsed)
     case Burst4State:
         if (is_ready)
         {
-            return done();
+            const qreal clock = reference()->frequency();
+            const qreal counter = m_regs.cnt;
+            const qreal start = qreal(m_regs.tac_strt) / m_tac_start;
+            const qreal stop = qreal(m_regs.tac_stop) / m_tac_stop;
+            const qreal timer = qreal(m_regs.tmr) + start - stop;
+
+            switch (m_mode)
+            {
+            case DeviceProcessor::NoType:
+                processor()->take(m_type, counter, timer / clock);
+                break;
+
+            case DeviceProcessor::DutyType:
+                processor()->take(m_type, 100.0 * timer / m_ti, m_ti / clock);
+                break;
+
+            case DeviceProcessor::TimeType:
+                processor()->take(m_type, timer / counter / clock, timer / clock);
+                break;
+
+            case DeviceProcessor::FrequencyType:
+                processor()->take(m_type, counter / timer * clock, timer / clock);
+                break;
+
+            default:
+                processor()->take(m_type, qQNaN(), timer / clock);
+                break;
+            }
+
+            return IdleState;
         }
 
         if (elapsed > m_duration)
-            return fail();
+            return DropState;
 
         break;
+
+    case DropState:
+        return IdleState;
 
     default:
         break;

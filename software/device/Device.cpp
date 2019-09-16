@@ -1,6 +1,7 @@
 #include <QDebug>
 #include <QTimer>
 #include <QSettings>
+#include <QSerialPortInfo>
 #include "Device.h"
 #include "MockDevice.h"
 #include "TargetDevice.h"
@@ -11,8 +12,8 @@
 
 Device *Device::createDevice(const QString &type, QObject *parent)
 {
-    if (type == "mock")
-        return new MockDevice(parent);
+    /*if (type == "mock")
+        return new MockDevice(parent);*/
 
     return new TargetDevice(parent);
 }
@@ -68,13 +69,13 @@ void Device::setPortName(const QString &name)
     {
         m_portName = name;
 
-        open();
+        reconnect();
     }
 }
 
-void Device::start()
+bool Device::isReady() const
 {
-    measure();
+    return m_ready;
 }
 
 void Device::stop()
@@ -135,11 +136,23 @@ void Device::restoreFromSettings(QSettings &settings)
 void Device::clearThenRestart()
 {
     m_processor->clear();
+
+    if (isStarted())
+        restart();
 }
 
-bool Device::isReady() const
+QString Device::internalPortName() const
 {
-    return m_ready;
+    if (m_portName.isEmpty())
+    {
+        foreach (const QSerialPortInfo &info, QSerialPortInfo::availablePorts())
+        {
+            if (info.vendorIdentifier() == 0x0483 && info.productIdentifier() == 0x5740 && !info.isBusy())
+                return info.systemLocation();
+        }
+    }
+
+    return m_portName;
 }
 
 void Device::setReady(bool ready)
@@ -150,5 +163,3 @@ void Device::setReady(bool ready)
         emit readyChanged(m_ready);
     }
 }
-
-

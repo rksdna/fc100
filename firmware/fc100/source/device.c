@@ -37,11 +37,9 @@
 #include <tools.h>
 #include "device.h"
 
-#define SPI1_DR_8 *(volatile u8_t *)(&SPI1->DR)
-
 #define V_REF 330
-#define V_ON 485
-#define V_OFF 475
+
+#define SPI1_DR_8 *(volatile u8_t *)(&SPI1->DR)
 
 static s32_t voltage;
 
@@ -154,26 +152,6 @@ void startup_device(void)
 
     debug("hello\n");
     debug("id: %*m flash: %dKbytes\n", sizeof(DES->ID), DES->ID, DES->FSIZE & DES_FSIZE_FSIZE);
-
-    sleep(250);
-    if (voltage < V_ON)
-    {
-        debug("low voltage, bye\n");
-        stop();
-    }
-
-    TIM17->BDTR |= TIM_BDTR_MOE;
-
-    sleep(250);
-    if (voltage < V_OFF)
-    {
-        debug("low power bye\n");
-        TIM17->BDTR &= ~TIM_BDTR_MOE;
-        stop();
-    }
-
-    GPIOA->BSRR = GPIO_BSRR_BR3;
-    debug("device started\n");
 }
 
 void irq12_handler(void)
@@ -194,6 +172,19 @@ static u8_t spi_poll(u8_t value)
     wait_for(&SPI1->SR, SPI_SR_RXNE, SPI_SR_RXNE);
 
     return SPI1_DR_8;
+}
+
+void startup_device_counter(u32_t delay)
+{
+    TIM17->BDTR |= TIM_BDTR_MOE;
+    sleep(delay);
+    GPIOA->BSRR = GPIO_BSRR_BR3;
+}
+
+void shutdown_device_counter(void)
+{
+    GPIOA->BSRR = GPIO_BSRR_BS3;
+    TIM17->BDTR &= ~TIM_BDTR_MOE;
 }
 
 void read_device_counter(u8_t address, void *destination, u32_t size)
@@ -235,5 +226,20 @@ s32_t __gnu_thumb1_case_uqi()
                   "lsl r1, #1\n"
                   "add lr, lr, r1\n"
                   "mov r1, r12\n"
+                  "bx lr\n" : : : );
+}
+
+__attribute__((naked))
+s32_t __gnu_thumb1_case_uhi()
+{
+    asm volatile ("push {r0, r1}\n"
+                  "mov r1, lr\n"
+                  "lsr r1, r1, #1\n"
+                  "lsl r0, r0, #1\n"
+                  "lsl r1, r1, #1\n"
+                  "ldrh r1, [r1, r0]\n"
+                  "lsl r1, r1, #1\n"
+                  "add lr, lr, r1\n"
+                  "pop {r0, r1}\n"
                   "bx lr\n" : : : );
 }

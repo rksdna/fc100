@@ -60,6 +60,7 @@ struct counter
 #define COUNTER_MODE_STRT_CH1F ((u8_t)0x01)
 #define COUNTER_MODE_STRT_CH2R ((u8_t)0x02)
 #define COUNTER_MODE_STRT_CH2F ((u8_t)0x03)
+#define COUNTER_MODE_STRT_BITS(x) ((u8_t)(x) & COUNTER_MODE_STRT)
 
 #define COUNTER_MODE_STOP ((u8_t)0x0C)
 #define COUNTER_MODE_STOP_0 ((u8_t)0x04)
@@ -68,6 +69,7 @@ struct counter
 #define COUNTER_MODE_STOP_CH1F ((u8_t)0x04)
 #define COUNTER_MODE_STOP_CH2R ((u8_t)0x08)
 #define COUNTER_MODE_STOP_CH2F ((u8_t)0x0C)
+#define COUNTER_MODE_STOP_BITS(x) (((u8_t)(x) << 2) & COUNTER_MODE_STOP)
 
 #define COUNTER_MODE_CNT ((u8_t)0x30)
 #define COUNTER_MODE_CNT_0 ((u8_t)0x10)
@@ -76,10 +78,12 @@ struct counter
 #define COUNTER_MODE_CNT_CH1F ((u8_t)0x10)
 #define COUNTER_MODE_CNT_CH2R ((u8_t)0x20)
 #define COUNTER_MODE_CNT_CH2F ((u8_t)0x30)
+#define COUNTER_MODE_CNT_BITS(x) (((u8_t)(x) << 4) & COUNTER_MODE_CNT)
 
 #define COUNTER_MODE_TMR ((u8_t)0x40)
 #define COUNTER_MODE_TMR_CLK ((u8_t)0x00)
 #define COUNTER_MODE_TMR_REF ((u8_t)0x40)
+#define COUNTER_MODE_TMR_BITS(x) (((u8_t)(x) << 6) & COUNTER_MODE_TMR)
 
 #define COUNTER_MODE_CLR ((u8_t)0x80)
 
@@ -87,8 +91,13 @@ struct counter
 #define COUNTER_CTRL_STOP ((u8_t)0x02)
 #define COUNTER_CTRL_CLB_ZS ((u8_t)0x04)
 #define COUNTER_CTRL_CLB_FS ((u8_t)0x08)
+
 #define COUNTER_CTRL_HPF_CH1 ((u8_t)0x10)
+#define COUNTER_CTRL_HPF_CH1_BITS(x) (((u8_t)(x) << 4) & COUNTER_CTRL_HPF_CH1)
+
 #define COUNTER_CTRL_HPF_CH2 ((u8_t)0x20)
+#define COUNTER_CTRL_HPF_CH2_BITS(x) (((u8_t)(x) << 5) & COUNTER_CTRL_HPF_CH2)
+
 #define COUNTER_CTRL_TEST ((u8_t)0x40)
 #define COUNTER_CTRL_CLR ((u8_t)0x80)
 
