@@ -99,86 +99,324 @@ static void put_memory(struct stream *stream, u32_t size, const u8_t *data)
 
 void explicit_print(struct stream *stream, const char *format, const void *args)
 {
+    u32_t shift = 0;
+    u32_t size = 0;
+    u32_t escape = 0;
     while (*format)
     {
         char token = *format++;
-        if (token == '%')
+        if (escape)
         {
-            u32_t size = 0;
-            u32_t shift = 0;
-            while (*format)
+            if (token >= '0' && token <= '9')
             {
-                token = *format++;
-                if (token >= '0' && token <= '9')
-                {
-                    size = 10 * size + token - '0';
-                    continue;
-                }
+                size = 10 * size + token - '0';
+                continue;
+            }
 
-                if (token == '*')
-                {
-                    size = *(u32_t *)args, args += sizeof(u32_t);
-                    continue;
-                }
+            if (token == '*')
+            {
+                size = *(u32_t *)args, args += sizeof(u32_t);
+                continue;
+            }
 
-                if (token == '.')
-                {
-                    shift = size;
-                    size = 0;
-                    continue;
-                }
+            if (token == '.')
+            {
+                shift = size;
+                size = 0;
+                continue;
+            }
 
-                if (token == 'c')
-                {
-                    put_char(stream, size, *(u32_t *)args);
-                    args += sizeof(u32_t);
-                    break;
-                }
+            escape = 0;
 
-                if (token == 'x')
-                {
-                    put_integer(stream, size, shift, 16, 0, *(u32_t *)args);
-                    args += sizeof(u32_t);
-                    break;
-                }
+            if (token == 'c')
+            {
+                put_char(stream, size, *(u32_t *)args);
+                args += sizeof(u32_t);
+                continue;
+            }
 
-                if (token == 'd')
-                {
-                    put_integer(stream, size, shift, 10, 1, *(s32_t *)args);
-                    args += sizeof(s32_t);
-                    break;
-                }
+            if (token == 'x')
+            {
+                put_integer(stream, size, shift, 16, 0, *(u32_t *)args);
+                args += sizeof(u32_t);
+                continue;
+            }
 
-                if (token == 'u')
-                {
-                    put_integer(stream, size, shift, 10, 0, *(u32_t *)args);
-                    args += sizeof(u32_t);
-                    break;
-                }
+            if (token == 'd')
+            {
+                put_integer(stream, size, shift, 10, 1, *(s32_t *)args);
+                args += sizeof(s32_t);
+                continue;
+            }
 
-                if (token == 'm')
-                {
-                    put_memory(stream, size, *(const u8_t **)args);
-                    args += sizeof(const u8_t *);
-                    break;
-                }
+            if (token == 'u')
+            {
+                put_integer(stream, size, shift, 10, 0, *(u32_t *)args);
+                args += sizeof(u32_t);
+                continue;
+            }
 
-                if (token == 's')
-                {
-                    put_string(stream, size, *(const char **)args);
-                    args += sizeof(const char *);
-                    break;
-                }
+            if (token == 'm')
+            {
+                put_memory(stream, size, *(const u8_t **)args);
+                args += sizeof(const u8_t *);
+                continue;
+            }
 
-                put(stream, token);
-                break;
+            if (token == 's')
+            {
+                put_string(stream, size, *(const char **)args);
+                args += sizeof(const char *);
+                continue;
             }
         }
         else
         {
-            put(stream, token);
+            if (token == '%')
+            {
+                escape = 1;
+                size = 0;
+                shift = 0;
+                continue;
+            }
+        }
+
+        put(stream, token);
+    }
+}
+
+static u32_t get_integer(struct source *source, u32_t size, char end, u32_t shift, u32_t base, u32_t sign, s32_t *value, char *ch)
+{
+    u32_t has_sign = 0;
+    u32_t has_digits = 0;
+    u32_t has_point = 0;
+    u32_t actual_shift = 0;
+
+    if (!size)
+        size = 12;
+
+    while (*ch != end && size--)
+    {
+        u32_t digit;
+        if (sign && !has_digits && !has_sign && *ch == '-')
+        {
+            has_sign = 1;
+            get(source);
+            continue;
+        }
+        else if (*ch >= '0' && *ch <= '9')
+        {
+            digit = *ch - '0';
+            has_digits = 1;
+        }
+        else if (*ch >= 'a' && *ch <= 'b')
+        {
+            digit = *ch - 'a' + 10;
+            has_digits = 1;
+        }
+        else if (*ch >= 'A' && *ch <= 'F')
+        {
+            digit = *ch - 'A' + 10;
+            has_digits = 1;
+        }
+        else if (shift && has_digits && !has_point && *ch == '.')
+        {
+            has_point = 1;
+            get(source);
+            continue;
+        }
+        else
+        {
+            return 1;
+        }
+
+        if (digit >= base)
+            return 1;
+
+        *value *= base;
+        *value += digit;
+
+        if (has_point)
+            actual_shift++;
+
+        *ch = get(source);
+    }
+
+    if (!has_digits)
+        return 1;
+
+    while (actual_shift++ < shift)
+        *value *= base;
+
+    if (has_sign)
+        *value = -*value;
+
+    *value = *value;
+    return 0;
+}
+
+static u32_t get_string(struct source *source, u32_t size, char end, char *value, char *ch)
+{
+    if (!size)
+    {
+        while (*ch != end)
+        {
+            *value++ = *ch;
+            *ch = get(source);
         }
     }
+    else
+    {
+        while (*ch != end && --size)
+        {
+            *value++ = *ch;
+            *ch = get(source);
+        }
+    }
+
+    *value++ = '\0';
+
+    return 0;
+}
+
+static u32_t get_char(struct source *source, u32_t size, char *value, char *ch)
+{
+    if (!size)
+        size = 1;
+
+    while (*ch && size--)
+    {
+        *value = *ch;
+        *ch = get(source);
+    }
+
+    return 0;
+}
+
+static u32_t get_memory(struct source *source, u32_t size, char end, u8_t *value, char *ch)
+{
+    if (!size)
+        size = 1;
+
+    while (size--)
+    {
+        s32_t scratch;
+        if (get_integer(source, 2, end, 0, 16, 0, &scratch, ch))
+            return 1;
+
+        *value++ = scratch;
+    }
+
+    return 0;
+}
+
+u32_t explicit_scan(struct source *source, const char *format, const void *args)
+{
+    u32_t shift = 0;
+    u32_t size = 0;
+    u32_t escape = 0;
+    char token;
+    char ch = get(source);
+    do
+    {
+        token = *format++;
+        if (escape)
+        {
+            if (token >= '0' && token <= '9')
+            {
+                size = 10 * size + token - '0';
+                continue;
+            }
+
+            if (token == '*')
+            {
+                size = *(u32_t *)args;
+                args += sizeof(u32_t);
+                continue;
+            }
+
+            if (token == '.')
+            {
+                shift = size;
+                size = 0;
+                continue;
+            }
+
+            escape = 0;
+
+            if (token == 'c')
+            {
+                if (get_char(source, size, *(char **)args, &ch))
+                    return 1;
+
+                args += sizeof(char *);
+                continue;
+            }
+
+            if (token == 'x')
+            {
+                if (get_integer(source, size, *format, shift, 16, 0, *(s32_t **)args, &ch))
+                    return 1;
+
+                args += sizeof(u32_t *);
+                continue;
+            }
+
+            if (token == 'd')
+            {
+                if (get_integer(source, size, *format, shift, 10, 1, *(s32_t **)args, &ch))
+                    return 1;
+
+                args += sizeof(u32_t *);
+                continue;
+            }
+
+            if (token == 'u')
+            {
+                if (get_integer(source, size, *format, shift, 10, 0, *(s32_t **)args, &ch))
+                    return 1;
+
+                args += sizeof(u32_t *);
+                continue;
+            }
+
+            if (token == 'm')
+            {
+                if (get_memory(source, size, *format, *(u8_t **)args, &ch))
+                    return 1;
+
+                args += sizeof(u8_t *);
+                continue;
+            }
+
+            if (token == 's')
+            {
+                if (get_string(source, size, *format, *(char **)args, &ch))
+                    return 1;
+
+                args += sizeof(char *);
+                continue;
+            }
+        }
+        else
+        {
+            if (token == '%')
+            {
+                escape = 1;
+                size = 0;
+                shift = 0;
+                continue;
+            }
+        }
+
+        if (token != ch)
+            return 1;
+
+        ch = get(source);
+    }
+    while (token);
+
+    return 0;
 }
 
 void put(struct stream *stream, char value)
@@ -186,10 +424,21 @@ void put(struct stream *stream, char value)
     stream->put(stream->data, value);
 }
 
+char get(struct source *source)
+{
+    return source->get(source->data);
+}
+
 __attribute__((noinline))
 void print(struct stream *stream, const char *format, ...)
 {
     explicit_print(stream, format, &format + 1);
+}
+
+__attribute__((noinline))
+u32_t scan(struct source *source, const char *format, ...)
+{
+    return explicit_scan(source, format, &format + 1);
 }
 
 void copy(void *destination, const void *source, u32_t size)
@@ -258,4 +507,3 @@ void *memset(void *destination, int value,  u32_t size)
     fill(destination, value, size);
     return destination;
 }
-

@@ -31,6 +31,7 @@
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 typedef void (*put_t)(void *data, char value);
+typedef char (*get_t)(void *data);
 
 struct stream
 {
@@ -38,8 +39,17 @@ struct stream
     void *data;
 };
 
+struct source
+{
+    get_t get;
+    void *data;
+};
+
 void put(struct stream *stream, char value);
+char get(struct source *source);
+
 void print(struct stream *stream, const char *format, ...);
+u32_t scan(struct source *source, const char *format, ...);
 
 void copy(void *destination, const void *source, u32_t size);
 void fill(void *destination, u8_t value, u32_t size);
