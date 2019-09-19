@@ -201,7 +201,7 @@ static u32_t get_integer(struct source *source, u32_t size, char end, u32_t shif
         if (sign && !has_digits && !has_sign && *ch == '-')
         {
             has_sign = 1;
-            get(source);
+            *ch = get(source);
             continue;
         }
         else if (*ch >= '0' && *ch <= '9')
@@ -222,16 +222,16 @@ static u32_t get_integer(struct source *source, u32_t size, char end, u32_t shif
         else if (shift && has_digits && !has_point && *ch == '.')
         {
             has_point = 1;
-            get(source);
+            *ch = get(source);
             continue;
         }
         else
         {
-            return 1;
+            return -1;
         }
 
         if (digit >= base)
-            return 1;
+            return -1;
 
         *value *= base;
         *value += digit;
@@ -243,7 +243,7 @@ static u32_t get_integer(struct source *source, u32_t size, char end, u32_t shif
     }
 
     if (!has_digits)
-        return 1;
+        return -1;
 
     while (actual_shift++ < shift)
         *value *= base;
@@ -302,7 +302,7 @@ static u32_t get_memory(struct source *source, u32_t size, char end, u8_t *value
     {
         s32_t scratch;
         if (get_integer(source, 2, end, 0, 16, 0, &scratch, ch))
-            return 1;
+            return -1;
 
         *value++ = scratch;
     }
@@ -347,7 +347,7 @@ u32_t explicit_scan(struct source *source, const char *format, const void *args)
             if (token == 'c')
             {
                 if (get_char(source, size, *(char **)args, &ch))
-                    return 1;
+                    return -1;
 
                 args += sizeof(char *);
                 continue;
@@ -356,7 +356,7 @@ u32_t explicit_scan(struct source *source, const char *format, const void *args)
             if (token == 'x')
             {
                 if (get_integer(source, size, *format, shift, 16, 0, *(s32_t **)args, &ch))
-                    return 1;
+                    return -1;
 
                 args += sizeof(u32_t *);
                 continue;
@@ -365,7 +365,7 @@ u32_t explicit_scan(struct source *source, const char *format, const void *args)
             if (token == 'd')
             {
                 if (get_integer(source, size, *format, shift, 10, 1, *(s32_t **)args, &ch))
-                    return 1;
+                    return -1;
 
                 args += sizeof(u32_t *);
                 continue;
@@ -374,7 +374,7 @@ u32_t explicit_scan(struct source *source, const char *format, const void *args)
             if (token == 'u')
             {
                 if (get_integer(source, size, *format, shift, 10, 0, *(s32_t **)args, &ch))
-                    return 1;
+                    return -1;
 
                 args += sizeof(u32_t *);
                 continue;
@@ -383,7 +383,7 @@ u32_t explicit_scan(struct source *source, const char *format, const void *args)
             if (token == 'm')
             {
                 if (get_memory(source, size, *format, *(u8_t **)args, &ch))
-                    return 1;
+                    return -1;
 
                 args += sizeof(u8_t *);
                 continue;
@@ -392,7 +392,7 @@ u32_t explicit_scan(struct source *source, const char *format, const void *args)
             if (token == 's')
             {
                 if (get_string(source, size, *format, *(char **)args, &ch))
-                    return 1;
+                    return -1;
 
                 args += sizeof(char *);
                 continue;
@@ -410,7 +410,7 @@ u32_t explicit_scan(struct source *source, const char *format, const void *args)
         }
 
         if (token != ch)
-            return 1;
+            return -1;
 
         ch = get(source);
     }

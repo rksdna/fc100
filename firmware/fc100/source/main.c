@@ -656,11 +656,22 @@ static void socket_handler(struct shp_socket *socket, const void *data, u32_t si
 }
 
 
+char *test = "a=332.2,b=qwerty";
+
+char gett(void *data)
+{
+    return *test++;
+}
+
+struct source src = {gett, 0};
 
 void main(void)
 {
     static struct thread control_thread;
     static u8_t control_stack[256];
+
+    s32_t x;
+    char y[256];
 
     static char rx[256];
     static char tx[256];
@@ -670,9 +681,19 @@ void main(void)
     params.duration = 500;
 
     startup_device();
+
+
+    u32_t r = scan(&src, "a=%1.5d,b=%s", &x, y);
+    debug("%d, %d, %s", r, x, y);
+
+
+
     start_thread(&control_thread, (function_t)control_handler, 0, control_stack, sizeof(control_stack));
     start_cdc_service();
     set_cdc_timeout(10);
+
+
+
     while (1)
     {
         struct shp_socket socket;
