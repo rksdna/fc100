@@ -21,329 +21,14 @@
  * THE SOFTWARE.
  */
 
-/*#include <threads.h>
-#include <timers.h>
-#include <debug.h>
-#include <cdc.h>
-#include "threads.h"
-#include "counter.h"
-#include "device.h"
-#include "tools.h"
-#include "shp.h"
-
-enum
-{
-    IDLE_STATE,
-    READY_STATE,
-    TRIGGER_STATE,
-    BUSY_1_STATE,
-    BUSY_2_STATE,
-    BUSY_3_STATE,
-    CALIBRATION_1_STATE,
-    CALIBRATION_2_STATE
-};
-
-struct shp_short_request
-{
-    s8_t threshold1;
-    s8_t threshold2;
-    u8_t coupling1;
-    u8_t coupling2;
-};
-
-struct shp_long_request
-{
-    u8_t threshold1;
-    u8_t threshold2;
-    u8_t coupling1;
-    u8_t coupling2;
-
-    u16_t burst;
-    u16_t duration;
-    u8_t counter_edge;
-    u8_t timer_clock;
-    u8_t start_edge;
-    u8_t stop_edge;
-};
-
-struct shp_short_response
-{
-    u16_t state;
-    u16_t voltage;
-};
-
-struct shp_long_response
-{
-    u16_t state;
-    u16_t voltage;
-
-    u32_t counter;
-    u32_t timer;
-    u8_t start_divident;
-    u8_t start_divider;
-    u8_t stop_divident;
-    u8_t stop_divider;
-};
-
-struct counter_params
-{
-    u32_t state;
-    u32_t duration;
-    u32_t burst;
-
-    u8_t dac1;
-    u8_t dac2;
-    u8_t coupling1;
-    u8_t coupling2;
-    u8_t start_edge;
-    u8_t stop_edge;
-    u8_t counter_edge;
-    u8_t timer_clock;
-
-    u32_t counter;
-    u32_t timer;
-    u8_t start;
-    u8_t start_p0;
-    u8_t start_p1;
-    u8_t stop;
-    u8_t stop_p0;
-    u8_t stop_p1;
-};
-
-static struct counter regs;
-static struct counter_params params;
-
-static u32_t update(u32_t state, u8_t mode, u8_t ctrl)
-{
-    regs.dac1 = 255 - params.dac1;
-    regs.dac2 = 255 - params.dac2;
-
-    regs.ctrl = ctrl |
-            ((params.coupling1 << 4) & COUNTER_CTRL_HPF_CH1) |
-            ((params.coupling2 << 5) & COUNTER_CTRL_HPF_CH2);
-
-    regs.mode = mode |
-            ((params.start_edge) & COUNTER_MODE_STRT) |
-            ((params.stop_edge << 2) & COUNTER_MODE_STOP) |
-            ((params.counter_edge << 4) & COUNTER_MODE_CNT) |
-            ((params.timer_clock << 6) & COUNTER_MODE_TMR);
-
-    return state;
-}
-
-static u32_t process_counter(u32_t state, u32_t elapsed)
-{
-    const u8_t ctrl = params.burst ? COUNTER_CTRL_STRT : COUNTER_CTRL_STRT | COUNTER_CTRL_STOP;
-
-    const u32_t is_started = regs.ack & COUNTER_ACK_STRT;
-    const u32_t is_stopped = regs.ack & COUNTER_ACK_STOP;
-    const u32_t is_ready = is_started && is_stopped;
-
-    switch (state)
-    {
-    case IDLE_STATE:
-    case READY_STATE:
-        return update(state, COUNTER_MODE_CLR, COUNTER_CTRL_CLR);
-
-    case TRIGGER_STATE:
-        return update(BUSY_1_STATE, COUNTER_MODE_CLR, ctrl);
-
-    case BUSY_1_STATE:
-        if (elapsed >= params.duration)
-            return update(IDLE_STATE, COUNTER_MODE_CLR, COUNTER_CTRL_CLR);
-
-        if (!is_started)
-            return update(BUSY_1_STATE, 0, ctrl);
-
-        return update(BUSY_2_STATE, 0, ctrl | COUNTER_CTRL_TEST);
-
-    case BUSY_2_STATE:
-        if (elapsed < params.duration && !is_ready)
-            return update(BUSY_2_STATE, 0, ctrl | COUNTER_CTRL_TEST);
-
-        return update(BUSY_3_STATE, 0, COUNTER_CTRL_STRT | COUNTER_CTRL_STOP | COUNTER_CTRL_TEST);
-
-    case BUSY_3_STATE:
-        if (elapsed >= params.duration)
-            return update(IDLE_STATE, COUNTER_MODE_CLR, COUNTER_CTRL_CLR);
-
-        if (!is_ready)
-            return update(BUSY_3_STATE, 0, COUNTER_CTRL_STRT | COUNTER_CTRL_STOP | COUNTER_CTRL_TEST);
-
-        params.counter = regs.cnt;
-        params.timer = regs.tmr;
-        params.start = regs.tac_strt;
-        params.stop = regs.tac_stop;
-        return update(CALIBRATION_1_STATE, COUNTER_MODE_CLR, COUNTER_CTRL_CLB_ZS);
-
-    case CALIBRATION_1_STATE:
-        if (!is_ready)
-            return update(IDLE_STATE, COUNTER_MODE_CLR, COUNTER_CTRL_CLR);
-
-        params.start_p0 = regs.tac_strt;
-        params.stop_p0 = regs.tac_stop;
-        return update(CALIBRATION_2_STATE, COUNTER_MODE_CLR, COUNTER_CTRL_CLB_FS);
-
-    case CALIBRATION_2_STATE:
-        if (!is_ready)
-            return update(IDLE_STATE, COUNTER_MODE_CLR, COUNTER_CTRL_CLR);
-
-        params.start_p1 = regs.tac_strt;
-        params.stop_p1 = regs.tac_stop;
-        return update(READY_STATE, COUNTER_MODE_CLR, COUNTER_CTRL_CLR);
-
-    default:
-        break;
-    }
-
-    return update(IDLE_STATE, COUNTER_MODE_CLR, COUNTER_CTRL_CLR);
-}
-
-static void control_handler(void *arg)
-{
-    WASTE(arg);
-    struct timer tm;
-    start_timer(&tm, -1);
-
-    u32_t time = 0;
-    while (1)
-    {
-        const u32_t state = process_counter(params.state, tm.ticks - time);
-        if (state != params.state)
-        {
-            time = tm.ticks;
-            params.state = state;
-        }
-
-        write_device_counter(COUNTER_DAC1, &regs.dac1, 4);
-        read_device_counter(COUNTER_ID, &regs.id, 12);
-    }
-
-    stop_timer(&tm);
-}
-
-static void socket_handler(struct shp_socket *socket, const void *data, u32_t size)
-{
-    if (size == sizeof(struct shp_short_request))
-    {
-        const struct shp_short_request * const request = (const struct shp_short_request *)data;
-        params.dac1 = request->threshold1;
-        params.dac2 = request->threshold2;
-        params.coupling1 = request->coupling1;
-        params.coupling2 = request->coupling2;
-    }
-    else if (size == sizeof(struct shp_long_request))
-    {
-        const struct shp_long_request * const request = (const struct shp_long_request *)data;
-        params.state = TRIGGER_STATE;
-        params.burst = request->burst;
-        params.duration = request->duration;
-
-        params.dac1 = request->threshold1;
-        params.dac2 = request->threshold2;
-        params.coupling1 = request->coupling1;
-        params.coupling2 = request->coupling2;
-
-        params.start_edge =request->start_edge;
-        params.stop_edge = request->stop_edge;
-        params.counter_edge = request->counter_edge;
-        params.timer_clock = request->timer_clock;
-    }
-    else
-    {
-        return;
-    }
-
-    if (params.state == READY_STATE)
-    {
-        struct shp_long_response response;
-        response.state = params.state;
-        response.voltage = get_device_voltage();
-
-        response.counter = params.counter;
-        response.timer = params.timer;
-        response.start_divident = params.start - params.start_p0;
-        response.start_divider = params.start_p1 - params.start_p0;
-        response.stop_divident = params.stop - params.stop_p0;
-        response.stop_divider = params.stop_p1 - params.stop_p0;
-
-        send_shp_response(socket, &response, sizeof(struct shp_long_response));
-    }
-    else
-    {
-        struct shp_short_response response;
-        response.state = params.state;
-        response.voltage = get_device_voltage();
-
-        send_shp_response(socket, &response, sizeof(struct shp_short_response));
-    }
-}
-
-void main(void)
-{
-    static struct thread control_thread;
-    static u8_t control_stack[256];
-
-    startup_device();
-    start_thread(&control_thread, (function_t)control_handler, 0, control_stack, sizeof(control_stack));
-    start_cdc_service();
-    set_cdc_timeout(10);
-    while (1)
-    {
-        struct shp_socket socket;
-        bind_shp_socket(&socket, socket_handler, read_cdc_data, write_cdc_data);
-
-        yield_thread((condition_t)has_cdc_connection, 0);
-        debug("cdc connected\n");
-        while (has_cdc_connection())
-            poll_shp_socket(&socket);
-
-        debug("cdc disconnected\n");
-    }
-}*/
-
-/*#include <threads.h>
-#include <timers.h>
-#include <debug.h>
-#include <cdc.h>
-#include "device.h"
-#include "shp.h"
-
-static void socket_handler(struct shp_socket *socket, const void *data, u32_t size)
-{
-    const u8_t response[12];
-    write_device_counter(0, data, size);
-    read_device_counter(size, response, sizeof(response));
-    send_shp_response(socket, &response, sizeof(response));
-}
-
-void main(void)
-{
-    startup_device();
-    start_cdc_service();
-    set_cdc_timeout(10);
-    while (1)
-    {
-        struct shp_socket socket;
-        bind_shp_socket(&socket, socket_handler, read_cdc_data, write_cdc_data);
-
-        yield_thread((condition_t)has_cdc_connection, 0);
-        debug("cdc connected\n");
-        while (has_cdc_connection())
-            poll_shp_socket(&socket);
-
-        debug("cdc disconnected\n");
-    }
-}*/
-
 #include <threads.h>
 #include <timers.h>
 #include <debug.h>
 #include <tools.h>
 #include <cdc.h>
-#include "device.h"
 #include "counter.h"
-#include "shp.h"
+#include "device.h"
+#include "slip.h"
 
 #define V_ON 475
 #define V_OFF 465
@@ -351,22 +36,25 @@ void main(void)
 enum state
 {
     IDLE_STATE,
+    READY_STATE,
     START_TIME_STATE,
     START_FREQUENCY_STATE,
     START_DUTY_STATE,
     START_GATED_FREQUENCY_STATE,
-    Ps2State,
-    Ps3State,
-    Ps4State,
+    DUTY_1_STATE,
+    DUTY_2_STATE,
+    DUTY_3_STATE,
     BUSY_1_STATE,
     BUSY_2_STATE,
     BUSY_3_STATE,
     CALIBRATION_1_STATE,
-    CALIBRATION_2_STATE,
+    CALIBRATION_2_STATE
 };
 
-struct
+struct parameters
 {
+    u32_t command;
+    u32_t duration;
     u8_t threshold1;
     u8_t threshold2;
     u8_t coupling1;
@@ -375,45 +63,39 @@ struct
     u8_t start_event;
     u8_t stop_event;
     u8_t count_event;
-    u32_t duration;
-} params;
+};
 
-struct output
+struct variables
 {
-    u32_t counter;
-    u32_t timer;
-} out;
+    u32_t status;
+    u32_t counter1;
+    u32_t timer1;
+    u32_t counter2;
+    u32_t timer2;
+    u8_t tac_start1;
+    u8_t tac_stop1;
+    u8_t tac_start2;
+    u8_t tac_stop2;
+    u8_t fs_start;
+    u8_t fs_stop;
+    u8_t zs_start;
+    u8_t zs_stop;
+};
 
-u32_t duration;
-
-
-char tx[256];
-u32_t tx_size;
-
-static void put_cdc(void *data, char value)
-{
-    if (tx_size < sizeof(tx))
-        tx[tx_size++] = value;
-
-    if (value == '\n')
-    {
-        if (has_cdc_connection())
-            write_cdc_data(tx, tx_size);
-
-        tx_size = 0;
-    }
-}
-
-struct stream cdc_stream = {put_cdc, 0};
+static struct parameters params;
+static struct variables vars;
+static u32_t duration;
 
 static enum state control(enum state state, u32_t elapsed, struct counter *regs)
 {
     switch (state)
     {
     case IDLE_STATE:
+    case READY_STATE:
         regs->dac1 = 255 - params.threshold1;
         regs->dac2 = 255 - params.threshold2;
         regs->mode =
+                COUNTER_MODE_TMR_BITS(params.ref_source) |
                 COUNTER_MODE_CLR;
         regs->ctrl =
                 COUNTER_CTRL_HPF_CH1_BITS(params.coupling1) |
@@ -476,7 +158,7 @@ static enum state control(enum state state, u32_t elapsed, struct counter *regs)
                 COUNTER_CTRL_HPF_CH2_BITS(params.coupling2) |
                 COUNTER_CTRL_STRT | COUNTER_CTRL_STOP;
 
-        return Ps2State;
+        return DUTY_1_STATE;
 
     case START_GATED_FREQUENCY_STATE:
         duration = params.duration;
@@ -497,12 +179,12 @@ static enum state control(enum state state, u32_t elapsed, struct counter *regs)
 
         return BUSY_1_STATE;
 
-    case Ps2State:
+    case DUTY_1_STATE:
         regs->mode &= ~COUNTER_MODE_CLR;
         if (regs->ack & COUNTER_ACK_STRT)
         {
             regs->ctrl |= COUNTER_CTRL_TEST;
-            return Ps3State;
+            return DUTY_2_STATE;
         }
 
         if (elapsed > duration)
@@ -510,12 +192,14 @@ static enum state control(enum state state, u32_t elapsed, struct counter *regs)
 
         break;
 
-    case Ps3State:
+    case DUTY_2_STATE:
         if (regs->ack & COUNTER_ACK_STOP)
         {
-            print(&cdc_stream, "B %d, %d, %d, %d\n", regs->tac_strt, regs->tac_stop, regs->cnt, regs->tmr);
-
             debug("B %d, %d, %d, %d\n", regs->tac_strt, regs->tac_stop, regs->cnt, regs->tmr);
+            vars.counter2 = regs->cnt;
+            vars.timer2 = regs->tmr;
+            vars.tac_start2 = regs->tac_strt;
+            vars.tac_stop2 = regs->tac_stop;
 
             regs->mode ^= COUNTER_MODE_STOP_0 | COUNTER_MODE_CNT_0;
             regs->mode |= COUNTER_MODE_CLR;
@@ -523,10 +207,7 @@ static enum state control(enum state state, u32_t elapsed, struct counter *regs)
         }
 
         if (elapsed > duration)
-        {
-
             return IDLE_STATE;
-        }
 
         break;
 
@@ -539,10 +220,7 @@ static enum state control(enum state state, u32_t elapsed, struct counter *regs)
         }
 
         if (elapsed > duration)
-        {
-
             return IDLE_STATE;
-        }
 
         break;
 
@@ -558,9 +236,12 @@ static enum state control(enum state state, u32_t elapsed, struct counter *regs)
     case BUSY_3_STATE:
         if (regs->ack & COUNTER_ACK_STOP)
         {
-            print(&cdc_stream, "R %d, %d, %d, %d\n", regs->tac_strt, regs->tac_stop, regs->cnt, regs->tmr);
-
+            //print(&cdc_stream, "R %d, %d, %d, %d\n", regs->tac_strt, regs->tac_stop, regs->cnt, regs->tmr);
             debug("R %d, %d, %d, %d\n", regs->tac_strt, regs->tac_stop, regs->cnt, regs->tmr);
+            vars.counter1 = regs->cnt;
+            vars.timer1 = regs->tmr;
+            vars.tac_start1 = regs->tac_strt;
+            vars.tac_stop1 = regs->tac_stop;
 
             regs->mode |= COUNTER_MODE_CLR;
             regs->ctrl &= ~(COUNTER_CTRL_STRT | COUNTER_CTRL_STOP);
@@ -569,9 +250,7 @@ static enum state control(enum state state, u32_t elapsed, struct counter *regs)
         }
 
         if (elapsed > duration)
-        {
             return IDLE_STATE;
-        }
 
         break;
 
@@ -579,9 +258,10 @@ static enum state control(enum state state, u32_t elapsed, struct counter *regs)
         regs->mode &= ~COUNTER_MODE_CLR;
         if (regs->ack & COUNTER_ACK_STOP)
         {
-            print(&cdc_stream, "FS %d, %d\n", regs->tac_strt, regs->tac_stop);
-
+            //print(&cdc_stream, "FS %d, %d\n", regs->tac_strt, regs->tac_stop);
             debug("FS %d, %d\n", regs->tac_strt, regs->tac_stop);
+            vars.fs_start = regs->tac_strt;
+            vars.fs_stop = regs->tac_stop;
 
             regs->mode |= COUNTER_MODE_CLR;
             regs->ctrl &= ~COUNTER_CTRL_CLB_FS;
@@ -589,21 +269,27 @@ static enum state control(enum state state, u32_t elapsed, struct counter *regs)
             return CALIBRATION_2_STATE;
         }
 
+        if (elapsed > 10)
+            return IDLE_STATE;
+
         break;
 
     case CALIBRATION_2_STATE:
         regs->mode &= ~COUNTER_MODE_CLR;
         if (regs->ack & COUNTER_ACK_STOP)
         {
-            print(&cdc_stream, "ZS %d, %d\n", regs->tac_strt, regs->tac_stop);
-
-
+            //print(&cdc_stream, "ZS %d, %d\n", regs->tac_strt, regs->tac_stop);
             debug("ZS %d, %d\n", regs->tac_strt, regs->tac_stop);
+            vars.zs_start = regs->tac_strt;
+            vars.zs_stop = regs->tac_stop;
 
             regs->mode |= COUNTER_MODE_CLR;
             regs->ctrl &= ~(COUNTER_CTRL_CLB_ZS | COUNTER_CTRL_TEST);
-            return START_DUTY_STATE;
+            return READY_STATE;
         }
+
+        if (elapsed > 10)
+            return IDLE_STATE;
 
         break;
 
@@ -617,14 +303,15 @@ static enum state control(enum state state, u32_t elapsed, struct counter *regs)
 static void control_handler(void *arg)
 {
     WASTE(arg);
-    enum state state = START_DUTY_STATE;
+
     struct timer tm;
     struct counter regs;
+    static enum state state = START_DUTY_STATE;
 
     sleep(250);
     if (get_device_voltage() > V_ON)
     {
-        debug("control started\n");
+        debug("counter started\n");
         startup_device_counter(250);
         start_timer(&tm, -1);
         while (get_device_voltage() > V_OFF)
@@ -643,70 +330,37 @@ static void control_handler(void *arg)
 
         stop_timer(&tm);
         shutdown_device_counter();
-        debug("control stopped\n");
+        debug("counter stopped\n");
     }
 }
 
-static void socket_handler(struct shp_socket *socket, const void *data, u32_t size)
+static void socket_handler(struct slip_socket *socket, const void *data, u32_t size)
 {
-    const u8_t response[12];
-    write_device_counter(0, data, size);
-    read_device_counter(size, response, sizeof(response));
-    send_shp_response(socket, &response, sizeof(response));
+    if (size == sizeof(struct parameters))
+    {
+        copy(&params, data, sizeof(struct parameters));
+        send_slip_response(socket, &vars, sizeof(struct variables));
+    }
 }
-
-
-char *test = "a=332.2,b=qwerty";
-
-char gett(void *data)
-{
-    return *test++;
-}
-
-struct source src = {gett, 0};
 
 void main(void)
 {
     static struct thread control_thread;
     static u8_t control_stack[256];
-
-    s32_t x;
-    char y[256];
-
-    static char rx[256];
-    static char tx[256];
-
-    params.threshold1 = 128;
-    params.threshold2 = 128;
-    params.duration = 500;
-
     startup_device();
-
-
-    u32_t r = scan(&src, "a=%1.5d,b=%s", &x, y);
-    debug("%d, %d, %s", r, x, y);
-
-
-
     start_thread(&control_thread, (function_t)control_handler, 0, control_stack, sizeof(control_stack));
     start_cdc_service();
     set_cdc_timeout(10);
-
-
-
     while (1)
     {
-        struct shp_socket socket;
-        bind_shp_socket(&socket, socket_handler, read_cdc_data, write_cdc_data);
+        struct slip_socket socket;
+        bind_slip_socket(&socket, socket_handler, read_cdc_data, write_cdc_data);
 
         yield_thread((condition_t)has_cdc_connection, 0);
         debug("cdc connected\n");
         while (has_cdc_connection())
-        {
-            poll_shp_socket(&socket);
-        }
+            poll_slip_socket(&socket);
 
         debug("cdc disconnected\n");
     }
 }
-

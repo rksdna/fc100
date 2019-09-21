@@ -21,56 +21,48 @@
  * THE SOFTWARE.
  */
 
-#ifndef SHP_H
-#define SHP_H
+#ifndef SLIP_H
+#define SLIP_H
 
 #include <types.h>
 
-#ifndef SHP_CHUNK_SIZE
-#define SHP_CHUNK_SIZE 64
+#ifndef SLIP_CHUNK_SIZE
+#define SLIP_CHUNK_SIZE 32
 #endif
 
-#ifndef SHP_DATA_SIZE
-#define SHP_DATA_SIZE 32
+#ifndef SLIP_DATA_SIZE
+#define SLIP_DATA_SIZE 32
 #endif
 
-struct shp_socket;
-enum shp_state;
+struct slip_socket;
 
-typedef void (* shp_handler_t)(struct shp_socket *socket, const void *data, u32_t size);
-typedef u32_t (* shp_read_t)(void *data, u32_t size);
-typedef u32_t (* shp_write_t)(const void *data, u32_t size);
+typedef void (* slip_handler_t)(struct slip_socket *socket, const void *data, u32_t size);
+typedef u32_t (* slip_read_t)(void *data, u32_t size);
+typedef u32_t (* slip_write_t)(const void *data, u32_t size);
 
-enum shp_state
+struct slip_chunk
 {
-    SHP_IDLE,
-    SHP_EVEN_DIGIT,
-    SHP_ODD_DIGIT,
-    SHP_CARRIAGE_RETURN
-};
-
-struct shp_chunk
-{
-    u8_t data[SHP_CHUNK_SIZE];
+    u8_t data[SLIP_CHUNK_SIZE];
     u8_t *head;
     u8_t *tail;
 };
 
-struct shp_socket
+struct slip_socket
 {
-    shp_handler_t handler;
-    shp_read_t read;
-    shp_write_t write;
-    struct shp_chunk read_chunk;
-    struct shp_chunk write_chunk;
-    enum shp_state state;
-    u8_t data[SHP_DATA_SIZE];
+    slip_handler_t handler;
+    slip_read_t read;
+    slip_write_t write;
+
+    struct slip_chunk read_chunk;
+    struct slip_chunk write_chunk;
+
     u32_t size;
+    u8_t data[SLIP_DATA_SIZE];
 };
 
-void bind_shp_socket(struct shp_socket *socket, shp_handler_t handler, shp_read_t read, shp_write_t write);
-void poll_shp_socket(struct shp_socket *socket);
+void bind_slip_socket(struct slip_socket *socket, slip_handler_t handler, slip_read_t read, slip_write_t write);
+void poll_slip_socket(struct slip_socket *socket);
 
-void send_shp_response(struct shp_socket *socket, const void *data, u32_t size);
+void send_slip_response(struct slip_socket *socket, const void *data, u32_t size);
 
 #endif

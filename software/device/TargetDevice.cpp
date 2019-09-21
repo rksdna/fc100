@@ -1,147 +1,19 @@
 #include <QDebug>
 #include <QTimer>
+#include <QDataStream>
 #include <QSerialPort>
-#include <QSerialPortInfo>
-#include "Regs.h"
 #include "TargetDevice.h"
 #include "DeviceChannel.h"
+#include "DeviceProcessor.h"
 #include "DeviceReference.h"
 #include "DeviceController.h"
-#include "DeviceProcessor.h"
-#include "DeviceChannel.h"
-#include "DeviceReference.h"
-
-static quint8 dac(int threshold)
-{
-    return 255 - threshold;
-}
-
-static quint8 hpf1(DeviceChannel::Coupling coupling)
-{
-    switch (coupling)
-    {
-    case DeviceChannel::DcCoupling:
-        return 0;
-
-    case DeviceChannel::AcCoupling:
-        return COUNTER_CTRL_HPF_CH1;
-
-    default:
-        break;
-    }
-
-    return 0;
-}
-
-static quint8 hpf2(DeviceChannel::Coupling coupling)
-{
-    switch (coupling)
-    {
-    case DeviceChannel::DcCoupling:
-        return 0;
-
-    case DeviceChannel::AcCoupling:
-        return COUNTER_CTRL_HPF_CH2;
-
-    default:
-        break;
-    }
-
-    return 0;
-}
-
-static quint8 start1(DeviceController::Event event)
-{
-    switch (event)
-    {
-    case DeviceController::Ch1RisingEdgeEvent:
-        return COUNTER_MODE_STRT_CH1R;
-
-    case DeviceController::Ch1FallingEdgeEvent:
-        return COUNTER_MODE_STRT_CH1F;
-
-    case DeviceController::Ch2RisingEdgeEvent:
-        return COUNTER_MODE_STRT_CH2R;
-
-    case DeviceController::Ch2FallingEdgeEvent:
-        return COUNTER_MODE_STRT_CH2F;
-
-    default:
-        break;
-    }
-
-    return 0;
-}
-
-static quint8 stop1(DeviceController::Event event)
-{
-    switch (event)
-    {
-    case DeviceController::Ch1RisingEdgeEvent:
-        return COUNTER_MODE_STOP_CH1R;
-
-    case DeviceController::Ch1FallingEdgeEvent:
-        return COUNTER_MODE_STOP_CH1F;
-
-    case DeviceController::Ch2RisingEdgeEvent:
-        return COUNTER_MODE_STOP_CH2R;
-
-    case DeviceController::Ch2FallingEdgeEvent:
-        return COUNTER_MODE_STOP_CH2F;
-
-    default:
-        break;
-    }
-
-    return 0;
-}
-
-static quint8 count(DeviceController::Event event)
-{
-    switch (event)
-    {
-    case DeviceController::Ch1RisingEdgeEvent:
-        return COUNTER_MODE_CNT_CH1R;
-
-    case DeviceController::Ch1FallingEdgeEvent:
-        return COUNTER_MODE_CNT_CH1F;
-
-    case DeviceController::Ch2RisingEdgeEvent:
-        return COUNTER_MODE_CNT_CH2R;
-
-    case DeviceController::Ch2FallingEdgeEvent:
-        return COUNTER_MODE_CNT_CH2F;
-
-    default:
-        break;
-    }
-
-    return 0;
-}
-
-static quint8 ref(DeviceReference::Source source)
-{
-    switch (source)
-    {
-    case DeviceReference::InternalSource:
-        return COUNTER_MODE_TMR_CLK;
-
-    case DeviceReference::ExternalSource:
-        return COUNTER_MODE_TMR_REF;
-
-    default:
-        break;
-    }
-
-    return 0;
-}
 
 TargetDevice::TargetDevice(QObject *parent)
     : Device(parent),
       m_timer(new QTimer(this)),
       m_port(new QSerialPort(this)),
-      m_state(IdleState),
-      m_measure(false)
+      m_escape(false),
+      m_req(false)
 {
     m_timer->setSingleShot(true);
     connect(m_timer, &QTimer::timeout, this, &TargetDevice::reconnect);
@@ -149,16 +21,17 @@ TargetDevice::TargetDevice(QObject *parent)
 }
 
 void TargetDevice::reconnect()
-{
+{        
     setReady(false);
 
     if (m_port->isOpen())
         m_port->close();
 
+    m_escape = false;
     m_port->setPortName(internalPortName());
     if (m_port->open(QSerialPort::ReadWrite))
     {
-        write(m_regs.serialize());
+        process(QByteArray());
     }
     else
         m_timer->start(500);
@@ -166,266 +39,150 @@ void TargetDevice::reconnect()
 
 void TargetDevice::restart()
 {
-    m_state = IdleState;
-    m_measure = true;
+    m_req = true;
 }
 
 bool TargetDevice::isStarted() const
 {
-    return m_state != IdleState;
+    return m_req;
 }
 
-TargetDevice::State TargetDevice::proc(State state, int elapsed)
+void TargetDevice::process(const QByteArray &data)
 {
-    setReady(m_regs.id == 0xAA);
+    quint32 status;
+    quint32 counter1;
+    quint32 timer1;
+    quint32 counter2;
+    quint32 timer2;
+    quint8 tac_start1;
+    quint8 tac_stop1;
+    quint8 tac_start2;
+    quint8 tac_stop2;
+    quint8 fs_start;
+    quint8 fs_stop;
+    quint8 zs_start;
+    quint8 zs_stop;
 
-    const bool is_started = m_regs.ack & COUNTER_ACK_STRT;
-    const bool is_stopped = m_regs.ack & COUNTER_ACK_STOP;
-    const bool is_ready = is_started && is_stopped;
+    QDataStream replyStream(data);
+    replyStream.setByteOrder(QDataStream::LittleEndian);
+    replyStream >> status;
+    replyStream >> counter1;
+    replyStream >> timer1;
+    replyStream >> counter2;
+    replyStream >> timer2;
+    replyStream >> tac_start1;
+    replyStream >> tac_stop1;
+    replyStream >> tac_start2;
+    replyStream >> tac_stop2;
+    replyStream >> fs_start;
+    replyStream >> fs_stop;
+    replyStream >> zs_start;
+    replyStream >> zs_stop;
 
-    switch (state)
+    if (replyStream.atEnd() && replyStream.status() == QDataStream::Ok)
     {
-    case IdleState:
-        m_regs.dac1 = dac(channel1()->threshold());
-        m_regs.dac2 = dac(channel2()->threshold());
-        m_regs.mode = ref(reference()->source());
-        m_regs.ctrl =
-                hpf1(channel1()->coupling()) |
-                hpf2(channel2()->coupling()) |
-                COUNTER_CTRL_CLR;
-
-        if (m_measure)
-        {
-
-
-
-            m_measure = controller()->trigger() == DeviceController::AutoTrigger;
-            return CalibrateFullScaleState;
-        }
-
-        break;
-
-    case CalibrateFullScaleState:
-        if (is_ready)
-        {
-            m_regs.ctrl |= COUNTER_CTRL_CLR;
-            m_regs.ctrl &= ~COUNTER_CTRL_CLB_FS;
-
-            m_tac_start = m_regs.tac_strt;
-            m_tac_stop = m_regs.tac_stop;
-            return CalibrateZeroScaleState;
-        }
-
-        m_regs.ctrl &= ~COUNTER_CTRL_CLR;
-        m_regs.ctrl |= COUNTER_CTRL_CLB_FS;
-        break;
-
-    case CalibrateZeroScaleState:
-        if (is_ready)
-        {
-            m_regs.ctrl |= COUNTER_CTRL_CLR;
-            m_regs.ctrl &= ~COUNTER_CTRL_CLB_ZS;
-
-            m_tac_start -= m_regs.tac_strt;
-            m_tac_stop -= m_regs.tac_stop;
-
-            return RunState;
-        }
-
-        m_regs.ctrl &= ~COUNTER_CTRL_CLR;
-        m_regs.ctrl |= COUNTER_CTRL_CLB_ZS;
-        break;
-
-    case RunState:
-        m_regs.ctrl &= ~COUNTER_CTRL_CLR;
-
-        m_mode = controller()->mode();
-        m_duration = controller()->duration();
-        switch (m_mode)
-        {
-        case DeviceController::TimeMode:
-            m_regs.mode |= start1(controller()->startEvent());
-            m_regs.mode |= stop1(controller()->stopEvent());
-            m_regs.mode |= count(controller()->stopEvent());
-            m_regs.ctrl |= COUNTER_CTRL_STRT | COUNTER_CTRL_STOP;
-            return Burst2State;
-
-        case DeviceController::FrequencyMode:
-        case DeviceController::PeriodMode:
-        case DeviceController::CountMode:
-            m_regs.mode |= start1(controller()->countEvent());
-            m_regs.mode |= stop1(controller()->countEvent());
-            m_regs.mode |= count(controller()->countEvent());
-            m_regs.ctrl |= COUNTER_CTRL_STRT;
-            return Burst2State;
-
-        case DeviceController::DutyMode:
-            m_regs.mode |= start1(controller()->countEvent());
-            m_regs.mode |= stop1(controller()->countEvent());
-            m_regs.mode |= count(controller()->countEvent());
-            m_regs.ctrl |= COUNTER_CTRL_STRT | COUNTER_CTRL_STOP;
-            return Ps2State;
-
-        case DeviceController::GateFrequencyMode:
-        case DeviceController::GatePeriodMode:
-        case DeviceController::GateCountMode:
-            m_regs.mode |= start1(controller()->startEvent());
-            m_regs.mode |= stop1(controller()->stopEvent());
-            m_regs.mode |= count(controller()->countEvent());
-            m_regs.ctrl &= ~COUNTER_CTRL_CLR;
-            m_regs.ctrl |= COUNTER_CTRL_STRT | COUNTER_CTRL_STOP;
-            return Burst2State;
-
-        default:
-            break;
-        }
-
-        break;
-
-    case Ps2State:
-        if (is_started)
-        {
-            m_regs.ctrl |= COUNTER_CTRL_TEST;
-            return Ps3State;
-        }
-
-        if (elapsed > m_duration)
-            return DropState;
-
-        break;
-
-    case Ps3State:
-        if (is_ready)
-        {
-            const qreal start = qreal(m_regs.tac_strt) / m_tac_start;
-            const qreal stop = qreal(m_regs.tac_stop) / m_tac_stop;
-            const qreal timer = qreal(m_regs.tmr) + start - stop;
-
-            m_ti = timer;
-
-            m_regs.mode ^= COUNTER_MODE_STOP_0;
-            m_regs.mode ^= COUNTER_MODE_CNT_0;
-            m_regs.ctrl |= COUNTER_CTRL_CLR;
-            m_regs.ctrl &= ~COUNTER_CTRL_TEST;
-            m_regs.ctrl &= ~COUNTER_CTRL_STOP;
-            m_regs.ctrl &= ~COUNTER_CTRL_STRT;
-            return Ps4State;
-        }
-
-        if (elapsed > m_duration)
-            return DropState;
-
-        break;
-
-    case Ps4State:
-        m_regs.ctrl &= ~COUNTER_CTRL_CLR;
-        m_regs.ctrl |= COUNTER_CTRL_STRT | COUNTER_CTRL_STOP;
-        return Burst2State;
-
-    case Burst2State:
-        if (is_started)
-        {
-            m_regs.ctrl |= COUNTER_CTRL_TEST;
-            return Burst3State;
-        }
-
-        if (elapsed > m_duration)
-            return DropState;
-
-        break;
-
-    case Burst3State:
-        if (elapsed > m_duration)
-        {
-            m_regs.ctrl |= COUNTER_CTRL_STOP;
-            return Burst4State;
-        }
-
-        break;
-
-    case Burst4State:
-        if (is_ready)
-        {
-            const qreal clock = reference()->frequency();
-            const qreal counter = m_regs.cnt;
-            const qreal start = qreal(m_regs.tac_strt) / m_tac_start;
-            const qreal stop = qreal(m_regs.tac_stop) / m_tac_stop;
-            const qreal timer = qreal(m_regs.tmr) + start - stop;
-
-            switch (m_mode)
-            {
-            case DeviceProcessor::NoType:
-                processor()->take(m_type, counter, timer / clock);
-                break;
-
-            case DeviceProcessor::DutyType:
-                processor()->take(m_type, 100.0 * timer / m_ti, m_ti / clock);
-                break;
-
-            case DeviceProcessor::TimeType:
-                processor()->take(m_type, timer / counter / clock, timer / clock);
-                break;
-
-            case DeviceProcessor::FrequencyType:
-                processor()->take(m_type, counter / timer * clock, timer / clock);
-                break;
-
-            default:
-                processor()->take(m_type, qQNaN(), timer / clock);
-                break;
-            }
-
-            return IdleState;
-        }
-
-        if (elapsed > m_duration)
-            return DropState;
-
-        break;
-
-    case DropState:
-        return IdleState;
-
-    default:
-        break;
+        setReady(true);
     }
 
-    return state;
-}
+    QByteArray request;
+    QDataStream requestStream(&request, QIODevice::WriteOnly);
+    requestStream.setByteOrder(QDataStream::LittleEndian);
 
-void TargetDevice::write(const QByteArray &data)
-{
-    QByteArray frame;
-    frame.append(data);
-    frame.append(checksum(data));
+    requestStream << quint32(0);
+    requestStream << quint32(controller()->duration());
+    requestStream << quint8(channel1()->threshold());
+    requestStream << quint8(channel2()->threshold());
+    requestStream << quint8(channel1()->coupling());
+    requestStream << quint8(channel2()->coupling());
+    requestStream << quint8(reference()->source());
+    requestStream << quint8(controller()->startEvent());
+    requestStream << quint8(controller()->stopEvent());
+    requestStream << quint8(controller()->countEvent());
 
-    m_port->write(":" + frame.toHex() + "\r\n");
-    m_timer->start(250);
+    write(request);
 }
 
 void TargetDevice::read()
 {
-    while (m_port->canReadLine())
-    {
-        const QByteArray line = m_port->readLine();
-        if (line.startsWith(':') && line.endsWith("\r\n"))
-        {
-            QByteArray data = QByteArray::fromHex(line);
-            if (data.size() > 1 && checksum(data) == 0)
-            {
-                data.chop(1);
-                m_regs.deserialize(data);
-                const State state = proc(m_state, m_time.elapsed());
-                if (state != m_state)
-                {
-                    m_state = state;
-                    m_time.restart();
-                }
+    const QByteArray data = m_port->readAll();
+    //qDebug() << "rx" << data.toHex();
+    foreach (char ch, data)
+        get(ch);
+}
 
-                write(m_regs.serialize());
-            }
+void TargetDevice::write(const QByteArray &data)
+{
+    foreach (char ch, data)
+        put(ch);
+
+    put(checksum(data));
+    m_outbox.append(0xC0);
+    flush();
+}
+
+void TargetDevice::get(quint8 data)
+{
+    switch (data)
+    {
+    case 0xC0:
+        if (m_inbox.size() > 1 && checksum(m_inbox) == 0)
+        {
+            m_inbox.chop(1);
+            process(m_inbox);
         }
+
+        m_inbox.clear();
+        m_escape = false;
+        break;
+
+    case 0xDB:
+        m_escape = true;
+        break;
+
+    case 0xDC:
+        m_inbox.append(m_escape ? 0xC0 : 0xDC);
+        m_escape = false;
+        break;
+
+    case 0xDD:
+        m_inbox.append(m_escape ? 0xDB : 0xDD);
+        m_escape = false;
+        break;
+
+    default:
+        m_inbox.append(data);
+        m_escape = false;
+        break;
     }
+}
+
+void TargetDevice::put(quint8 data)
+{
+    switch (data)
+    {
+    case 0xC0:
+        m_outbox.append(0xDB);
+        m_outbox.append(0xDC);
+        break;
+
+    case 0xDB:
+        m_outbox.append(0xDB);
+        m_outbox.append(0xDD);
+        break;
+
+    default:
+        m_outbox.append(data);
+        break;
+    }
+}
+
+void TargetDevice::flush()
+{
+    //qDebug() << "tx" << m_outbox.toHex();
+
+    m_port->write(m_outbox);
+    m_outbox.clear();
+    m_timer->start(250);
 }
 
 quint8 TargetDevice::checksum(const QByteArray &data)

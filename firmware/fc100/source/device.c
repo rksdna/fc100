@@ -150,8 +150,9 @@ void startup_device(void)
 
     start_timers_clock(48000);
 
-    debug("hello\n");
-    debug("id: %*m flash: %dKbytes\n", sizeof(DES->ID), DES->ID, DES->FSIZE & DES_FSIZE_FSIZE);
+    debug("device started\n");
+    debug("- id: %*m\n", sizeof(DES->ID), DES->ID);
+    debug("- flash: %dKbytes\n", DES->FSIZE & DES_FSIZE_FSIZE);
 }
 
 void irq12_handler(void)

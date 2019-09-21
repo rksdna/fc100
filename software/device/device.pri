@@ -12,8 +12,7 @@ SOURCES += \
     $$PWD/DeviceFormatBox.cpp \
     $$PWD/DeviceProcessingWidget.cpp \
     $$PWD/DeviceHardwareWidget.cpp \
-    $$PWD/TargetDevice.cpp \
-    $$PWD/Regs.cpp
+    $$PWD/TargetDevice.cpp
 
 HEADERS += \
     $$PWD/Device.h \
@@ -27,5 +26,4 @@ HEADERS += \
     $$PWD/DeviceFormatBox.h \
     $$PWD/DeviceProcessingWidget.h \
     $$PWD/DeviceHardwareWidget.h \
-    $$PWD/TargetDevice.h \
-    $$PWD/Regs.h
+    $$PWD/TargetDevice.h

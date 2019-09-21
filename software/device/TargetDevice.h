@@ -4,7 +4,6 @@
 #include <QTime>
 #include "Device.h"
 #include "DeviceController.h"
-#include "Regs.h"
 
 class QTimer;
 class QSerialPort;
@@ -17,48 +16,34 @@ public:
     explicit TargetDevice(QObject *parent = 0);
 
     void reconnect();
+    bool isConnected() const;
 
     void restart();
     bool isStarted() const;
 
 private:
-    enum State
-    {
-        IdleState,
-        CalibrateFullScaleState,
-        CalibrateZeroScaleState,
-        RunState,
+    void process(const QByteArray &data);
 
-
-        Ps2State,
-        Ps3State,
-        Ps4State,
-        Burst2State,
-        Burst3State,
-        Burst4State,
-        DropState,
-
-    };
-
-private:
-    State proc(State state, int elapsed);
-    void write(const QByteArray &data);
     void read();
+    void write(const QByteArray &data);
+
+    void get(quint8 data);
+
+    void put32(quint32 data);
+    void put(quint8 data);
+    void flush();
+
     quint8 checksum(const QByteArray &data);
 
 private:
     QTimer * const m_timer;
     QSerialPort * const m_port;
-    State m_state;
-    QTime m_time;
-    Regs m_regs;
-    bool m_measure;
-    int m_tac_start;
-    int m_tac_stop;
-    int m_duration;
-    qreal m_ti;
-    //DeviceProcessor::Type m_type;
-    DeviceController::Mode m_mode;
+
+    bool m_req;
+
+    QByteArray m_inbox;
+    bool m_escape;
+    QByteArray m_outbox;
 };
 
 #endif // TARGETDEVICE_H

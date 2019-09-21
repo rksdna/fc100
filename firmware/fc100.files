@@ -2,10 +2,10 @@ cdc/include/cdc.h
 cdc/source/cdc.c
 fc100/include/counter.h
 fc100/include/device.h
-fc100/include/shp.h
+fc100/include/slip.h
 fc100/source/device.c
 fc100/source/main.c
-fc100/source/shp.c
+fc100/source/slip.c
 kernel/include/debug.h
 kernel/include/stm32/adc.h
 kernel/include/stm32/can.h
