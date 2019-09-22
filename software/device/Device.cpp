@@ -277,7 +277,7 @@ void Device::process(const QByteArray &replyData)
             case DeviceController::TimeMode:
             case DeviceController::PeriodMode:
             case DeviceController::GatePeriodMode:
-                m_processor->take(DeviceProcessor::NoType, qQNaN(), qQNaN());
+                m_processor->take(DeviceProcessor::TimeType, qQNaN(), qQNaN());
                 break;
 
             case DeviceController::DutyMode:
