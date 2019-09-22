@@ -5,7 +5,9 @@
 #include <QSettings>
 #include <QMessageBox>
 #include <QApplication>
+#include <QStandardPaths>
 #include "Device.h"
+#include "Settings.h"
 #include "MainWindow.h"
 #include "DeviceWidget.h"
 #include "PreferencesDialog.h"
@@ -33,7 +35,8 @@ MainWindow::MainWindow(QWidget *parent)
     QAction * const aboutAction = helpMenu->addAction(tr("About..."));
     connect(aboutAction, &QAction::triggered, this, &MainWindow::about);
 
-    QSettings settings;
+    QSettings settings(settingsPath(), QSettings::IniFormat);
+
     settings.beginGroup("MainWindow");
     restoreState(settings.value("State").toByteArray());
     restoreGeometry(settings.value("Geometry").toByteArray());
@@ -48,7 +51,8 @@ MainWindow::MainWindow(QWidget *parent)
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-    QSettings settings;
+    QSettings settings(settingsPath(), QSettings::IniFormat);
+
     settings.beginGroup("MainWindow");
     settings.setValue("State", saveState());
     settings.setValue("Geometry", saveGeometry());

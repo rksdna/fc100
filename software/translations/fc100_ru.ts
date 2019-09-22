@@ -126,6 +126,16 @@
         <source>Colors</source>
         <translation>Цвета</translation>
     </message>
+    <message>
+        <location filename="../device/DevicePreferencesWidget.cpp" line="30"/>
+        <source>Display</source>
+        <translation>Дисплей</translation>
+    </message>
+    <message>
+        <location filename="../device/DevicePreferencesWidget.cpp" line="31"/>
+        <source>Control</source>
+        <translation>Кнопки</translation>
+    </message>
 </context>
 <context>
     <name>DeviceProcessingWidget</name>
@@ -550,32 +560,32 @@
 <context>
     <name>MainWindow</name>
     <message>
-        <location filename="../MainWindow.cpp" line="19"/>
+        <location filename="../MainWindow.cpp" line="21"/>
         <source>Device</source>
         <translation>Устройство</translation>
     </message>
     <message>
-        <location filename="../MainWindow.cpp" line="21"/>
+        <location filename="../MainWindow.cpp" line="23"/>
         <source>Preferences...</source>
         <translation>Настройки...</translation>
     </message>
     <message>
-        <location filename="../MainWindow.cpp" line="27"/>
+        <location filename="../MainWindow.cpp" line="29"/>
         <source>Quit</source>
         <translation>Выход</translation>
     </message>
     <message>
-        <location filename="../MainWindow.cpp" line="31"/>
+        <location filename="../MainWindow.cpp" line="33"/>
         <source>Help</source>
         <translation>Справка</translation>
     </message>
     <message>
-        <location filename="../MainWindow.cpp" line="33"/>
+        <location filename="../MainWindow.cpp" line="35"/>
         <source>About...</source>
         <translation>О программе...</translation>
     </message>
     <message>
-        <location filename="../MainWindow.cpp" line="74"/>
+        <location filename="../MainWindow.cpp" line="78"/>
         <source>&lt;b&gt;%1&lt;/b&gt;&lt;br&gt;%2&lt;br&gt;&lt;br&gt;Copyright © %3 rksdna, murych&lt;br&gt;The program is provided under MIT license&lt;br&gt;</source>
         <translation>&lt;b&gt;%1&lt;/b&gt;&lt;br&gt;%2&lt;br&gt;&lt;br&gt;Авторское право © %3 rksdna, murych&lt;br&gt;Программа предоставляется на условиях лицензии MIT&lt;br&gt;</translation>
     </message>
@@ -583,17 +593,17 @@
 <context>
     <name>PreferencesDialog</name>
     <message>
-        <location filename="../PreferencesDialog.cpp" line="24"/>
+        <location filename="../PreferencesDialog.cpp" line="25"/>
         <source>Hardware</source>
         <translation>Аппаратура</translation>
     </message>
     <message>
-        <location filename="../PreferencesDialog.cpp" line="25"/>
+        <location filename="../PreferencesDialog.cpp" line="26"/>
         <source>Processing</source>
         <translation>Обработка</translation>
     </message>
     <message>
-        <location filename="../PreferencesDialog.cpp" line="26"/>
+        <location filename="../PreferencesDialog.cpp" line="27"/>
         <source>Preferences</source>
         <translation>Настройки</translation>
     </message>

@@ -41,8 +41,6 @@ int main(int argc, char *argv[])
     appTranslator.load(QStandardPaths::locate(QStandardPaths::AppDataLocation, QString("fc100_%1.qm").arg(locale)));
     application.installTranslator(&appTranslator);
 
-    qDebug() << QStandardPaths::standardLocations(QStandardPaths::AppDataLocation);
-
     MainWindow window;
     window.show();
 

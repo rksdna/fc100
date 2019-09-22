@@ -3,6 +3,7 @@
 #include <QBoxLayout>
 #include <QDialogButtonBox>
 #include "Device.h"
+#include "Settings.h"
 #include "PreferencesDialog.h"
 #include "DeviceProcessingWidget.h"
 #include "DeviceHardwareWidget.h"
@@ -33,7 +34,7 @@ PreferencesDialog::PreferencesDialog(Device *device, QWidget *parent)
     layout->addWidget(tabWidget);
     layout->addWidget(buttonBox);
 
-    QSettings settings;
+    QSettings settings(settingsPath(), QSettings::IniFormat);
     settings.beginGroup("DeviceDialog");
     restoreGeometry(settings.value("Geometry").toByteArray());
     settings.endGroup();
@@ -41,7 +42,7 @@ PreferencesDialog::PreferencesDialog(Device *device, QWidget *parent)
 
 void PreferencesDialog::hideEvent(QHideEvent *event)
 {
-    QSettings settings;
+    QSettings settings(settingsPath(), QSettings::IniFormat);
     settings.beginGroup("DeviceDialog");
     settings.setValue("Geometry", saveGeometry());
     settings.endGroup();
