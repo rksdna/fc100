@@ -177,24 +177,23 @@ static const u8_t language_descriptor[] =
 
 static const u8_t manufacturer_descriptor[] =
 {
-    0x0C, // bLenght
+    0x0A, // bLenght
     0x03, // bDescriptorType
-    'S', 0x00,
-    'w', 0x00,
-    'a', 0x00,
-    'm', 0x00,
-    'p', 0x00,
+    'n', 0x00,
+    'o', 0x00,
+    'n', 0x00,
+    'e', 0x00,
 };
 
 static const u8_t product_descriptor[] =
 {
     0x0C, // bLenght
     0x03, // bDescriptorType
-    'S', 0x00,
-    'w', 0x00,
-    'a', 0x00,
-    'm', 0x00,
-    'p', 0x00,
+    'f', 0x00,
+    'c', 0x00,
+    '1', 0x00,
+    '0', 0x00,
+    '0', 0x00
 };
 
 static u16_t usb_connected;

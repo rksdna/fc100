@@ -30,8 +30,8 @@
 #include "device.h"
 #include "slip.h"
 
-#define V_ON 475
-#define V_OFF 465
+#define V_OFF 475
+#define V_ON 485
 
 enum state
 {
@@ -100,34 +100,6 @@ struct variables
 static struct parameters params;
 static struct variables vars;
 static u32_t duration;
-
-static enum state command(enum state state)
-{
-    switch (params.command)
-    {
-    case START_TIME_COMMAND:
-        state = START_TIME_STATE;
-        break;
-
-    case START_FREQUENCY_COMMAND:
-        state = START_FREQUENCY_STATE;
-        break;
-
-    case START_DUTY_COMMAND:
-        state = START_DUTY_STATE;
-        break;
-
-    case START_GATED_FREQUENCY_COMMAND:
-        state = START_GATED_FREQUENCY_STATE;
-        break;
-
-    default:
-        break;
-    }
-
-    params.command = POLL_COMMAND;
-    return state;
-}
 
 static enum state control(enum state state, u32_t elapsed, struct counter *regs)
 {
@@ -240,7 +212,7 @@ static enum state control(enum state state, u32_t elapsed, struct counter *regs)
     case DUTY_2_STATE:
         if (regs->ack & COUNTER_ACK_STOP)
         {
-            debug("B %d, %d, %d, %d\n", regs->tac_strt, regs->tac_stop, regs->cnt, regs->tmr);
+            debug("aux measure %d, %d, %d, %d\n", regs->tac_strt, regs->tac_stop, regs->cnt, regs->tmr);
             vars.counter2 = regs->cnt;
             vars.timer2 = regs->tmr;
             vars.tac_start2 = regs->tac_strt;
@@ -287,7 +259,7 @@ static enum state control(enum state state, u32_t elapsed, struct counter *regs)
     case BUSY_3_STATE:
         if (regs->ack & COUNTER_ACK_STOP)
         {
-            debug("R %d, %d, %d, %d\n", regs->tac_strt, regs->tac_stop, regs->cnt, regs->tmr);
+            debug("measure %d, %d, %d, %d\n", regs->tac_strt, regs->tac_stop, regs->cnt, regs->tmr);
             vars.counter1 = regs->cnt;
             vars.timer1 = regs->tmr;
             vars.tac_start1 = regs->tac_strt;
@@ -311,7 +283,7 @@ static enum state control(enum state state, u32_t elapsed, struct counter *regs)
         regs->mode &= ~COUNTER_MODE_CLR;
         if (regs->ack & COUNTER_ACK_STOP)
         {
-            debug("FS %d, %d\n", regs->tac_strt, regs->tac_stop);
+            debug("full scale %d, %d\n", regs->tac_strt, regs->tac_stop);
             vars.fs_start = regs->tac_strt;
             vars.fs_stop = regs->tac_stop;
 
@@ -333,7 +305,7 @@ static enum state control(enum state state, u32_t elapsed, struct counter *regs)
         regs->mode &= ~COUNTER_MODE_CLR;
         if (regs->ack & COUNTER_ACK_STOP)
         {
-            debug("ZS %d, %d\n", regs->tac_strt, regs->tac_stop);
+            debug("zero scale %d, %d\n", regs->tac_strt, regs->tac_stop);
             vars.zs_start = regs->tac_strt;
             vars.zs_stop = regs->tac_stop;
 
@@ -359,41 +331,7 @@ static enum state control(enum state state, u32_t elapsed, struct counter *regs)
     return state;
 }
 
-static void control_handler(void *arg)
-{
-    WASTE(arg);
-
-    struct timer tm;
-    struct counter regs;
-    static enum state state = IDLE_STATE;
-
-    sleep(250);
-    if (get_device_voltage() > V_ON)
-    {
-        debug("counter started\n");
-        startup_device_counter(250);
-        start_timer(&tm, -1);
-        while (get_device_voltage() > V_OFF)
-        {
-            const enum state next = control(command(state), tm.ticks, &regs);
-            if (next != state)
-            {
-                state = next;
-                stop_timer(&tm);
-                start_timer(&tm, -1);
-            }
-
-            write_device_counter(COUNTER_DAC1, &regs.dac1, 4);
-            read_device_counter(COUNTER_ID, &regs.id, 12);
-        }
-
-        stop_timer(&tm);
-        shutdown_device_counter();
-        debug("counter stopped\n");
-    }
-}
-
-static void socket_handler(struct slip_socket *socket, const void *data, u32_t size)
+static void slip_socket_handler(struct slip_socket *socket, const void *data, u32_t size)
 {
     if (size == sizeof(struct parameters))
     {
@@ -405,24 +343,112 @@ static void socket_handler(struct slip_socket *socket, const void *data, u32_t s
     }
 }
 
-void main(void)
+static void slip_handler(void *arg)
 {
-    static struct thread control_thread;
-    static u8_t control_stack[256];
-    startup_device();
-    start_thread(&control_thread, (function_t)control_handler, 0, control_stack, sizeof(control_stack));
-    start_cdc_service();
+    WASTE(arg);
+
     set_cdc_timeout(10);
-    while (1)
+    start_cdc_service();
+    debug("usb started\n");
+    debug("- supply: %2.dV\n", get_device_voltage());
+
+    while (get_device_voltage() > V_OFF)
     {
         struct slip_socket socket;
-        bind_slip_socket(&socket, socket_handler, read_cdc_data, write_cdc_data);
+        bind_slip_socket(&socket, slip_socket_handler, read_cdc_data, write_cdc_data);
 
         yield_thread((condition_t)has_cdc_connection, 0);
-        debug("cdc connected\n");
+        debug("usb connected\n");
         while (has_cdc_connection())
             poll_slip_socket(&socket);
 
-        debug("cdc disconnected\n");
+        debug("usb disconnected\n");
     }
+
+    stop_cdc_service();
+    debug("usb stopped\n");
+    debug("- supply: %2.dV\n", get_device_voltage());
+}
+
+static enum state slip_command(enum state state)
+{
+    switch (params.command)
+    {
+    case START_TIME_COMMAND:
+        debug("time started\n");
+        state = START_TIME_STATE;
+        break;
+
+    case START_FREQUENCY_COMMAND:
+        debug("frequency started\n");
+        state = START_FREQUENCY_STATE;
+        break;
+
+    case START_DUTY_COMMAND:
+        debug("duty started\n");
+        state = START_DUTY_STATE;
+        break;
+
+    case START_GATED_FREQUENCY_COMMAND:
+        debug("gate frequency started\n");
+        state = START_GATED_FREQUENCY_STATE;
+        break;
+
+    default:
+        break;
+    }
+
+    params.command = POLL_COMMAND;
+    return state;
+}
+
+static void counter_handler(void *arg)
+{
+    WASTE(arg);
+
+    struct timer tm;
+    struct counter regs;
+    enum state state = IDLE_STATE;
+
+    startup_device_counter(250);
+    start_timer(&tm, -1);
+    debug("counter started\n");
+    debug("- supply: %2.dV\n", get_device_voltage());
+
+    while (get_device_voltage() > V_OFF)
+    {
+        const enum state next = control(slip_command(state), tm.ticks, &regs);
+        if (next != state)
+        {
+            state = next;
+            stop_timer(&tm);
+            start_timer(&tm, -1);
+        }
+
+        write_device_counter(COUNTER_DAC1, &regs.dac1, 4);
+        read_device_counter(COUNTER_ID, &regs.id, 12);
+    }
+
+    stop_timer(&tm);
+    shutdown_device_counter();
+    debug("counter stopped\n");
+    debug("- supply: %2.dV\n", get_device_voltage());
+}
+
+void main(void)
+{
+    static struct thread slip_thread;
+    static u8_t slip_stack[512];
+
+    static struct thread counter_thread;
+    static u8_t counter_stack[512];
+
+    startup_device();
+    while (get_device_voltage() < V_ON)
+        continue;
+
+    start_thread(&slip_thread, (function_t)slip_handler, 0, slip_stack, sizeof(slip_stack));
+    start_thread(&counter_thread, (function_t)counter_handler, 0, counter_stack, sizeof(counter_stack));
+    debug("threads started\n");
+    debug("- supply: %2.dV\n", get_device_voltage());
 }

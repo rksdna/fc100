@@ -24,7 +24,7 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     setEnabled(device->isReady());
     connect(device, &Device::readyChanged, this, &DeviceWidget::setEnabled);
 
-    CustomOptionButton * const ch1CouplingButton = new CustomOptionButton(tr("INPUT.1"));
+    CustomOptionButton * const ch1CouplingButton = new CustomOptionButton(tr("COUPLING.B"));
     ch1CouplingButton->addValueOption(tr("DC"), DeviceChannel::DcCoupling);
     ch1CouplingButton->addValueOption(tr("AC"), DeviceChannel::AcCoupling);
     ch1CouplingButton->setValue(channel1->coupling());
@@ -33,7 +33,7 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     connect(ch1CouplingButton, reinterpret_cast<void (CustomOptionButton::*)(DeviceChannel::Coupling)>(&CustomOptionButton::valueChanged), channel1, &DeviceChannel::setCoupling);
     connect(channel1, &DeviceChannel::couplingChanged, ch1CouplingButton, &CustomOptionButton::setValue);
 
-    CustomOptionButton * const ch1ProbeButton = new CustomOptionButton(tr("PROBE.1"));
+    CustomOptionButton * const ch1ProbeButton = new CustomOptionButton(tr("PROBE.B"));
     ch1ProbeButton->addValueOption(tr("1:1"), DeviceChannel::x1Probe);
     ch1ProbeButton->addValueOption(tr("1:10"), DeviceChannel::x10Probe);
     ch1ProbeButton->addValueOption(tr("1:100"), DeviceChannel::x100Probe);
@@ -43,7 +43,7 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     connect(ch1ProbeButton, reinterpret_cast<void (CustomOptionButton::*)(DeviceChannel::Probe)>(&CustomOptionButton::valueChanged), channel1, &DeviceChannel::setProbe);
     connect(channel1, &DeviceChannel::probeChanged, ch1ProbeButton, &CustomOptionButton::setValue);
 
-    CustomDial * const ch1ThresholdDial = new CustomDial(tr("LEVEL.1"));
+    CustomDial * const ch1ThresholdDial = new CustomDial(tr("LEVEL.B"));
     ch1ThresholdDial->setRange(DeviceChannel::minThreshold(), DeviceChannel::maxThreshold());
     ch1ThresholdDial->setValue(channel1->threshold());
     ch1ThresholdDial->setText(channel1->text());
@@ -53,7 +53,7 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     connect(channel1, &DeviceChannel::thresholdChanged, ch1ThresholdDial, &CustomDial::setValue);
     connect(channel1, &DeviceChannel::textChanged, ch1ThresholdDial, &CustomDial::setText);
 
-    CustomOptionButton * const ch2CouplingButton = new CustomOptionButton(tr("INPUT.2"));
+    CustomOptionButton * const ch2CouplingButton = new CustomOptionButton(tr("COUPLING.A"));
     ch2CouplingButton->addValueOption(tr("DC"), DeviceChannel::DcCoupling);
     ch2CouplingButton->addValueOption(tr("AC"), DeviceChannel::AcCoupling);
     ch2CouplingButton->setValue(channel2->coupling());
@@ -62,7 +62,7 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     connect(ch2CouplingButton, reinterpret_cast<void (CustomOptionButton::*)(DeviceChannel::Coupling)>(&CustomOptionButton::valueChanged), channel2, &DeviceChannel::setCoupling);
     connect(channel2, &DeviceChannel::couplingChanged, ch2CouplingButton, &CustomOptionButton::setValue);
 
-    CustomOptionButton * const ch2ProbeButton = new CustomOptionButton(tr("PROBE.2"));
+    CustomOptionButton * const ch2ProbeButton = new CustomOptionButton(tr("PROBE.A"));
     ch2ProbeButton->addValueOption(tr("1:1"), DeviceChannel::x1Probe);
     ch2ProbeButton->addValueOption(tr("1:10"), DeviceChannel::x10Probe);
     ch2ProbeButton->addValueOption(tr("1:10"), DeviceChannel::x100Probe);
@@ -72,7 +72,7 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     connect(ch2ProbeButton, reinterpret_cast<void (CustomOptionButton::*)(DeviceChannel::Probe)>(&CustomOptionButton::valueChanged), channel2, &DeviceChannel::setProbe);
     connect(channel2, &DeviceChannel::probeChanged, ch2ProbeButton, &CustomOptionButton::setValue);
 
-    CustomDial * const ch2ThresholdDial = new CustomDial(tr("LEVEL.2"));
+    CustomDial * const ch2ThresholdDial = new CustomDial(tr("LEVEL.A"));
     ch2ThresholdDial->setRange(DeviceChannel::minThreshold(), DeviceChannel::maxThreshold());
     ch2ThresholdDial->setValue(channel2->threshold());
     ch2ThresholdDial->setText(channel2->text());
@@ -250,19 +250,19 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     layout->addWidget(absoluteDisplay, 2, 2, 1, 3);
     layout->addWidget(relativeDisplay, 2, 5, 1, 2);
 
-    layout->addWidget(ch1CouplingButton, 3, 0);
-    layout->addWidget(ch1ProbeButton, 3, 1);
+    layout->addWidget(ch2CouplingButton, 3, 0);
+    layout->addWidget(ch2ProbeButton, 3, 1);
     layout->addWidget(triggerButton, 3, 2);
     layout->addWidget(restartButton, 3, 3);
     layout->addWidget(clearButton, 3, 4);
-    layout->addWidget(ch2CouplingButton, 3, 5);
-    layout->addWidget(ch2ProbeButton, 3, 6);
+    layout->addWidget(ch1CouplingButton, 3, 5);
+    layout->addWidget(ch1ProbeButton, 3, 6);
 
-    layout->addWidget(ch1ThresholdDial, 4, 0, 2, 2);
+    layout->addWidget(ch2ThresholdDial, 4, 0, 2, 2);
     layout->addWidget(modeButton, 4, 2);
     layout->addWidget(durationButton, 4, 3);
     layout->addWidget(conversionButton, 4, 4);
-    layout->addWidget(ch2ThresholdDial, 4, 5, 2, 2);
+    layout->addWidget(ch1ThresholdDial, 4, 5, 2, 2);
 
     layout->addWidget(countEventButton, 5, 2);
     layout->addWidget(startEventButton, 5, 3);
