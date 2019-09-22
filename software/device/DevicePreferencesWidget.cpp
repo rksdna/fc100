@@ -27,8 +27,8 @@ DevicePreferencesWidget::DevicePreferencesWidget(Device *device, QWidget *parent
 
     QGroupBox * const colorBox = new QGroupBox(tr("Colors"));
     QFormLayout * const colorLayout = new QFormLayout(colorBox);
-    colorLayout->addRow("Displays", m_processorButton);
-    colorLayout->addRow("Controls", m_controllerButton);
+    colorLayout->addRow(tr("Display"), m_processorButton);
+    colorLayout->addRow(tr("Control"), m_controllerButton);
 
     QGridLayout * const groupsLayout = new QGridLayout;
 

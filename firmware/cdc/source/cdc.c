@@ -177,12 +177,14 @@ static const u8_t language_descriptor[] =
 
 static const u8_t manufacturer_descriptor[] =
 {
-    0x0A, // bLenght
+    0x0E, // bLenght
     0x03, // bDescriptorType
+    'r', 0x00,
+    'k', 0x00,
+    's', 0x00,
+    'd', 0x00,
     'n', 0x00,
-    'o', 0x00,
-    'n', 0x00,
-    'e', 0x00,
+    'a', 0x00
 };
 
 static const u8_t product_descriptor[] =

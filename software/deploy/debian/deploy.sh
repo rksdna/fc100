@@ -2,6 +2,7 @@
 # Usage: sh deploy.sh SOURCE_DIR DESTINATION_DIR
 
 set -e
+umask 022
 
 # Prepare
 

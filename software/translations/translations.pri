@@ -8,5 +8,7 @@ lrelease.CONFIG += no_link target_predeps
 
 QMAKE_EXTRA_COMPILERS += lrelease
 
-translations.files += $$OUT_PWD/*.qm
+translations.files += \
+     $$OUT_PWD/fc100_ru.qm
+
 translations.CONFIG = no_check_exist

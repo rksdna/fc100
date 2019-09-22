@@ -1,15 +1,11 @@
 isEmpty(DEPLOY_PRODUCT): DEPLOY_PRODUCT = "fc100"
 isEmpty(DEPLOY_VERSION): DEPLOY_VERSION = "0.0.0.$$system(git rev-list --count HEAD)"
-isEmpty(DEPLOY_ORGANIZATION): DEPLOY_ORGANIZATION = "rksdna"
-isEmpty(DEPLOY_DOMAIN): DEPLOY_DOMAIN = "https://github.com/rksdna/fc100"
 
 VERSION = $$DEPLOY_VERSION
 
 DEFINES += \
     DEPLOY_PRODUCT="\"\\\"$$DEPLOY_PRODUCT\\\"\"" \
-    DEPLOY_VERSION="\"\\\"$$DEPLOY_VERSION\\\"\"" \
-    DEPLOY_ORGANIZATION="\"\\\"$$DEPLOY_ORGANIZATION\\\"\"" \
-    DEPLOY_DOMAIN="\"\\\"$$DEPLOY_DOMAIN\\\"\""
+    DEPLOY_VERSION="\"\\\"$$DEPLOY_VERSION\\\"\""
 
 OTHER_FILES += \
     $$PWD/debian/deploy.sh \
@@ -24,7 +20,7 @@ OTHER_FILES += \
 
 linux {
     target.path = /usr/bin
-    translations.path = /usr/share/rksdna/fc100
+    translations.path = /usr/share/fc100
 
     docs.path = /usr/share/doc/fc100
     docs.files = \
