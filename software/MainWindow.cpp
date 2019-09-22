@@ -1,15 +1,18 @@
 #include <QMenu>
+#include <QDate>
 #include <QDebug>
 #include <QMenuBar>
 #include <QSettings>
+#include <QMessageBox>
+#include <QApplication>
 #include "Device.h"
 #include "MainWindow.h"
 #include "DeviceWidget.h"
 #include "PreferencesDialog.h"
 
-MainWindow::MainWindow(const QString &type, QWidget *parent)
+MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent),
-      m_device(Device::createDevice(type, this))
+      m_device(new Device(this))
 {
     setCentralWidget(new DeviceWidget(m_device));
 
@@ -40,7 +43,7 @@ MainWindow::MainWindow(const QString &type, QWidget *parent)
     m_device->restoreFromSettings(settings);
     settings.endGroup();
 
-    m_device->reconnect();
+    m_device->open();
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
@@ -68,4 +71,19 @@ void MainWindow::preferences()
 
 void MainWindow::about()
 {
+    const QString text = tr("<b>%1</b><br>%2<br><br>Copyright © %3 rksdna, murych<br>The program is provided under MIT license<br>")
+            .arg(QApplication::applicationDisplayName())
+            .arg(QApplication::organizationDomain())
+            .arg(QDate::currentDate().year());
+
+    QMessageBox * const dialog = new QMessageBox(QMessageBox::NoIcon,
+                                                 QApplication::applicationDisplayName(),
+                                                 text,
+                                                 QMessageBox::Ok,
+                                                 this);
+
+    dialog->setIconPixmap(QApplication::windowIcon().pixmap(48, 48));
+    connect(dialog, &QMessageBox::finished, dialog, &QMessageBox::deleteLater);
+
+    dialog->open();
 }

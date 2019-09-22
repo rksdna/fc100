@@ -4,7 +4,6 @@
 #include <QApplication>
 #include <QLibraryInfo>
 #include <QStandardPaths>
-#include <QCommandLineParser>
 #include "MainWindow.h"
 
 int main(int argc, char *argv[])
@@ -14,7 +13,8 @@ int main(int argc, char *argv[])
     QApplication application(argc, argv);
     application.setApplicationName(DEPLOY_PRODUCT);
     application.setApplicationVersion(DEPLOY_VERSION);
-    application.setOrganizationName(QString());
+    application.setOrganizationName(DEPLOY_ORGANIZATION);
+    application.setOrganizationDomain(DEPLOY_DOMAIN);
     application.setApplicationDisplayName(QString("%1 %2").arg(DEPLOY_PRODUCT, DEPLOY_VERSION));
 
     QIcon icon;
@@ -43,15 +43,7 @@ int main(int argc, char *argv[])
     appTranslator.load(QStandardPaths::locate(QStandardPaths::AppDataLocation, QString("fc100_%1.qm").arg(locale)));
     application.installTranslator(&appTranslator);
 
-    QCommandLineParser parser;
-    parser.setApplicationDescription(QApplication::tr("Frequency counter"));
-    parser.addVersionOption();
-    parser.addHelpOption();
-    parser.addOption(QCommandLineOption("device", QApplication::tr("Select device type"), "device", "fc100"));
-
-    parser.process(application);
-
-    MainWindow window(parser.value("device"));
+    MainWindow window;
     window.show();
 
     return application.exec();

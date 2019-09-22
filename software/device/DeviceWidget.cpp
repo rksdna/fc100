@@ -85,7 +85,7 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     CustomPushButton * const restartButton = new CustomPushButton(tr("START"));
     restartButton->setColor(controller->color());
     connect(controller, &DeviceController::colorChanged, restartButton, &CustomButton::setColor);
-    connect(restartButton, &CustomPushButton::clicked, device, &Device::restart);
+    connect(restartButton, &CustomPushButton::clicked, device, &Device::start);
 
     CustomPushButton * const clearButton = new CustomPushButton(tr("CLEAR"));
     clearButton->setColor(controller->color());
@@ -112,13 +112,13 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
 
     CustomOptionButton * const modeButton = new CustomOptionButton(tr("MODE"));
     modeButton->addValueOption(tr("TIME"), DeviceController::TimeMode);
-    modeButton->addValueOption(tr("FREQ"), DeviceController::FrequencyMode);
+    modeButton->addValueOption(tr("FREQUENCY"), DeviceController::FrequencyMode);
     modeButton->addValueOption(tr("PERIOD"), DeviceController::PeriodMode);
     modeButton->addValueOption(tr("COUNTER"), DeviceController::CountMode);
     modeButton->addValueOption(tr("DUTY"), DeviceController::DutyMode);
-    modeButton->addValueOption(tr("G FREQ"), DeviceController::GateFrequencyMode);
-    modeButton->addValueOption(tr("G PERIOD"), DeviceController::GatePeriodMode);
-    modeButton->addValueOption(tr("G COUNTER"), DeviceController::GateCountMode);
+    modeButton->addValueOption(tr("G. FREQ."), DeviceController::GateFrequencyMode);
+    modeButton->addValueOption(tr("G. PERIOD"), DeviceController::GatePeriodMode);
+    modeButton->addValueOption(tr("G. COUNTER"), DeviceController::GateCountMode);
     modeButton->setValue(controller->mode());
     modeButton->setColor(controller->color());
     connect(controller, &DeviceController::colorChanged, modeButton, &CustomButton::setColor);
@@ -126,10 +126,10 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     connect(controller, &DeviceController::modeChanged, modeButton, &CustomOptionButton::setValue);
 
     CustomOptionButton * const countEventButton = new CustomOptionButton(tr("INPUT"));
-    countEventButton->addValueOption(tr("CH1 R"), DeviceController::Ch1RisingEdgeEvent);
-    countEventButton->addValueOption(tr("CH1 F"), DeviceController::Ch1FallingEdgeEvent);
-    countEventButton->addValueOption(tr("CH2 R"), DeviceController::Ch2RisingEdgeEvent);
-    countEventButton->addValueOption(tr("CH2 F"), DeviceController::Ch2FallingEdgeEvent);
+    countEventButton->addValueOption(tr("CH.A L-H"), DeviceController::Ch2RisingEdgeEvent);
+    countEventButton->addValueOption(tr("CH.A H-L"), DeviceController::Ch2FallingEdgeEvent);
+    countEventButton->addValueOption(tr("CH.B L-H"), DeviceController::Ch1RisingEdgeEvent);
+    countEventButton->addValueOption(tr("CH.B H-L"), DeviceController::Ch1FallingEdgeEvent);
     countEventButton->setValue(controller->countEvent());
     countEventButton->setColor(controller->color());
     countEventButton->setEnabled(controller->isCountEventEnabled());
@@ -139,10 +139,10 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     connect(controller, &DeviceController::countEventEnabled, countEventButton, &CustomOptionButton::setEnabled);
 
     CustomOptionButton * const startEventButton = new CustomOptionButton(tr("START ON"));
-    startEventButton->addValueOption(tr("CH1 R"), DeviceController::Ch1RisingEdgeEvent);
-    startEventButton->addValueOption(tr("CH1 F"), DeviceController::Ch1FallingEdgeEvent);
-    startEventButton->addValueOption(tr("CH2 R"), DeviceController::Ch2RisingEdgeEvent);
-    startEventButton->addValueOption(tr("CH2 F"), DeviceController::Ch2FallingEdgeEvent);
+    startEventButton->addValueOption(tr("CH.A L-H"), DeviceController::Ch2RisingEdgeEvent);
+    startEventButton->addValueOption(tr("CH.A H-L"), DeviceController::Ch2FallingEdgeEvent);
+    startEventButton->addValueOption(tr("CH.B L-H"), DeviceController::Ch1RisingEdgeEvent);
+    startEventButton->addValueOption(tr("CH.B H-L"), DeviceController::Ch1FallingEdgeEvent);
     startEventButton->setValue(controller->startEvent());
     startEventButton->setColor(controller->color());
     startEventButton->setEnabled(controller->isStartStopEventEnabled());
@@ -151,11 +151,11 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     connect(controller, &DeviceController::startEventChanged, startEventButton, &CustomOptionButton::setValue);
     connect(controller, &DeviceController::startStopEventEnabled, startEventButton, &CustomOptionButton::setEnabled);
 
-    CustomOptionButton * const stopEventButton = new CustomOptionButton(tr("STOP ON"));
-    stopEventButton->addValueOption(tr("CH1 R"), DeviceController::Ch1RisingEdgeEvent);
-    stopEventButton->addValueOption(tr("CH1 F"), DeviceController::Ch1FallingEdgeEvent);
-    stopEventButton->addValueOption(tr("CH2 R"), DeviceController::Ch2RisingEdgeEvent);
-    stopEventButton->addValueOption(tr("CH2 F"), DeviceController::Ch2FallingEdgeEvent);
+    CustomOptionButton * const stopEventButton = new CustomOptionButton(tr("STOP ON"));    
+    stopEventButton->addValueOption(tr("CH.A L-H"), DeviceController::Ch2RisingEdgeEvent);
+    stopEventButton->addValueOption(tr("CH.A H-L"), DeviceController::Ch2FallingEdgeEvent);
+    stopEventButton->addValueOption(tr("CH.B L-H"), DeviceController::Ch1RisingEdgeEvent);
+    stopEventButton->addValueOption(tr("CH.B H-L"), DeviceController::Ch1FallingEdgeEvent);
     stopEventButton->setValue(controller->stopEvent());
     stopEventButton->setColor(controller->color());
     stopEventButton->setEnabled(controller->isStartStopEventEnabled());

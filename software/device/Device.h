@@ -4,7 +4,9 @@
 #include <QColor>
 #include <QObject>
 
+class QTimer;
 class QSettings;
+class QSerialPort;
 class DeviceChannel;
 class DeviceProcessor;
 class DeviceReference;
@@ -13,9 +15,6 @@ class DeviceController;
 class Device : public QObject
 {
     Q_OBJECT
-
-public:
-    static Device *createDevice(const QString &type, QObject *parent = 0);
 
 public:
     explicit Device(QObject *parent = 0);
@@ -29,35 +28,71 @@ public:
     QString portName() const;
     void setPortName(const QString &name);
 
-    virtual void reconnect() = 0;
+    void open();
+    void close();
     bool isReady() const;
 
-    virtual void restart() = 0;
-    virtual bool isStarted() const = 0;
-
+    void clear();
+    void start();
     void stop();
 
     void saveToSettings(QSettings &settings) const;
     void restoreFromSettings(QSettings &settings);
 
 signals:
-    void readyChanged(bool online);
-
-protected:
-    QString internalPortName() const;
-    void setReady(bool ready);
+    void readyChanged(bool state);
 
 private:
-    void clearThenRestart();
+    enum State
+    {
+        IdleState,
+        TriggerState,
+        BusyState
+    };
+
+    enum Command
+    {
+        PollCommand,
+        MeasureTimeCommand,
+        MeasureFrequencyCommand,
+        MeasureDutyCommand,
+        MeasureGateFrequencyCommand
+    };
+
+    enum Status
+    {
+        FailStatus,
+        DoneStatus,
+        BusyStatus
+    };
 
 private:
+    QString autoPortName() const;
+    void setReady(bool state);
+
+    void process(const QByteArray &replyData);
+    void read();
+    void write(const QByteArray &data);
+    void get(quint8 data);
+    void put(quint8 data);
+    void flush();
+
+    quint8 checksum(const QByteArray &data);
+
+private:
+    QTimer * const m_timer;
+    QSerialPort * const m_port;
     DeviceReference * const m_reference;
     DeviceChannel * const m_channel1;
     DeviceChannel * const m_channel2;
     DeviceController * const m_controller;
     DeviceProcessor * const m_processor;
     QString m_portName;
+    QByteArray m_inbox;
+    QByteArray m_outbox;
     bool m_ready;
+    bool m_escape;
+    State m_state;
 };
 
 #endif // DEVICE_H

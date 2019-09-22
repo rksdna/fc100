@@ -2,7 +2,6 @@ INCLUDEPATH += $$PWD
 
 SOURCES += \
     $$PWD/Device.cpp \
-    $$PWD/MockDevice.cpp \
     $$PWD/DeviceChannel.cpp \
     $$PWD/DeviceReference.cpp \
     $$PWD/DeviceProcessor.cpp \
@@ -11,12 +10,10 @@ SOURCES += \
     $$PWD/DevicePreferencesWidget.cpp \
     $$PWD/DeviceFormatBox.cpp \
     $$PWD/DeviceProcessingWidget.cpp \
-    $$PWD/DeviceHardwareWidget.cpp \
-    $$PWD/TargetDevice.cpp
+    $$PWD/DeviceHardwareWidget.cpp
 
 HEADERS += \
     $$PWD/Device.h \
-    $$PWD/MockDevice.h \
     $$PWD/DeviceChannel.h \
     $$PWD/DeviceReference.h \
     $$PWD/DeviceProcessor.h \
@@ -25,5 +22,4 @@ HEADERS += \
     $$PWD/DevicePreferencesWidget.h \
     $$PWD/DeviceFormatBox.h \
     $$PWD/DeviceProcessingWidget.h \
-    $$PWD/DeviceHardwareWidget.h \
-    $$PWD/TargetDevice.h
+    $$PWD/DeviceHardwareWidget.h

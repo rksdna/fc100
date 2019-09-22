@@ -1,5 +1,5 @@
 /*
- * Reciprocal counter with vernier and serial peripheral interface
+ * Reciprocal counter USB bridge
  * Copyright (c) 2018 rksdna, murych
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy

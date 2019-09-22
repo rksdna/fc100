@@ -1,5 +1,5 @@
 /*
- * Reciprocal counter with vernier and serial peripheral interface
+ * Reciprocal counter USB bridge
  * Copyright (c) 2018 rksdna, murych
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -36,7 +36,6 @@
 enum state
 {
     IDLE_STATE,
-    READY_STATE,
     START_TIME_STATE,
     START_FREQUENCY_STATE,
     START_DUTY_STATE,
@@ -49,6 +48,22 @@ enum state
     BUSY_3_STATE,
     CALIBRATION_1_STATE,
     CALIBRATION_2_STATE
+};
+
+enum
+{
+    POLL_COMMAND,
+    START_TIME_COMMAND,
+    START_FREQUENCY_COMMAND,
+    START_DUTY_COMMAND,
+    START_GATED_FREQUENCY_COMMAND
+};
+
+enum
+{
+    FAIL_STATUS,
+    DONE_STATUS,
+    BUSY_STATUS
 };
 
 struct parameters
@@ -86,12 +101,39 @@ static struct parameters params;
 static struct variables vars;
 static u32_t duration;
 
+static enum state command(enum state state)
+{
+    switch (params.command)
+    {
+    case START_TIME_COMMAND:
+        state = START_TIME_STATE;
+        break;
+
+    case START_FREQUENCY_COMMAND:
+        state = START_FREQUENCY_STATE;
+        break;
+
+    case START_DUTY_COMMAND:
+        state = START_DUTY_STATE;
+        break;
+
+    case START_GATED_FREQUENCY_COMMAND:
+        state = START_GATED_FREQUENCY_STATE;
+        break;
+
+    default:
+        break;
+    }
+
+    params.command = POLL_COMMAND;
+    return state;
+}
+
 static enum state control(enum state state, u32_t elapsed, struct counter *regs)
 {
     switch (state)
     {
     case IDLE_STATE:
-    case READY_STATE:
         regs->dac1 = 255 - params.threshold1;
         regs->dac2 = 255 - params.threshold2;
         regs->mode =
@@ -175,7 +217,7 @@ static enum state control(enum state state, u32_t elapsed, struct counter *regs)
         regs->ctrl =
                 COUNTER_CTRL_HPF_CH1_BITS(params.coupling1) |
                 COUNTER_CTRL_HPF_CH2_BITS(params.coupling2) |
-                COUNTER_CTRL_STRT;
+                COUNTER_CTRL_STRT | COUNTER_CTRL_STOP;
 
         return BUSY_1_STATE;
 
@@ -188,7 +230,10 @@ static enum state control(enum state state, u32_t elapsed, struct counter *regs)
         }
 
         if (elapsed > duration)
+        {
+            vars.status = FAIL_STATUS;
             return IDLE_STATE;
+        }
 
         break;
 
@@ -207,7 +252,10 @@ static enum state control(enum state state, u32_t elapsed, struct counter *regs)
         }
 
         if (elapsed > duration)
+        {
+            vars.status = FAIL_STATUS;
             return IDLE_STATE;
+        }
 
         break;
 
@@ -220,7 +268,10 @@ static enum state control(enum state state, u32_t elapsed, struct counter *regs)
         }
 
         if (elapsed > duration)
+        {
+            vars.status = FAIL_STATUS;
             return IDLE_STATE;
+        }
 
         break;
 
@@ -236,7 +287,6 @@ static enum state control(enum state state, u32_t elapsed, struct counter *regs)
     case BUSY_3_STATE:
         if (regs->ack & COUNTER_ACK_STOP)
         {
-            //print(&cdc_stream, "R %d, %d, %d, %d\n", regs->tac_strt, regs->tac_stop, regs->cnt, regs->tmr);
             debug("R %d, %d, %d, %d\n", regs->tac_strt, regs->tac_stop, regs->cnt, regs->tmr);
             vars.counter1 = regs->cnt;
             vars.timer1 = regs->tmr;
@@ -250,7 +300,10 @@ static enum state control(enum state state, u32_t elapsed, struct counter *regs)
         }
 
         if (elapsed > duration)
+        {
+            vars.status = FAIL_STATUS;
             return IDLE_STATE;
+        }
 
         break;
 
@@ -258,7 +311,6 @@ static enum state control(enum state state, u32_t elapsed, struct counter *regs)
         regs->mode &= ~COUNTER_MODE_CLR;
         if (regs->ack & COUNTER_ACK_STOP)
         {
-            //print(&cdc_stream, "FS %d, %d\n", regs->tac_strt, regs->tac_stop);
             debug("FS %d, %d\n", regs->tac_strt, regs->tac_stop);
             vars.fs_start = regs->tac_strt;
             vars.fs_stop = regs->tac_stop;
@@ -270,7 +322,10 @@ static enum state control(enum state state, u32_t elapsed, struct counter *regs)
         }
 
         if (elapsed > 10)
+        {
+            vars.status = FAIL_STATUS;
             return IDLE_STATE;
+        }
 
         break;
 
@@ -278,23 +333,27 @@ static enum state control(enum state state, u32_t elapsed, struct counter *regs)
         regs->mode &= ~COUNTER_MODE_CLR;
         if (regs->ack & COUNTER_ACK_STOP)
         {
-            //print(&cdc_stream, "ZS %d, %d\n", regs->tac_strt, regs->tac_stop);
             debug("ZS %d, %d\n", regs->tac_strt, regs->tac_stop);
             vars.zs_start = regs->tac_strt;
             vars.zs_stop = regs->tac_stop;
 
             regs->mode |= COUNTER_MODE_CLR;
             regs->ctrl &= ~(COUNTER_CTRL_CLB_ZS | COUNTER_CTRL_TEST);
-            return READY_STATE;
+
+            vars.status = DONE_STATUS;
+            return IDLE_STATE;
         }
 
         if (elapsed > 10)
+        {
+            vars.status = FAIL_STATUS;
             return IDLE_STATE;
+        }
 
         break;
 
     default:
-        break;
+        return IDLE_STATE;
     }
 
     return state;
@@ -306,7 +365,7 @@ static void control_handler(void *arg)
 
     struct timer tm;
     struct counter regs;
-    static enum state state = START_DUTY_STATE;
+    static enum state state = IDLE_STATE;
 
     sleep(250);
     if (get_device_voltage() > V_ON)
@@ -316,7 +375,7 @@ static void control_handler(void *arg)
         start_timer(&tm, -1);
         while (get_device_voltage() > V_OFF)
         {
-            const enum state next = control(state, tm.ticks, &regs);
+            const enum state next = control(command(state), tm.ticks, &regs);
             if (next != state)
             {
                 state = next;
@@ -339,6 +398,9 @@ static void socket_handler(struct slip_socket *socket, const void *data, u32_t s
     if (size == sizeof(struct parameters))
     {
         copy(&params, data, sizeof(struct parameters));
+        if (params.command != POLL_COMMAND)
+            vars.status = BUSY_STATUS;
+
         send_slip_response(socket, &vars, sizeof(struct variables));
     }
 }

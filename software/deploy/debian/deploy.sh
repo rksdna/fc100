@@ -28,7 +28,6 @@ DEB_WEBSITE="https://github.com/rksdna/fc100"
 # Build and install
 
 "$DEB_QT_DIR/bin/qmake" \
-    DEPLOY_PACKAGE="$DEB_PRODUCT" \
     DEPLOY_PRODUCT="$DEB_PRODUCT" \
     DEPLOY_VERSION="$DEB_VERSION" \
     -o "$DEB_BUILD_DIR/Makefile" \
