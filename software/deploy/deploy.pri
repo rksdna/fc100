@@ -33,7 +33,7 @@ linux {
 
     icons.path = /usr/share/icons
     icons.files = \
-        $$PWD/debian/fc100.png
+        $$PWD/debian/fc100.svg
 
     shortcuts.path = /usr/share/applications
     shortcuts.files = \
@@ -61,5 +61,5 @@ win32 {
 DISTFILES += \
     $$PWD/debian/fc100.1 \
     $$PWD/debian/fc100.desktop \
-    $$PWD/debian/fc100.png \
-    $$PWD/windows/fc100.ico
+    $$PWD/windows/fc100.ico \
+    $$PWD/debian/fc100.svg
