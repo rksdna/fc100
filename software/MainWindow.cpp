@@ -3,13 +3,14 @@
 #include <QDebug>
 #include <QMenuBar>
 #include <QSettings>
+#include <QFileDialog>
 #include <QMessageBox>
 #include <QApplication>
-#include <QStandardPaths>
 #include "Device.h"
 #include "Settings.h"
 #include "MainWindow.h"
 #include "DeviceWidget.h"
+#include "DeviceProcessor.h"
 #include "PreferencesDialog.h"
 
 MainWindow::MainWindow(QWidget *parent)
@@ -19,6 +20,10 @@ MainWindow::MainWindow(QWidget *parent)
     setCentralWidget(new DeviceWidget(m_device));
 
     QMenu * const deviceMenu = menuBar()->addMenu(tr("Device"));
+
+    QAction * const saveAsAction = deviceMenu->addAction(tr("Save as..."));
+    saveAsAction->setShortcut(QKeySequence::SaveAs);
+    connect(saveAsAction, &QAction::triggered, this, &MainWindow::saveAs);
 
     QAction * const preferencesAction = deviceMenu->addAction(tr("Preferences..."));
     preferencesAction->setShortcut(QKeySequence::Preferences);
@@ -73,11 +78,23 @@ void MainWindow::preferences()
     dialog->open();
 }
 
+void MainWindow::saveAs()
+{
+    QFileDialog * const dialog = new QFileDialog(this);
+    dialog->setWindowTitle(QApplication::applicationDisplayName());
+    dialog->setDefaultSuffix("csv");
+    dialog->setNameFilter("CSV files (*.csv)");
+    dialog->setAcceptMode(QFileDialog::AcceptSave);
+
+    connect(dialog, &QFileDialog::fileSelected, m_device->processor(), &DeviceProcessor::saveToFile);
+    connect(dialog, &QFileDialog::finished, dialog, &QFileDialog::deleteLater);
+    dialog->open();
+}
+
 void MainWindow::about()
 {
-    const QString text = tr("<b>%1</b><br>%2<br><br>Copyright © %3 rksdna, murych<br>The program is provided under MIT license<br>")
+    const QString text = tr("<p><b>%1</b></p><p>Copyright © %3 rksdna, murych</p><p>The program is provided under MIT license</p>")
             .arg(QApplication::applicationDisplayName())
-            .arg(QApplication::organizationDomain())
             .arg(QDate::currentDate().year());
 
     QMessageBox * const dialog = new QMessageBox(QMessageBox::NoIcon,

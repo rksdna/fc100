@@ -1,3 +1,4 @@
+#include <QFile>
 #include <QtMath>
 #include <QSettings>
 #include <QJSEngine>
@@ -187,6 +188,17 @@ void DeviceProcessor::take(DeviceProcessor::Type type, qreal value, qreal time)
     }
 
     refresh();
+}
+
+void DeviceProcessor::saveToFile(const QString &fileName) const
+{
+    QStringList list;
+    foreach (qreal v, m_buffer)
+        list.append(tr("%1").arg(v));
+
+    QFile file(fileName);
+    if (file.open(QFile::WriteOnly))
+        file.write(list.join(tr("\n")).toUtf8());
 }
 
 QString DeviceProcessor::toString(qreal value, DeviceProcessor::Type type) const

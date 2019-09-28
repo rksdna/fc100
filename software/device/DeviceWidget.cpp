@@ -65,7 +65,7 @@ DeviceWidget::DeviceWidget(Device *device, QWidget *parent)
     CustomOptionButton * const ch2ProbeButton = new CustomOptionButton(tr("PROBE.A"));
     ch2ProbeButton->addValueOption(tr("1:1"), DeviceChannel::x1Probe);
     ch2ProbeButton->addValueOption(tr("1:10"), DeviceChannel::x10Probe);
-    ch2ProbeButton->addValueOption(tr("1:10"), DeviceChannel::x100Probe);
+    ch2ProbeButton->addValueOption(tr("1:100"), DeviceChannel::x100Probe);
     ch2ProbeButton->setValue(channel2->probe());
     ch2ProbeButton->setColor(controller->color());
     connect(controller, &DeviceController::colorChanged, ch2ProbeButton, &CustomButton::setColor);

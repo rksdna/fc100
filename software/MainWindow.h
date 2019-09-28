@@ -16,6 +16,7 @@ protected:
 
 private:
     void preferences();
+    void saveAs();
     void about();
 
 public:

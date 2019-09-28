@@ -13,7 +13,7 @@ OTHER_FILES += \
     $$PWD/debian/copyright \
     $$PWD/debian/changelog \
     $$PWD/windows/deploy.sh \
-    $$PWD/windows/i686-w64-mingw32-qt-5.5.1.sh \
+    $$PWD/windows/i686-w64-mingw32-qt-5.9.5.sh \
     $$PWD/windows/control.wxs \
     $$PWD/windows/changelog.txt \
     $$PWD/windows/license.txt

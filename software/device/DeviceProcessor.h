@@ -89,7 +89,9 @@ public:
     void clear();
     void take(Type type, qreal value, qreal time);
 
-    QString toString(qreal value, Type type) const;
+    void saveToFile(const QString &fileName) const;
+
+    QString toString(qreal value, Type type) const;   
 
     void saveToSettings(QSettings &settings) const;
     void restoreFromSettings(QSettings &settings);
