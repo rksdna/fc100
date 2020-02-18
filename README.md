@@ -4,7 +4,8 @@ Two channel reciprocal frequency counter / interval timer with analog interpolat
 
 Modes of operation:
  - frequency / period measurement, up to 100MHz (without prescaler)
- - time interval measurement (1nS resolution, with interpolators) with independent selection of start and end events (any edge, any input) 
+ - time interval measurement (1nS resolution, with interpolators) 
+   with independent selection of start and end events (any edge, any input) 
  - event counting
  - gated frequency / period measurement
 
