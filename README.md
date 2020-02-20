@@ -26,7 +26,7 @@ Hardware image:
 Software features:
 
 - basic statistic and post-processing
-- debian / windows portable
+- Debian / Windows portable
 
 Screenshot:
 
@@ -34,12 +34,5 @@ Screenshot:
 
 How to build:
 
-- debian `PATH_TO_REPO/software/deploy/debian/deploy.sh PATH_TO_REPO/software OUTPUT_DEB_DIRECTORY`
-- windows `PATH_TO_REPO/software/deploy/windows/deploy.sh PATH_TO_REPO/software OUTPUT_MSI_DIRECTORY` (reqired cross buld of Qt, see `PATH_TO_REPO/software/deploy/windows/i686-w64-mingw32-qt-5.9.5.sh`)
-
-
-
-
-
-
-
+- Debian `REPO_PATH/software/deploy/debian/deploy.sh PATH_TO_REPO/software OUTPUT_DEB_DIRECTORY`
+- Windows `REPO_PATH/software/deploy/windows/deploy.sh PATH_TO_REPO/software OUTPUT_MSI_DIRECTORY` (see `REPO_PATH/software/deploy/windows/i686-w64-mingw32-qt-5.9.5.sh`)
