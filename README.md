@@ -19,11 +19,27 @@ Hardware features:
 - galvanic isolation
 - external connected or built-in 10 MHz reference (TCXO)
 
+Hardware image:
+
+![Image](/docs/hardware.png)
+
 Software features:
 
 - basic statistic and post-processing
-- linux / windows portable
+- debian / windows portable
 
-## Images
-![Image](/docs/hardware.png)
+Screenshot:
+
 ![Image](/docs/software.png)
+
+How to build:
+
+- debian `PATH_TO_REPO/software/deploy/debian/deploy.sh PATH_TO_REPO/software OUTPUT_DEB_DIRECTORY`
+- windows `PATH_TO_REPO/software/deploy/windows/deploy.sh PATH_TO_REPO/software OUTPUT_MSI_DIRECTORY` (reqired cross buld of Qt, see `PATH_TO_REPO/software/deploy/windows/i686-w64-mingw32-qt-5.9.5.sh`)
+
+
+
+
+
+
+
