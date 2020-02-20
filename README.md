@@ -15,8 +15,9 @@ Modes of operation:
 
 Hardware features:
 
-- USB connection to PC
-- galvanic isolation
+- USB connection as CDC device class
+- frontend galvanic isolation
+- standard 1 MΩ / 10 pF inputs for 10:1 oscilliscope probes (±5 threshold range, 20 mV sensitivity)
 - external connected or built-in 10 MHz reference (TCXO)
 
 Hardware image:
@@ -28,11 +29,13 @@ Software features:
 - basic statistic and post-processing
 - Debian / Windows portable
 
-Screenshot:
+Screenshots:
 
 ![Image](/docs/software.png)
 
 How to build:
 
 - Debian `REPO_PATH/software/deploy/debian/deploy.sh PATH_TO_REPO/software OUTPUT_DEB_DIRECTORY`
-- Windows `REPO_PATH/software/deploy/windows/deploy.sh PATH_TO_REPO/software OUTPUT_MSI_DIRECTORY` (see `REPO_PATH/software/deploy/windows/i686-w64-mingw32-qt-5.9.5.sh`)
+- Windows `REPO_PATH/software/deploy/windows/deploy.sh PATH_TO_REPO/software OUTPUT_MSI_DIRECTORY` 
+
+Cross-compile Qt for Windows: `REPO_PATH/software/deploy/windows/i686-w64-mingw32-qt-5.9.5.sh`
